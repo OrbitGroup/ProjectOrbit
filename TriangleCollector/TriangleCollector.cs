@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
@@ -23,18 +24,23 @@ namespace TriangleCollector
 
         private const string Uri = "wss://api.hitbtc.com/api/2/ws";
 
+        public static Orderbook OfficialOrderbook;
+
         public static async Task Main(string[] args)
         {
+            Stopwatch sw;
             var client = new ClientWebSocket();
             var cts = new CancellationToken();
             await client.ConnectAsync(new Uri(Uri), CancellationToken.None);
+            
             await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(@"{""method"": ""subscribeOrderbook"",""params"": { ""symbol"": ""ETHBTC"" }}")), WebSocketMessageType.Text, true, cts);
-            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(@"{""method"": ""subscribeOrderbook"",""params"": { ""symbol"": ""LTCETH"" }}")), WebSocketMessageType.Text, true, cts);
-            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(@"{""method"": ""subscribeOrderbook"",""params"": { ""symbol"": ""LTCBTC"" }}")), WebSocketMessageType.Text, true, cts);
-
+            
+            
+            //await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(@"{""method"": ""subscribeOrderbook"",""params"": { ""symbol"": ""LTCETH"" }}")), WebSocketMessageType.Text, true, cts);
+            //await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(@"{""method"": ""subscribeOrderbook"",""params"": { ""symbol"": ""LTCBTC"" }}")), WebSocketMessageType.Text, true, cts);
+            
             while (client.State == WebSocketState.Open)
             {
-
                 ArraySegment<Byte> buffer = new ArraySegment<byte>(new Byte[8192]);
 
                 WebSocketReceiveResult result = null;
@@ -56,18 +62,28 @@ namespace TriangleCollector
                         {
                             try
                             {
-                                var orderbook = JsonSerializer.Deserialize<Orderbook>(reader.ReadToEnd());
-                                if (orderbook.@params != null) //make sure params is not null, first message that confirms subscription does not have params (i.e bid/ask/volumes)
-                                {
-                                    Console.WriteLine(orderbook.@params.symbol);
-                                    Console.WriteLine(orderbook.@params.ask[0].price);
-                                    Console.WriteLine(orderbook.@params.bid[0].price);
 
+                                var orderbook = JsonSerializer.Deserialize<Orderbook>(reader.ReadToEnd());
+                                if (orderbook != null)
+                                {
+                                    if (orderbook.method == "updateOrderbook") // if its an update, merge with the OfficialOrderbook
+                                    {
+                                        Console.WriteLine("Starting Merge");
+                                        sw = Stopwatch.StartNew();
+                                        OfficialOrderbook.Merge(orderbook);
+                                        sw.Stop();
+                                        Console.WriteLine($"Merge took {sw.ElapsedMilliseconds}ms");
+
+                                    }
+                                    else //This is called whenever the method is not update. The first response we get is just confirmation we subscribed, second response is the "snapshot" which becomes the OfficialOrderbook
+                                    {
+                                        OfficialOrderbook = orderbook;
+                                    }
                                 }
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine(reader.ReadToEnd());
+                                throw ex;
                             }
                         }
                     }

@@ -1,39 +1,37 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace TriangleCollector.Models
 {
-    public class Ask
-    {
-        public string price { get; set; }
-        public string size { get; set; }
-
-    }
-
-    public class Bid
-    {
-        public string price { get; set; }
-        public string size { get; set; }
-
-    }
-
-    public class Params
-    {
-        public List<Ask> ask { get; set; }
-        public List<Bid> bid { get; set; }
-        public string symbol { get; set; }
-        public int sequence { get; set; }
-        public DateTime timestamp { get; set; }
-
-    }
-
+    [JsonConverter(typeof(OrderbookConverter))]
     public class Orderbook
     {
-        public string jsonrpc { get; set; }
+        public string symbol { get; set; }
+        
+        public int sequence { get; set; }
+        
         public string method { get; set; }
-        public Params @params { get; set; }
+        
+        public ConcurrentDictionary<decimal, decimal> asks { get; set; }
+        
+        public ConcurrentDictionary<decimal, decimal> bids { get; set; }
+
+        public DateTime timestamp { get; set; }
+
+        /// <summary>
+        /// Takes an update and merges it with this orderbook.
+        /// </summary>
+        /// <param name="update">An orderbook update</param>
+        public void Merge(Orderbook update)
+        {
+            //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
+            update.asks.AsParallel().ForAll(x => asks.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
+            update.bids.AsParallel().ForAll(x => bids.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
+        }
     }
 }
 
