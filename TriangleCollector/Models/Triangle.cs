@@ -8,22 +8,71 @@ namespace TriangleCollector.Models
 {
     public class Triangle
     {
-        public string Base { get; set; }
+        public string FirstSymbol { get; set; }
 
-        public decimal BaseAsk { get; set; }
+        public decimal FirstSymbolAsk { get; set; }
 
-        public double BaseVolume { get; set; }
+        public double FirstSymbolVolume { get; set; }
 
-        public string Middle { get; set; }
+        public string SecondSymbol { get; set; }
 
-        public decimal MiddleBid { get; set; }
+        public decimal SecondSymbolBid { get; set; }
 
-        public double MiddleVolume { get; set; }
+        public double SecondSymbolBidVolume { get; set; }
 
-        public string Final { get; set; }
+        public decimal SecondSymbolAsk { get; set; }
 
-        public decimal FinalBid { get; set; }
+        public double SecondSymbolAskVolume { get; set; }
 
-        public double FinalVolume { get; set; }
+        public string ThirdSymbol { get; set; }
+
+        public decimal ThirdSymbolBid { get; set; }
+
+        public double ThirdSymbolVolume { get; set; }
+
+        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol)
+        {
+            this.FirstSymbol = FirstSymbol;
+            this.SecondSymbol = SecondSymbol;
+            this.ThirdSymbol = ThirdSymbol;
+        }
+
+        public IEnumerator<string> GetEnumerator()
+        {
+            foreach (var pair in new List<string> { FirstSymbol, SecondSymbol, ThirdSymbol })
+            {
+                yield return pair;
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{FirstSymbol}-{SecondSymbol}-{ThirdSymbol}";
+        }
+
+        public string ToReversedString()
+        {
+            return $"{ThirdSymbol}-{SecondSymbol}-{FirstSymbol}";
+        }
+
+        public decimal GetProfitability()
+        {
+            try
+            {
+                var firstTrade = 1 / FirstSymbolAsk;
+                var secondTrade = firstTrade * SecondSymbolBid;
+                var thirdTrade = secondTrade * ThirdSymbolBid;
+                return thirdTrade;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+
+        public decimal GetReversedProfitability()
+        {
+            return 0;
+        }
     }
 }

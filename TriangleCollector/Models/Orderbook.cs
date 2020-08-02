@@ -28,9 +28,16 @@ namespace TriangleCollector.Models
         /// <param name="update">An orderbook update</param>
         public void Merge(Orderbook update)
         {
-            //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
-            update.asks.AsParallel().ForAll(x => asks.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
-            update.bids.AsParallel().ForAll(x => bids.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
+            if (this.sequence < update.sequence)
+            {
+                this.sequence = update.sequence;
+                this.timestamp = update.timestamp;
+                this.method = update.method;
+                
+                //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
+                update.asks.AsParallel().ForAll(x => asks.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
+                update.bids.AsParallel().ForAll(x => bids.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
+            }
         }
     }
 }
