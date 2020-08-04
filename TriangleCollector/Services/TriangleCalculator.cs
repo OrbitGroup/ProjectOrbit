@@ -80,6 +80,7 @@ namespace TriangleCollector.Services
                         var profit = triangle.GetProfitability();
                         //var reversedProfit = triangle.GetReversedProfitability();
                         TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), profit, (key, oldValue) => oldValue = profit);
+                        TriangleCollector.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), DateTime.UtcNow, (key, oldValue) => oldValue = DateTime.UtcNow);
                     }
                 }
             }

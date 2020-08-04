@@ -31,6 +31,8 @@ namespace TriangleCollector
 
         public static ConcurrentDictionary<string, decimal> Triangles = new ConcurrentDictionary<string, decimal>();
 
+        public static ConcurrentDictionary<string, DateTime> TriangleRefreshTimes = new ConcurrentDictionary<string, DateTime>();
+
         public static ConcurrentDictionary<string, List<Triangle>> SymbolTriangleMapping = new ConcurrentDictionary<string, List<Triangle>>();
 
         public static List<string> Pairs = new List<string>();
@@ -48,6 +50,13 @@ namespace TriangleCollector
         public static ConcurrentQueue<Triangle> RecalculatedTriangles = new ConcurrentQueue<Triangle>();
 
         public static ClientWebSocket client = new ClientWebSocket();
+
+        //stats data structures:
+        public static ConcurrentQueue<long> MergeTimings = new ConcurrentQueue<long>();
+
+        public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>();
+
+
 
         public IConfiguration Configuration { get; }
 
@@ -78,6 +87,7 @@ namespace TriangleCollector
                 services.AddHostedService<OrderbookSubscriber>();
                 services.AddHostedService<OrderbookListener>();
                 services.AddHostedService<TriangleCalculator>();
+                services.AddHostedService<StatisticsMonitor>();
             });
 
         public static async Task MonitorUpdatedTriangles()

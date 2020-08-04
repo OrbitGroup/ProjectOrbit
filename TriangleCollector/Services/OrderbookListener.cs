@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
@@ -35,6 +36,7 @@ namespace TriangleCollector.Services
 
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
+            var stopwatch = new Stopwatch();
             while (TriangleCollector.client.State == WebSocketState.Open && !stoppingToken.IsCancellationRequested)
             {
                 if (TriangleCollector.client.State == WebSocketState.CloseReceived)
@@ -72,8 +74,12 @@ namespace TriangleCollector.Services
                             try
                             {
                                 var orderbook = JsonSerializer.Deserialize<Orderbook>(await reader.ReadToEndAsync());
-                                if (orderbook != null)
+
+                                if (orderbook.symbol != null)
                                 {
+                                    var orderbookUpdateDelta = DateTime.UtcNow.Subtract(orderbook.timestamp);
+                                    TriangleCollector.OrderbookUpdateDeltas.Enqueue(orderbookUpdateDelta);
+
                                     if (orderbook.method == "updateOrderbook") // if its an update, merge with the OfficialOrderbook
                                     {
                                         try
@@ -81,9 +87,14 @@ namespace TriangleCollector.Services
                                             TriangleCollector.OfficialOrderbooks.TryGetValue(orderbook.symbol, out Orderbook OfficialOrderbook);
                                             if (OfficialOrderbook != null)
                                             {
+                                                stopwatch.Reset();
+                                                stopwatch.Start();
                                                 OfficialOrderbook.Merge(orderbook);
+                                                stopwatch.Stop();
+
                                                 TriangleCollector.UpdatedSymbols.Enqueue(orderbook.symbol);
 
+                                                TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
                                             }
                                             else
                                             {

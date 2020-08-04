@@ -12,6 +12,8 @@ namespace TriangleCollector.Services
 {
     public class QueueMonitor : BackgroundService
     {
+        private int QueueSizeTarget = 10;
+
         private ILoggerFactory _factory;
 
         private readonly ILogger<QueueMonitor> _logger;
@@ -19,6 +21,8 @@ namespace TriangleCollector.Services
         private int calculatorCount = 1;
 
         private int MaxTriangleCalculatorQueueLength = 100;
+
+        private int MaxTriangleCalculators = 5;
 
         public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger)
         {
@@ -39,18 +43,21 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (TriangleCollector.OfficialOrderbooks.Count > 0)
+                if (TriangleCollector.OfficialOrderbooks.Count > 0 && (TriangleCollector.UpdatedSymbols.Count > QueueSizeTarget || TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget))
                 {
-                    _logger.LogDebug($"\nOrderbooks: {TriangleCollector.OfficialOrderbooks.Count}\nTriangles: {TriangleCollector.Triangles.Count}\nUpdatedSymbols: {TriangleCollector.UpdatedSymbols.Count}\nTrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}\n");
+                    _logger.LogWarning($"\nOrderbooks: {TriangleCollector.OfficialOrderbooks.Count}\nTriangles: {TriangleCollector.Triangles.Count}\nUpdatedSymbols: {TriangleCollector.UpdatedSymbols.Count}\nTrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}\n");
                 }
 
                 var sb = new StringBuilder();
+                sb.Append($"\nTriangle:               Profitability:                    Last Updated:       Delay:");
+
                 int count = 0;
                 foreach (var triangle in TriangleCollector.Triangles.OrderByDescending(x => x.Value))
                 {
                     if (triangle.Value > 0)
                     {
-                        sb.Append($"\n{triangle.Key} : {triangle.Value}");
+                        TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.Key, out DateTime refreshTime);
+                        sb.Append($"\n{triangle.Key} : {triangle.Value} : {refreshTime} : {DateTime.UtcNow.Subtract(refreshTime).TotalSeconds} seconds");
                         count++;
                     }
                     if (count == 5)
@@ -64,13 +71,14 @@ namespace TriangleCollector.Services
                     _logger.LogDebug($"{sb}\n");
                 }
 
-                if (TriangleCollector.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength)
+                if (TriangleCollector.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && calculatorCount < MaxTriangleCalculators)
                 {
+                    //TODO: implement average queue size metric to decrement TriangleCalculators.
                     calculatorCount++;
                     var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), calculatorCount);
                     newCalc.StartAsync(stoppingToken);
                 }
-
+                
                 await Task.Delay(2000, stoppingToken);
             }
         }
