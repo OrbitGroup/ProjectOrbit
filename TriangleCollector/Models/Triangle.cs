@@ -30,6 +30,14 @@ namespace TriangleCollector.Models
 
         public double ThirdSymbolVolume { get; set; }
 
+        public bool AllPricesSet
+        {
+            get
+            {
+                return FirstSymbolAsk != 0 && SecondSymbolAsk != 0 && SecondSymbolBid != 0 && ThirdSymbolBid != 0;
+            }
+        }
+
         public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol)
         {
             this.FirstSymbol = FirstSymbol;
