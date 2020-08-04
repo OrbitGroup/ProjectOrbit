@@ -1,9 +1,8 @@
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1
 ARG BUILD_CONFIGURATION=Debug
 ENV ASPNETCORE_ENVIRONMENT=Development
-ENV ASPNETCORE_URLS=http://+:80
 ENV DOTNET_USE_POLLING_FILE_WATCHER=true
-EXPOSE 80
+
 
 WORKDIR /src
 COPY ["TriangleCollector/TriangleCollector.csproj", "TriangleCollector/"]

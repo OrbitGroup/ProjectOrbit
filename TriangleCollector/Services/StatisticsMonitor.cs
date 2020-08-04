@@ -47,7 +47,7 @@ namespace TriangleCollector.Services
                         _logger.LogWarning($"\nAverage Merge: {AverageMerge}\nAverage Update Delta: {AverageOrderbookUpdateDelta}\n");
                     }
                 }
-                await Task.Delay(5000);
+                await Task.Delay(10000);
             }
         }
 

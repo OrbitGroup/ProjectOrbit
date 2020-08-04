@@ -23,14 +23,14 @@
       "applicationUrl": ""
     },
     "Docker": {
-      "commandName": "Docker",
-      "launchBrowser": true,
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
-      "publishAllPorts": true
+      "commandName": "Docker"
     },
     "Azure Dev Spaces": {
       "commandName": "AzureDevSpaces",
-      "launchBrowser": true
+      "launchBrowser": false,
+      "resourceGroup": "TriArbMarkets",
+      "aksName": "triarbmarkets",
+      "subscriptionId": "ce317365-50c0-488b-98f6-13ed2aca9068"
     }
   }
 }
