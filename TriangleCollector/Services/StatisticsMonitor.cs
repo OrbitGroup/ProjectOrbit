@@ -44,7 +44,7 @@ namespace TriangleCollector.Services
                 {
                     if (AverageMerge > AverageMergeTarget || AverageOrderbookUpdateDelta > AverageOrderbookUpdateDeltaTarget)
                     {
-                        _logger.LogWarning($"\nAverage Merge: {AverageMerge}\nAverage Update Delta: {AverageOrderbookUpdateDelta}\n");
+                        _logger.LogWarning($"Average Merge: {AverageMerge} | Average Update Delta: {AverageOrderbookUpdateDelta}");
                     }
                 }
                 await Task.Delay(10000);

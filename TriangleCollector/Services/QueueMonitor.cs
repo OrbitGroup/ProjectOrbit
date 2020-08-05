@@ -22,7 +22,7 @@ namespace TriangleCollector.Services
 
         private int MaxTriangleCalculatorQueueLength = 100;
 
-        private int MaxTriangleCalculators = 5;
+        private int MaxTriangleCalculators = 4;
 
         public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger)
         {
@@ -45,11 +45,10 @@ namespace TriangleCollector.Services
             {
                 if (TriangleCollector.OfficialOrderbooks.Count > 0 && (TriangleCollector.UpdatedSymbols.Count > QueueSizeTarget || TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget))
                 {
-                    _logger.LogWarning($"\nOrderbooks: {TriangleCollector.OfficialOrderbooks.Count}\nTriangles: {TriangleCollector.Triangles.Count}\nUpdatedSymbols: {TriangleCollector.UpdatedSymbols.Count}\nTrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}\n");
+                    _logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}\n");
                 }
 
                 var sb = new StringBuilder();
-                sb.Append($"\nTriangle:               Profitability:                    Last Updated:       Delay:");
 
                 int count = 0;
                 foreach (var triangle in TriangleCollector.Triangles.OrderByDescending(x => x.Value))
@@ -57,7 +56,7 @@ namespace TriangleCollector.Services
                     if (triangle.Value > 0)
                     {
                         TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.Key, out DateTime refreshTime);
-                        sb.Append($"\n{triangle.Key} : {triangle.Value} : {refreshTime} : {DateTime.UtcNow.Subtract(refreshTime).TotalSeconds} seconds");
+                        sb.Append($"\nTriangle: {triangle.Key} | Profit: {triangle.Value} | Last Updated: {refreshTime} | Delay: {DateTime.UtcNow.Subtract(refreshTime).TotalSeconds} seconds");
                         count++;
                     }
                     if (count == 5)
@@ -68,7 +67,7 @@ namespace TriangleCollector.Services
 
                 if (TriangleCollector.Triangles.Count > 0)
                 {
-                    _logger.LogDebug($"{sb}\n");
+                    _logger.LogDebug($"{sb}");
                 }
 
                 if (TriangleCollector.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && calculatorCount < MaxTriangleCalculators)

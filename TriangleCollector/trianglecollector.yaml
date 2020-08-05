@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trianglecollector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trianglecollector
+  template:
+    metadata:
+      labels:
+        app: trianglecollector
+    spec:
+      containers:
+      - name: trianglecollector
+        image: orbit.azurecr.io/triarbmarkets/trianglecollector:latest
+        resources:
+            requests:
+                cpu: "2000m"
+                memory: "1Gi"
+            limits:
+                cpu: "4000m"
+                memory: "1.5Gi"
