@@ -61,18 +61,18 @@ namespace TriangleCollector.Services
 
                     if (firstSymbolOrderbook != null)
                     {
-                        triangle.FirstSymbolAsk = firstSymbolOrderbook.asks.Keys.OrderBy(price => price).First();
+                        triangle.FirstSymbolAsk = firstSymbolOrderbook.LowestAsk;
                     }
 
                     if (secondSymbolOrderbook != null)
                     {
-                        triangle.SecondSymbolAsk = secondSymbolOrderbook.asks.Keys.OrderBy(price => price).First();
-                        triangle.SecondSymbolBid = secondSymbolOrderbook.bids.Keys.OrderByDescending(price => price).First();
+                        triangle.SecondSymbolAsk = secondSymbolOrderbook.LowestAsk;
+                        triangle.SecondSymbolBid = secondSymbolOrderbook.HighestBid;
                     }
 
                     if (thirdSymbolOrderbook != null)
                     {
-                        triangle.ThirdSymbolBid = thirdSymbolOrderbook.bids.Keys.OrderByDescending(price => price).First();
+                        triangle.ThirdSymbolBid = thirdSymbolOrderbook.HighestBid;
                     }
 
                     if (triangle.AllPricesSet)

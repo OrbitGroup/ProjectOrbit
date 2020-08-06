@@ -20,9 +20,9 @@ namespace TriangleCollector.Services
 
         private int calculatorCount = 1;
 
-        private int MaxTriangleCalculatorQueueLength = 100;
+        private int MaxTriangleCalculatorQueueLength = 1000;
 
-        private int MaxTriangleCalculators = 4;
+        private int MaxTriangleCalculators = 7;
 
         public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger)
         {
@@ -45,7 +45,7 @@ namespace TriangleCollector.Services
             {
                 if (TriangleCollector.OfficialOrderbooks.Count > 0 && (TriangleCollector.UpdatedSymbols.Count > QueueSizeTarget || TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget))
                 {
-                    _logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}\n");
+                    _logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count} - SymbolsQueued: {TriangleCollector.UpdatedSymbols.Count}");
                 }
 
                 var sb = new StringBuilder();
@@ -56,7 +56,7 @@ namespace TriangleCollector.Services
                     if (triangle.Value > 0)
                     {
                         TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.Key, out DateTime refreshTime);
-                        sb.Append($"\nTriangle: {triangle.Key} | Profit: {triangle.Value} | Last Updated: {refreshTime} | Delay: {DateTime.UtcNow.Subtract(refreshTime).TotalSeconds} seconds");
+                        sb.Append($"Triangle: {triangle.Key} | Profit: {triangle.Value} | Last Updated: {refreshTime} | Delay: {DateTime.UtcNow.Subtract(refreshTime).TotalSeconds} seconds\n");
                         count++;
                     }
                     if (count == 5)

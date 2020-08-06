@@ -12,13 +12,13 @@ spec:
       labels:
         app: trianglecollector
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: trianglecollector
         image: orbit.azurecr.io/triarbmarkets/trianglecollector:latest
+        imagePullPolicy: "Always"
         resources:
             requests:
-                cpu: "2000m"
-                memory: "1Gi"
+                memory: "500M"
             limits:
-                cpu: "4000m"
-                memory: "1.5Gi"
+                memory: "1Gi"

@@ -14,9 +14,9 @@ namespace TriangleCollector.Services
 
         private double AverageOrderbookUpdateDeltaTarget = 1;
 
-        private long AverageMerge = 0;
+        private float AverageMerge = 0;
 
-        private int MergeCount = 0;
+        private float MergeCount = 0;
 
         private List<long> Merges = new List<long>();
 
