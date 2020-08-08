@@ -24,6 +24,8 @@ namespace TriangleCollector.Services
 
         private int MaxTriangleCalculators = 7;
 
+        private int NumberOfSecondsUntilStale = 60;
+
         public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger)
         {
             _factory = factory;
@@ -56,9 +58,12 @@ namespace TriangleCollector.Services
                     if (triangle.Value > 0)
                     {
                         TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.Key, out DateTime refreshTime);
-                        sb.Append($"Triangle: {triangle.Key} | Profit: {triangle.Value} | Last Updated: {refreshTime} | Delay: {DateTime.UtcNow.Subtract(refreshTime).TotalSeconds} seconds\n");
+                        var delay = DateTime.UtcNow.Subtract(refreshTime).TotalSeconds;
+
+                        sb.Append($"Triangle: {triangle.Key} | Profit: {triangle.Value} | Last Updated: {refreshTime} | Delay: {delay} seconds\n");
                         count++;
                     }
+                    
                     if (count == 5)
                     {
                         break;
