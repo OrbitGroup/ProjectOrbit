@@ -30,6 +30,8 @@ namespace TriangleCollector.Models
 
         public double ThirdSymbolVolume { get; set; }
 
+        public decimal Profitability { get; set; }
+
         public bool AllPricesSet
         {
             get
@@ -70,6 +72,7 @@ namespace TriangleCollector.Models
                 var firstTrade = 1 / FirstSymbolAsk;
                 var secondTrade = firstTrade * SecondSymbolBid;
                 var thirdTrade = secondTrade * ThirdSymbolBid;
+                this.Profitability = thirdTrade;
                 return thirdTrade;
             }
             catch (Exception ex)

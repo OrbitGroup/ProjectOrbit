@@ -35,7 +35,7 @@ namespace TriangleCollector.Services
             //get updatedSymbols
             //get impacted triangles
             //push triangles to trianglesToRecalculate
-            while (TriangleCollector.client.State == WebSocketState.Open && !stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 if (TriangleCollector.UpdatedSymbols.TryDequeue(out string symbol) && TriangleCollector.SymbolTriangleMapping.TryGetValue(symbol, out List<Triangle> impactedTriangles))
                 {

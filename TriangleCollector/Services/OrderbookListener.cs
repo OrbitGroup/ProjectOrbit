@@ -18,9 +18,12 @@ namespace TriangleCollector.Services
     {
         private readonly ILogger<OrderbookListener> _logger;
 
-        public OrderbookListener(ILogger<OrderbookListener> logger)
+        private ClientWebSocket client;
+
+        public OrderbookListener(ILogger<OrderbookListener> logger, ClientWebSocket client)
         {
             _logger = logger;
+            this.client = client;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -37,16 +40,16 @@ namespace TriangleCollector.Services
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
             var stopwatch = new Stopwatch();
-            while (TriangleCollector.client.State == WebSocketState.Open && !stoppingToken.IsCancellationRequested)
+            while (client.State == WebSocketState.Open && !stoppingToken.IsCancellationRequested)
             {
-                if (TriangleCollector.client.State == WebSocketState.CloseReceived)
+                if (client.State == WebSocketState.CloseReceived)
                 {
                     _logger.LogWarning("CLOSE RECEIVED");
                 }
-                ArraySegment<Byte> buffer = new ArraySegment<byte>(new byte[4096]);
+                var buffer = WebSocket.CreateClientBuffer(1024 * 64, 1024);
 
                 WebSocketReceiveResult result = null;
-
+                
                 using (var ms = new MemoryStream())
                 {
 
@@ -54,7 +57,7 @@ namespace TriangleCollector.Services
                     {
                         try
                         {
-                            result = await TriangleCollector.client.ReceiveAsync(buffer, CancellationToken.None);
+                            result = await client.ReceiveAsync(buffer, CancellationToken.None);
                             ms.Write(buffer.Array, buffer.Offset, result.Count);
                         }
                         catch (WebSocketException ex)
@@ -64,7 +67,6 @@ namespace TriangleCollector.Services
                         }
                     }
                     while (!result.EndOfMessage && !stoppingToken.IsCancellationRequested);
-
                     ms.Seek(0, SeekOrigin.Begin);
 
                     if (result.MessageType == WebSocketMessageType.Text)
@@ -89,16 +91,15 @@ namespace TriangleCollector.Services
                                             {
                                                 stopwatch.Reset();
                                                 stopwatch.Start();
-                                                OfficialOrderbook.Merge(orderbook);
+                                                var shouldRecalculate = OfficialOrderbook.Merge(orderbook);
                                                 stopwatch.Stop();
 
-                                                TriangleCollector.UpdatedSymbols.Enqueue(orderbook.symbol);
+                                                if (shouldRecalculate)
+                                                {
+                                                    TriangleCollector.UpdatedSymbols.Enqueue(orderbook.symbol);
+                                                }
 
                                                 TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
-                                            }
-                                            else
-                                            {
-                                                Console.WriteLine($"Orderbook miss for {orderbook.symbol}");
                                             }
                                         }
                                         catch (Exception ex)

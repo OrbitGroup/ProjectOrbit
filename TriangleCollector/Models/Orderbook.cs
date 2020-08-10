@@ -34,7 +34,7 @@ namespace TriangleCollector.Models
         /// Takes an update and merges it with this orderbook.
         /// </summary>
         /// <param name="update">An orderbook update</param>
-        public void Merge(Orderbook update)
+        public bool Merge(Orderbook update)
         {
             if (this.sequence < update.sequence)
             {
@@ -46,9 +46,21 @@ namespace TriangleCollector.Models
                 update.asks.AsParallel().ForAll(x => asks.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
                 update.bids.AsParallel().ForAll(x => bids.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
 
+                var oldHighestBid = HighestBid;
+                var oldLowestAsk = LowestAsk;
+
                 HighestBid = bids.Keys.OrderByDescending(price => price).First();
                 LowestAsk = asks.Keys.OrderBy(price => price).First();
+
+                if (oldHighestBid == HighestBid && oldLowestAsk == LowestAsk)
+                {
+                    return false;
+                }
+
+                return true;
             }
+
+            return false;
         }
     }
 }

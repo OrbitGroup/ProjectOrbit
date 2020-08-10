@@ -17,8 +17,19 @@ spec:
       - name: trianglecollector
         image: orbit.azurecr.io/triarbmarkets/trianglecollector:latest
         imagePullPolicy: "Always"
+        volumeMounts:
+        - name: secrets
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
         resources:
             requests:
                 memory: "500M"
             limits:
                 memory: "1Gi"
+      volumes:
+        - name: secrets
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: triarbmarkets

@@ -16,6 +16,12 @@ namespace TriangleCollector.Services
 
         private int CalculatorId;
 
+        private double timeWasters = 0;
+
+        private double totalCalculations = 0;
+
+        private double percentWasted = 0;
+
         public TriangleCalculator(ILogger<TriangleCalculator> logger)
         {
             _logger = logger;
@@ -51,7 +57,7 @@ namespace TriangleCollector.Services
             //push triangle:profit to Triangles
             //push triangle name to UpdatedTriangles
 
-            while (TriangleCollector.client.State == WebSocketState.Open && !stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 if (TriangleCollector.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
                 {
@@ -79,9 +85,19 @@ namespace TriangleCollector.Services
                     {
                         var profit = triangle.GetProfitability();
                         //var reversedProfit = triangle.GetReversedProfitability();
+                        TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
                         TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), profit, (key, oldValue) => oldValue = profit);
                         var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.timestamp, secondSymbolOrderbook.timestamp, thirdSymbolOrderbook.timestamp }.Max();
+                        TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal newEntry);
+                        //totalCalculations++;
+                        //if (newEntry == oldEntry)
+                        //{
+                        //    timeWasters++;
+                        //}
+                        //percentWasted = (timeWasters / totalCalculations) * 100;
+                        //_logger.LogDebug($"Total calcs: {totalCalculations} | Time wasters: {timeWasters} | % time wasters {percentWasted}");
                         TriangleCollector.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), newestTimestamp, (key, oldValue) => oldValue = newestTimestamp);
+                        TriangleCollector.RecalculatedTriangles.Enqueue(triangle);
                     }
                 }
             }

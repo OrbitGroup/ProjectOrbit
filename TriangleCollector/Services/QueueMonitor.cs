@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TriangleCollector;
+using System.Net.WebSockets;
 
 namespace TriangleCollector.Services
 {
@@ -14,7 +14,7 @@ namespace TriangleCollector.Services
     {
         private int QueueSizeTarget = 10;
 
-        private ILoggerFactory _factory;
+        private readonly ILoggerFactory _factory;
 
         private readonly ILogger<QueueMonitor> _logger;
 
@@ -45,6 +45,11 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
+                if (TriangleCollector.Clients.Any(x => x.State != WebSocketState.Open && x.State != WebSocketState.Connecting))
+                {
+                    _logger.LogError("One or more clients have disconnected");
+                }
+
                 if (TriangleCollector.OfficialOrderbooks.Count > 0 && (TriangleCollector.UpdatedSymbols.Count > QueueSizeTarget || TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget))
                 {
                     _logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count} - SymbolsQueued: {TriangleCollector.UpdatedSymbols.Count}");
@@ -80,7 +85,7 @@ namespace TriangleCollector.Services
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
                     calculatorCount++;
                     var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), calculatorCount);
-                    newCalc.StartAsync(stoppingToken);
+                    await newCalc.StartAsync(stoppingToken);
                 }
                 
                 await Task.Delay(2000, stoppingToken);

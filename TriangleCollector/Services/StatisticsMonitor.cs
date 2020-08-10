@@ -14,17 +14,17 @@ namespace TriangleCollector.Services
 
         private double AverageOrderbookUpdateDeltaTarget = 1;
 
-        private float AverageMerge = 0;
+        private double AverageMerge = 0;
 
-        private float MergeCount = 0;
+        private double MergeCount = 0;
 
-        private List<long> Merges = new List<long>();
+        private double MergeTotal = 0; 
 
         private double AverageOrderbookUpdateDelta = 0;
 
-        private int OrderbookUpdateCount = 0;
+        private double OrderbookUpdateCount = 0;
 
-        private List<double> OrderbookUpdates = new List<double>();
+        private double OrderbookUpdateTotal = 0;
 
         private readonly ILogger<StatisticsMonitor> _logger;
 
@@ -58,8 +58,8 @@ namespace TriangleCollector.Services
                 if (TriangleCollector.MergeTimings.TryDequeue(out long merge))
                 {
                     MergeCount++;
-                    Merges.Add(merge);
-                    AverageMerge = Merges.Sum() / MergeCount;
+                    MergeTotal += merge;
+                    AverageMerge = MergeTotal / MergeCount;
                 }
             }
         }
@@ -71,8 +71,8 @@ namespace TriangleCollector.Services
                 if (TriangleCollector.OrderbookUpdateDeltas.TryDequeue(out TimeSpan delta))
                 {
                     OrderbookUpdateCount++;
-                    OrderbookUpdates.Add(delta.TotalSeconds);
-                    AverageOrderbookUpdateDelta = OrderbookUpdates.Sum() / OrderbookUpdateCount;
+                    OrderbookUpdateTotal += delta.TotalSeconds;
+                    AverageOrderbookUpdateDelta = OrderbookUpdateTotal / OrderbookUpdateCount;
                 }
             }
         }

@@ -49,26 +49,20 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<Triangle> RecalculatedTriangles = new ConcurrentQueue<Triangle>();
 
-        public static ClientWebSocket client = new ClientWebSocket();
-
         //stats data structures:
         public static ConcurrentQueue<long> MergeTimings = new ConcurrentQueue<long>();
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>();
 
+        public static List<ClientWebSocket> Clients = new List<ClientWebSocket>();
+
 
 
         public IConfiguration Configuration { get; }
 
-        public static async Task Main(string[] args)
+        public static void Main(string[] args)
         {
-            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
-            await client.ConnectAsync(new Uri(Uri), CancellationToken.None);
-
-
             CreateHostBuilder(args).Build().Run();
-            
-            
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -85,15 +79,18 @@ namespace TriangleCollector
                 services.AddHostedService<QueueMonitor>();
                 services.AddHostedService<SymbolMonitor>();
                 services.AddHostedService<OrderbookSubscriber>();
-                services.AddHostedService<OrderbookListener>();
                 services.AddHostedService<TriangleCalculator>();
                 services.AddHostedService<StatisticsMonitor>();
+                services.AddHostedService<TrianglePublisher>();
             });
 
-        public static async Task MonitorUpdatedTriangles()
+        public static async Task<ClientWebSocket> GetExchangeClientAsync()
         {
-            //get triangle:profit from Triangles dict
-            //push to redis
+            var client = new ClientWebSocket();
+            Clients.Add(client);
+            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
+            await client.ConnectAsync(new Uri(Uri), CancellationToken.None);
+            return client;
         }
 
     }
