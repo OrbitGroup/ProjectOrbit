@@ -41,7 +41,7 @@ namespace TriangleCollector.Services
                 {
                     if (TriangleCollector.RecalculatedTriangles.TryDequeue(out Triangle triangle))
                     {
-                        await db.HashSetAsync(triangle.ToString(), new HashEntry[] { new HashEntry("profit", triangle.Profitability.ToString()) });
+                        await db.HashSetAsync(triangle.ToString(), new HashEntry[] { new HashEntry("profit", triangle.ProfitPercent.ToString()) });
                         subscriber.PublishAsync("triangles", triangle.ToString());
                     }
                     

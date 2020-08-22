@@ -23,7 +23,7 @@ namespace TriangleCollector.Services
 
         private readonly int MaxSymbols = 3;
 
-        private readonly int MaxPairsPerClient = 50;
+        private readonly int MaxPairsPerClient = 40;
 
         private int CurrentClientPairCount = 0;
 
@@ -138,7 +138,7 @@ namespace TriangleCollector.Services
 
                         if (secondPair.Contains(firstPairAlt) && thirdPair.Contains(secondPairBase) && thirdPair.Length == secondPairBase.Length + 3)
                         {
-                            var newTriangle = new Triangle(firstPair, secondPair, thirdPair);
+                            var newTriangle = new Triangle(firstPair, secondPair, thirdPair, _factory.CreateLogger<Triangle>());
 
                             foreach (var pair in new List<string> { firstPair, secondPair, thirdPair })
                             {

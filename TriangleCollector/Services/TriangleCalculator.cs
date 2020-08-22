@@ -67,26 +67,26 @@ namespace TriangleCollector.Services
 
                     if (firstSymbolOrderbook != null)
                     {
-                        triangle.FirstSymbolAsk = firstSymbolOrderbook.LowestAsk;
+                        triangle.FirstSymbolOrderbook = firstSymbolOrderbook;
                     }
 
                     if (secondSymbolOrderbook != null)
                     {
-                        triangle.SecondSymbolAsk = secondSymbolOrderbook.LowestAsk;
-                        triangle.SecondSymbolBid = secondSymbolOrderbook.HighestBid;
+                        triangle.SecondSymbolOrderbook = secondSymbolOrderbook;
                     }
 
                     if (thirdSymbolOrderbook != null)
                     {
-                        triangle.ThirdSymbolBid = thirdSymbolOrderbook.HighestBid;
+                        triangle.ThirdSymbolOrderbook = thirdSymbolOrderbook;
                     }
 
-                    if (triangle.AllPricesSet)
+                    if (triangle.AllOrderbooksSet)
                     {
-                        var profit = triangle.GetProfitability();
+                        //_logger.LogDebug($"RECALCULATING TRIANGLE: {triangle.FirstSymbol}: {triangle.FirstSymbolAsk} - {triangle.SecondSymbol}: {triangle.SecondSymbolBid} - {triangle.ThirdSymbol}: {triangle.ThirdSymbolBid}");
+                        triangle.SetMaxVolumeAndProfitability();
                         //var reversedProfit = triangle.GetReversedProfitability();
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
-                        TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), profit, (key, oldValue) => oldValue = profit);
+                        TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), triangle.ProfitPercent, (key, oldValue) => oldValue = triangle.ProfitPercent);
                         var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.timestamp, secondSymbolOrderbook.timestamp, thirdSymbolOrderbook.timestamp }.Max();
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal newEntry);
                         //totalCalculations++;

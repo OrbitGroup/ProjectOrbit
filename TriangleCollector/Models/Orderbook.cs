@@ -18,11 +18,11 @@ namespace TriangleCollector.Models
 
         public ConcurrentDictionary<decimal, decimal> asks { get; set; }
 
-        public SortedDictionary<decimal, decimal> SortedAsks { get; set; }
+        public IOrderedEnumerable<KeyValuePair<decimal, decimal>> SortedAsks { get; set; }
 
         public ConcurrentDictionary<decimal, decimal> bids { get; set; }
 
-        public SortedDictionary<decimal, decimal> SortedBids { get; set; }
+        public IOrderedEnumerable<KeyValuePair<decimal, decimal>> SortedBids { get; set; }
 
         public DateTime timestamp { get; set; }
 
@@ -46,11 +46,17 @@ namespace TriangleCollector.Models
                 update.asks.AsParallel().ForAll(UpdateAskLayer);
                 update.bids.AsParallel().ForAll(UpdateBidLayer);
 
+
+                //SortedBids = new SortedDictionary<decimal, decimal>(bids).Reverse().ToDictionary(x => x.Key, y => y.Value);
+
+                SortedBids = bids.OrderByDescending(layer => layer.Key);
+                SortedAsks = asks.OrderBy(layer => layer.Key);
+
                 var oldHighestBid = HighestBid;
                 var oldLowestAsk = LowestAsk;
 
-                HighestBid = bids.Keys.OrderByDescending(price => price).First();
-                LowestAsk = asks.Keys.OrderBy(price => price).First();
+                HighestBid = SortedBids.First().Key;
+                LowestAsk = SortedAsks.First().Key;
 
                 if (oldHighestBid == HighestBid && oldLowestAsk == LowestAsk)
                 {
