@@ -85,10 +85,10 @@ namespace TriangleCollector.Services
                     {
                         var profit = triangle.GetProfitability();
                         //var reversedProfit = triangle.GetReversedProfitability();
-                        TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
+                        //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
                         TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), profit, (key, oldValue) => oldValue = profit);
                         var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.timestamp, secondSymbolOrderbook.timestamp, thirdSymbolOrderbook.timestamp }.Max();
-                        TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal newEntry);
+                        //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal newEntry);
                         //totalCalculations++;
                         //if (newEntry == oldEntry)
                         //{
@@ -101,7 +101,6 @@ namespace TriangleCollector.Services
                     }
                 }
             }
-
         }
     }
 }

@@ -75,13 +75,12 @@ namespace TriangleCollector
             })
             .ConfigureServices((hostContext, services) =>
             {
-               
                 services.AddHostedService<QueueMonitor>();
                 services.AddHostedService<SymbolMonitor>();
                 services.AddHostedService<OrderbookSubscriber>();
                 services.AddHostedService<TriangleCalculator>();
                 services.AddHostedService<StatisticsMonitor>();
-                services.AddHostedService<TrianglePublisher>();
+                //services.AddHostedService<TrianglePublisher>();
             });
 
         public static async Task<ClientWebSocket> GetExchangeClientAsync()
@@ -92,6 +91,5 @@ namespace TriangleCollector
             await client.ConnectAsync(new Uri(Uri), CancellationToken.None);
             return client;
         }
-
     }
 }

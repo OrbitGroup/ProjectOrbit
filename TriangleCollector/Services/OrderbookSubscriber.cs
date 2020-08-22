@@ -21,7 +21,7 @@ namespace TriangleCollector.Services
 
         private readonly bool AllSymbols = true;
 
-        private readonly int MaxSymbols = 100;
+        private readonly int MaxSymbols = 3;
 
         private readonly int MaxPairsPerClient = 50;
 
@@ -29,7 +29,7 @@ namespace TriangleCollector.Services
 
         private int Count = 0;
 
-        private List<string> AllowedSymbols = new List<string> { "LTCBTC", "ETHBTC", "LTCETH"};
+        private List<string> AllowedSymbols = new List<string> { "ICXETH", "ETHBTC", "ICXBTC"};
 
     public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {

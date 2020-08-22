@@ -43,8 +43,8 @@ namespace TriangleCollector.Models
                 this.method = update.method;
 
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
-                update.asks.AsParallel().ForAll(x => asks.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
-                update.bids.AsParallel().ForAll(x => bids.AddOrUpdate(x.Key, x.Value, (key, oldValue) => oldValue = x.Value));
+                update.asks.AsParallel().ForAll(UpdateAskLayer);
+                update.bids.AsParallel().ForAll(UpdateBidLayer);
 
                 var oldHighestBid = HighestBid;
                 var oldLowestAsk = LowestAsk;
@@ -61,6 +61,30 @@ namespace TriangleCollector.Models
             }
 
             return false;
+        }
+
+        private void UpdateAskLayer(KeyValuePair<decimal, decimal> layer)
+        {
+            if (layer.Value > 0)
+            {
+                asks.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
+            }
+            else
+            {
+                asks.TryRemove(layer.Key, out var _);
+            }
+        }
+
+        private void UpdateBidLayer(KeyValuePair<decimal, decimal> layer)
+        {
+            if (layer.Value > 0)
+            {
+                bids.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
+            }
+            else
+            {
+                bids.TryRemove(layer.Key, out var _);
+            }
         }
     }
 }

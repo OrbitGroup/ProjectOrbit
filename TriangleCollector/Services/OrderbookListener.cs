@@ -109,7 +109,8 @@ namespace TriangleCollector.Services
                                         }
 
                                     }
-                                    else if (orderbook.method == "snapshotOrderbook") //This is called whenever the method is not update. The first response we get is just confirmation we subscribed, second response is the "snapshot" which becomes the OfficialOrderbook
+                                    //This is called whenever the method is not update. The first response we get is just confirmation we subscribed, second response is the "snapshot" which becomes the OfficialOrderbook
+                                    else if (orderbook.method == "snapshotOrderbook") 
                                     {
                                         TriangleCollector.OfficialOrderbooks.AddOrUpdate(orderbook.symbol, orderbook, (key, oldValue) => oldValue = orderbook);
                                         TriangleCollector.UpdatedSymbols.Enqueue(orderbook.symbol);
