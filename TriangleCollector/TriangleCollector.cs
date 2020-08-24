@@ -35,11 +35,7 @@ namespace TriangleCollector
 
         public static ConcurrentDictionary<string, List<Triangle>> SymbolTriangleMapping = new ConcurrentDictionary<string, List<Triangle>>();
 
-        public static List<string> Pairs = new List<string>();
-
-        public static HashSet<string> BaseCoins = new HashSet<string>();
-
-        public static HashSet<string> AltCoins = new HashSet<string>();
+        public static HashSet<string> triangleEligiblePairs = new HashSet<string>();
 
         public static ConcurrentBag<string> ActiveSymbols = new ConcurrentBag<string>();
 

@@ -51,19 +51,14 @@ namespace TriangleCollector.Services
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
             _logger.LogDebug("Loading exchange symbols.");
-            LoadExchangeSymbols();
-            
-            _logger.LogDebug("Loading triangles from symbols.");
-            LoadTrianglesFromSymbols();
+            symbolGenerator();
 
-            TriangleCollector.Pairs = TriangleCollector.SymbolTriangleMapping.Keys.ToList();
-
-            _logger.LogDebug($"Subscribing to {TriangleCollector.Pairs.Count} pairs.");
+            _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
 
             var client = await TriangleCollector.GetExchangeClientAsync();
             var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client);
             await listener.StartAsync(stoppingToken);
-            foreach (var symbol in TriangleCollector.Pairs)
+            foreach (var symbol in TriangleCollector.triangleEligiblePairs)
             {
                 try
                 {
@@ -87,73 +82,55 @@ namespace TriangleCollector.Services
             _logger.LogDebug("Subscribing complete.");
         }
 
-        private void LoadExchangeSymbols()
+        private void symbolGenerator()
         {
             var httpClient = new HttpClient();
-
-            var symbols = JsonDocument.ParseAsync(httpClient.GetStreamAsync("https://api.hitbtc.com/api/2/public/symbol").Result).Result;
+            var startNetwork = DateTime.UtcNow;
+            var symbols = JsonDocument.ParseAsync(httpClient.GetStreamAsync("https://api.hitbtc.com/api/2/public/symbol").Result).Result.RootElement.EnumerateArray();
 
             httpClient.Dispose();
-            
-            foreach (var symbol in symbols.RootElement.EnumerateArray())
+            int count = 0;
+            foreach (var firstSymbol in symbols)
             {
-                var id = symbol.GetProperty("id").ToString();
-                if (AllowedSymbols.Contains(id) || AllSymbols || Count < MaxSymbols)
+                if (firstSymbol.GetProperty("quoteCurrency").ToString() == "BTC")
                 {
-                    TriangleCollector.Pairs.Add(id);
-                    TriangleCollector.BaseCoins.Add(symbol.GetProperty("quoteCurrency").ToString());
-                    TriangleCollector.AltCoins.Add(symbol.GetProperty("baseCurrency").ToString());
-                    Count++;
-                }
-            }
-            TriangleCollector.BaseCoins.Remove("BTC"); //BTC is implied
-        }
-
-        private void LoadTrianglesFromSymbols()
-        {
-            var triangles = new List<Triangle>();
-
-            var altBtc = TriangleCollector.Pairs.Where(x => x.EndsWith("BTC")).ToList();
-            var altBase = TriangleCollector.Pairs.Where(x => TriangleCollector.BaseCoins.Any(x.Contains) && !x.EndsWith("BTC")).ToList();
-            var baseBtc = TriangleCollector.Pairs.Where(x => x.EndsWith("BTC")).ToList();
-
-            foreach (var firstPair in altBtc)
-            {
-                foreach (var secondPair in altBase)
-                {
-                    foreach (var thirdPair in baseBtc)
+                    var firstMarket = firstSymbol.GetProperty("id").ToString();
+                    var firstAlt = firstSymbol.GetProperty("baseCurrency").ToString();
+                    foreach (var secondSymbol in symbols)
                     {
-                        var firstPairAlt = "INVALID";
-                        if (firstPair.EndsWith("BTC"))
+                        if (secondSymbol.GetProperty("baseCurrency").ToString() == firstAlt && secondSymbol.GetProperty("quoteCurrency").ToString() != "BTC")
                         {
-                            firstPairAlt = firstPair.Remove(firstPair.Length - 3);
-                        }
-
-                        var secondPairBase = "INVALID";
-                        if (secondPair.StartsWith(firstPairAlt))
-                        {
-                            secondPairBase = secondPair.Remove(0, firstPairAlt.Length);
-                            if (!TriangleCollector.BaseCoins.Contains(secondPairBase)) secondPairBase = "INVALID";
-                        }
-
-                        if (secondPair.Contains(firstPairAlt) && thirdPair.Contains(secondPairBase) && thirdPair.Length == secondPairBase.Length + 3)
-                        {
-                            var newTriangle = new Triangle(firstPair, secondPair, thirdPair, _factory.CreateLogger<Triangle>());
-
-                            foreach (var pair in new List<string> { firstPair, secondPair, thirdPair })
-                            {
-                                TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                            var secondMarket = secondSymbol.GetProperty("id").ToString();
+                            var secondBase = secondSymbol.GetProperty("quoteCurrency").ToString();
+                            foreach (var thirdSymbol in symbols)
+                                if (thirdSymbol.GetProperty("quoteCurrency").ToString() == "BTC" &&
+                                    thirdSymbol.GetProperty("baseCurrency").ToString() == secondBase)
                                 {
-                                    if (key == pair)
+                                    var thirdMarket = thirdSymbol.GetProperty("id").ToString();
+                                    //Console.WriteLine($"1: {firstMarket} 2: {secondMarket} 3: {thirdMarket}");
+                                    count++;
+
+                                    var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, _factory.CreateLogger<Triangle>());
+
+                                    TriangleCollector.triangleEligiblePairs.Add(firstMarket);
+                                    TriangleCollector.triangleEligiblePairs.Add(secondMarket); 
+                                    TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
+
+                                    foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
                                     {
-                                        triangleList.Add(newTriangle);
+                                        TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                                        {
+                                            if (key == pair)
+                                            {
+                                                triangleList.Add(newTriangle);
+                                            }
+                                            return triangleList;
+                                        });
                                     }
-                                    return triangleList;
-                                });
-                            }
+                                }
                         }
                     }
-                }
+                }            
             }
         }
     }
