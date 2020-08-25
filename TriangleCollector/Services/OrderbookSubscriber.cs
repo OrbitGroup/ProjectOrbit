@@ -19,17 +19,16 @@ namespace TriangleCollector.Services
 
         private readonly ILoggerFactory _factory;
 
-        private readonly bool AllSymbols = true;
-
         private readonly int MaxSymbols = 3;
 
         private readonly int MaxPairsPerClient = 40;
 
         private int CurrentClientPairCount = 0;
 
-        private int Count = 0;
+        private readonly bool useDummySymbols = true;
 
-        private List<string> AllowedSymbols = new List<string> { "ICXETH", "ETHBTC", "ICXBTC"};
+        // the dummy list must be in order of trade execution (sorry!)
+        private List<string> dummySymbols = new List<string> { "ICXBTC", "ICXETH", "ETHBTC"};
 
     public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
@@ -50,14 +49,35 @@ namespace TriangleCollector.Services
 
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            _logger.LogDebug("Loading exchange symbols.");
-            symbolGenerator();
+            if (useDummySymbols == true)
+            {
+                var dummyTriangle = new Triangle(dummySymbols[0], dummySymbols[1], dummySymbols[2], _factory.CreateLogger<Triangle>());
+                foreach (var pair in dummySymbols)
+                {
+                    TriangleCollector.triangleEligiblePairs.Add(pair);
+                    TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { dummyTriangle }, (key, triangleList) =>
+                    {
+                        if (key == pair)
+                        {
+                            triangleList.Add(dummyTriangle);
+                        }
+                        return triangleList;
+                    });
+                }             
+                _logger.LogDebug("Using dummy list of symbols for testing purposes.");
+            } 
+            else
+            {
+                _logger.LogDebug("Loading triangular arbitrage eligible symbols.");
+                symbolGenerator();
+            }
 
             _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
 
             var client = await TriangleCollector.GetExchangeClientAsync();
             var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client);
             await listener.StartAsync(stoppingToken);
+
             foreach (var symbol in TriangleCollector.triangleEligiblePairs)
             {
                 try
@@ -114,8 +134,7 @@ namespace TriangleCollector.Services
 
                                     TriangleCollector.triangleEligiblePairs.Add(firstMarket);
                                     TriangleCollector.triangleEligiblePairs.Add(secondMarket); 
-                                    TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
-
+                                    TriangleCollector.triangleEligiblePairs.Add(thirdMarket);                                   
                                     foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
                                     {
                                         TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
