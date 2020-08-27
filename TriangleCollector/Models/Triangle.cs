@@ -16,11 +16,15 @@ namespace TriangleCollector.Models
 
         public List<KeyValuePair<decimal, decimal>> FirstSymbolAsks = new List<KeyValuePair<decimal, decimal>>();
 
+        public List<KeyValuePair<decimal, decimal>> FirstSymbolBids = new List<KeyValuePair<decimal, decimal>>();
+
         public string SecondSymbol { get; set; }
 
         public Orderbook SecondSymbolOrderbook { get; set; }
 
         public List<KeyValuePair<decimal, decimal>> SecondSymbolBids = new List<KeyValuePair<decimal, decimal>>();
+
+        public List<KeyValuePair<decimal, decimal>> SecondSymbolAsks = new List<KeyValuePair<decimal, decimal>>();
 
         public string ThirdSymbol { get; set; }
 
@@ -34,6 +38,8 @@ namespace TriangleCollector.Models
 
         public decimal MaxVolume { get; set; }
 
+        public List<string> Direction = new List<string>();
+
         private ILogger<Triangle> _logger;
 
         public bool AllOrderbooksSet
@@ -44,11 +50,12 @@ namespace TriangleCollector.Models
             }
         }
 
-        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, ILogger<Triangle> logger)
+        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, List<String> Direction, ILogger<Triangle> logger)
         {
             this.FirstSymbol = FirstSymbol;
             this.SecondSymbol = SecondSymbol;
             this.ThirdSymbol = ThirdSymbol;
+            this.Direction = Direction;
             _logger = logger;
         }
 
@@ -62,7 +69,7 @@ namespace TriangleCollector.Models
 
         public override string ToString()
         {
-            return $"{FirstSymbol}-{SecondSymbol}-{ThirdSymbol}";
+            return $"{Direction[0]} {FirstSymbol}--{Direction[1]} {SecondSymbol}--{Direction[2]} {ThirdSymbol}";
         }
 
         public string ToReversedString()
@@ -70,21 +77,32 @@ namespace TriangleCollector.Models
             return $"{ThirdSymbol}-{SecondSymbol}-{FirstSymbol}";
         }
 
-        private decimal GetProfitPercent(decimal firstAsk, decimal secondBid, decimal thirdBid)
+        private decimal GetProfitPercent(Orderbook first, Orderbook second, Orderbook third, List<String> Direction)
         {
-            try
+            try //use the direction list to understand what trades to make at each step
             {
+                if (Direction[0] == "Buy") //two directions start with buying: "Buy Sell Sell" and "Buy Buy Sell"
+                {
+                    var firstTrade = 1 / first.SortedAsks.First().Key;
+                    if (Direction [1] == "Buy") //must be "Buy Buy Sell"
+                    {
+                        var secondTrade = firstTrade / second.SortedAsks.First().Key; //buy
+                        var thirdTrade = secondTrade * third.SortedBids.First().Key; //sell
+                        return thirdTrade;
+                    } else //must be "Buy Sell Sell"
+                    {
+                        var secondTrade = firstTrade * second.SortedBids.First().Key; //sell
+                        var thirdTrade = secondTrade * third.SortedBids.First().Key; //sell
+                        return thirdTrade;
+                    }
+                } else // only one direction starts with selling: "Sell Buy Sell"
+                {
+                    var firstTrade = 1 * first.SortedBids.First().Key;
+                    var secondTrade = firstTrade / second.SortedAsks.First().Key;
+                    var thirdTrade = secondTrade * third.SortedBids.First().Key;
+                    return thirdTrade;
+                }
 
-                var firstTrade = 1 / firstAsk;
-                var secondTrade = firstTrade * secondBid;
-                var thirdTrade = secondTrade * thirdBid;
-
-                //get first layer profit + volume
-                //get symbol with lowest volume
-                //determine if second layer of lowVol symbol is profitable
-                //repeat
-
-                return thirdTrade;
             }
             catch (Exception ex)
             {
@@ -106,9 +124,14 @@ namespace TriangleCollector.Models
             SecondSymbolBids.Add(SecondSymbolOrderbook.SortedBids.First());
             ThirdSymbolBids.Add(ThirdSymbolOrderbook.SortedBids.First());
 
-            var profitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, SecondSymbolBids.Last().Key, ThirdSymbolBids.Last().Key);
-            if (profitPercent < 1)
+            ProfitPercent = GetProfitPercent(FirstSymbolOrderbook, SecondSymbolOrderbook, ThirdSymbolOrderbook, Direction);
+            return;
+            /*if (profitPercent < 1)
             {
+                var minVol = GetMinVolume(FirstSymbolAsks.Last(), SecondSymbolBids.Last(), ThirdSymbolBids.Last());
+                //_logger.LogDebug($"first: {FirstSymbolOrderbook.symbol} Price: {FirstSymbolAsks.Last().Key} depth: {FirstSymbolAsks.Last().Value} second: {SecondSymbolOrderbook.symbol} Price: {SecondSymbolBids.Last().Key} depth: {SecondSymbolBids.Last().Value} third: {ThirdSymbolOrderbook.symbol} Price: {ThirdSymbolBids.Last().Key} depth: {ThirdSymbolBids.Last().Value}");
+                //_logger.LogDebug($"{minVol.Value} maximum BTC of volume calculated");
+                
                 this.ProfitPercent = profitPercent;
                 this.Profit = 0;
                 return;
@@ -118,7 +141,7 @@ namespace TriangleCollector.Models
             decimal profitReturned = 0;
             while (true)
             {
-                var minVol = GetMinVolume(FirstSymbolAsks.Last(), SecondSymbolBids.Last(), ThirdSymbolBids.Last());
+                var minVol = GetMinVolume(FirstSymbolAsks.Last(), SecondSymbolBids.Last(), ThirdSymbolBids.Last());                
 
                 if (minVol.Key == 1)
                 {
@@ -170,9 +193,9 @@ namespace TriangleCollector.Models
                 }
             }
 
-            this.ProfitPercent = profitReturned / volumeTraded; //This seems to be broken...
+            ProfitPercent = profitReturned / volumeTraded; //This seems to be broken...
             this.Profit = profitReturned;
-
+*/
             //determine highest profitability but maximizing volume to an extent
         }
 
@@ -205,7 +228,7 @@ namespace TriangleCollector.Models
             {
                 return new KeyValuePair<int, decimal>(2, secondBtcVol);
             }
-
+            else
             return new KeyValuePair<int, decimal>(3, thirdBtcVol);
         }
 

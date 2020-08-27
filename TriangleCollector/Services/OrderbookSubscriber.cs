@@ -51,8 +51,8 @@ namespace TriangleCollector.Services
         {
             if (useDummySymbols == true)
             {
-                var dummyTriangle = new Triangle(dummySymbols[0], dummySymbols[1], dummySymbols[2], _factory.CreateLogger<Triangle>());
-                foreach (var pair in dummySymbols)
+                //var dummyTriangle = new Triangle(dummySymbols[0], dummySymbols[1], dummySymbols[2], _factory.CreateLogger<Triangle>());
+                /*foreach (var pair in dummySymbols)
                 {
                     TriangleCollector.triangleEligiblePairs.Add(pair);
                     TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { dummyTriangle }, (key, triangleList) =>
@@ -64,13 +64,12 @@ namespace TriangleCollector.Services
                         return triangleList;
                     });
                 }
-                _logger.LogDebug("Using dummy list of symbols for testing purposes.");
+                _logger.LogDebug("Using dummy list of symbols for testing purposes.");*/
             }
             else
             {
                 _logger.LogDebug("Loading triangular arbitrage eligible symbols.");
                 symbolGenerator();
-                return;
             }
 
             _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
@@ -136,8 +135,13 @@ namespace TriangleCollector.Services
                                         {
                                             var thirdDirection = "Sell";
                                             var thirdMarket = thirdSymbol.GetProperty("id").ToString();
+                                            var Direction = new List<String>();
+                                            Direction.Add(firstDirection);
+                                            Direction.Add(secondDirection);
+                                            Direction.Add(thirdDirection);
+
                                             Console.WriteLine($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                            var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, _factory.CreateLogger<Triangle>());
+                                            var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, Direction, _factory.CreateLogger<Triangle>());
                                             count++;
                                             TriangleCollector.triangleEligiblePairs.Add(firstMarket);
                                             TriangleCollector.triangleEligiblePairs.Add(secondMarket);
@@ -165,7 +169,12 @@ namespace TriangleCollector.Services
                                             var thirdDirection = "Sell";
                                             var thirdMarket = thirdSymbol.GetProperty("id").ToString();
                                             Console.WriteLine($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                            var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, _factory.CreateLogger<Triangle>());
+                                            var Direction = new List<String>();
+                                            Direction.Add(firstDirection);
+                                            Direction.Add(secondDirection);
+                                            Direction.Add(thirdDirection);
+
+                                            var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, Direction, _factory.CreateLogger<Triangle>());
                                             count++;
                                             TriangleCollector.triangleEligiblePairs.Add(firstMarket);
                                             TriangleCollector.triangleEligiblePairs.Add(secondMarket);
@@ -202,7 +211,11 @@ namespace TriangleCollector.Services
                                         var thirdDirection = "Sell";
                                         var thirdMarket = thirdSymbol.GetProperty("id").ToString();
                                         Console.WriteLine($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                        var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, _factory.CreateLogger<Triangle>());
+                                        var Direction = new List<String>();
+                                        Direction.Add(firstDirection);
+                                        Direction.Add(secondDirection);
+                                        Direction.Add(thirdDirection);
+                                        var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, Direction, _factory.CreateLogger<Triangle>());
                                         count++;
                                         TriangleCollector.triangleEligiblePairs.Add(firstMarket);
                                         TriangleCollector.triangleEligiblePairs.Add(secondMarket);
@@ -224,7 +237,7 @@ namespace TriangleCollector.Services
                     }
                 }
             }
-            Console.WriteLine(count);
+            //Console.WriteLine(count);
         }
     }
 }
