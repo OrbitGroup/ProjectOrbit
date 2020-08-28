@@ -36,7 +36,7 @@ namespace TriangleCollector.Models
 
         public decimal Profit { get; set; }
 
-        public decimal MaxVolume { get; set; }
+        KeyValuePair<int, decimal> MaxVolume = new KeyValuePair<int, decimal>();
 
         public List<string> Direction = new List<string>();
 
@@ -69,12 +69,10 @@ namespace TriangleCollector.Models
 
         public override string ToString()
         {
-            return $"{Direction[0]} {FirstSymbol}--{Direction[1]} {SecondSymbol}--{Direction[2]} {ThirdSymbol}";
-        }
-
-        public string ToReversedString()
-        {
-            return $"{ThirdSymbol}-{SecondSymbol}-{FirstSymbol}";
+            return $"{Direction[0]} {FirstSymbol} bid price {FirstSymbolOrderbook.SortedBids.First().Key} bid depth {FirstSymbolOrderbook.SortedBids.First().Value} ask price {FirstSymbolOrderbook.SortedAsks.First().Key} ask depth {FirstSymbolOrderbook.SortedAsks.First().Value} \n" +
+                $"--{Direction[1]} {SecondSymbol} bid price {SecondSymbolOrderbook.SortedBids.First().Key} bid depth {SecondSymbolOrderbook.SortedBids.First().Value} ask price {SecondSymbolOrderbook.SortedAsks.First().Key} ask depth {SecondSymbolOrderbook.SortedAsks.First().Value} \n" +
+                $"--{Direction[2]} {ThirdSymbol} bid price {ThirdSymbolOrderbook.SortedBids.First().Key} bid depth {ThirdSymbolOrderbook.SortedBids.First().Value} ask price {ThirdSymbolOrderbook.SortedAsks.First().Key} ask depth {ThirdSymbolOrderbook.SortedAsks.First().Value} \n" +
+                $"maximum volume is {MaxVolume.Value} BTC, bottleneck is trade #{MaxVolume.Key}";
         }
 
         private decimal GetProfitPercent(Orderbook first, Orderbook second, Orderbook third, List<String> Direction)
@@ -84,18 +82,20 @@ namespace TriangleCollector.Models
                 if (Direction[0] == "Buy") //two directions start with buying: "Buy Sell Sell" and "Buy Buy Sell"
                 {
                     var firstTrade = 1 / first.SortedAsks.First().Key;
-                    if (Direction [1] == "Buy") //must be "Buy Buy Sell"
+                    if (Direction[1] == "Buy") //must be "Buy Buy Sell"
                     {
                         var secondTrade = firstTrade / second.SortedAsks.First().Key; //buy
                         var thirdTrade = secondTrade * third.SortedBids.First().Key; //sell
                         return thirdTrade;
-                    } else //must be "Buy Sell Sell"
+                    }
+                    else //must be "Buy Sell Sell"
                     {
                         var secondTrade = firstTrade * second.SortedBids.First().Key; //sell
                         var thirdTrade = secondTrade * third.SortedBids.First().Key; //sell
                         return thirdTrade;
                     }
-                } else // only one direction starts with selling: "Sell Buy Sell"
+                }
+                else // only one direction starts with selling: "Sell Buy Sell"
                 {
                     var firstTrade = 1 * first.SortedBids.First().Key;
                     var secondTrade = firstTrade / second.SortedAsks.First().Key;
@@ -125,6 +125,8 @@ namespace TriangleCollector.Models
             ThirdSymbolBids.Add(ThirdSymbolOrderbook.SortedBids.First());
 
             ProfitPercent = GetProfitPercent(FirstSymbolOrderbook, SecondSymbolOrderbook, ThirdSymbolOrderbook, Direction);
+            MaxVolume = GetMaxVolume(FirstSymbolOrderbook, SecondSymbolOrderbook, ThirdSymbolOrderbook, Direction);
+
             return;
             /*if (profitPercent < 1)
             {
@@ -199,42 +201,80 @@ namespace TriangleCollector.Models
             //determine highest profitability but maximizing volume to an extent
         }
 
-        // the first market's volume is quoted in altcoin terms. The 'volume' expressed for buying ICXBTC will be the number of ICX available for purchase
-        // the second market's volume is quoted in altcoin terms. The 'volume' expressed for selling ICXETH will be the number of ICX available to be sold for ETH
-        // the third market's volume is quoted in altcoin terms. The 'volume' expressed for selling ETHBTC will be the number of ETH available to be sold for BTC
-
-        private KeyValuePair<int, decimal> GetMinVolume(KeyValuePair<decimal, decimal> firstAsk, KeyValuePair<decimal, decimal> secondBid, KeyValuePair<decimal, decimal> thirdBid)
+        private KeyValuePair<int, decimal> GetMaxVolume(Orderbook FirstSymbolOrderbook, Orderbook SecondSymbolOrderbook, Orderbook ThirdSymbolOrderbook, List<String> Direction)
         {
-            
-            decimal firstBtcVol = decimal.MaxValue;
-            decimal secondBtcVol = decimal.MaxValue;
-
-            if (firstAsk.Value <= secondBid.Value)
+            if (Direction[0] == "Buy")
             {
-                firstBtcVol = firstAsk.Key * firstAsk.Value;
+                // since the first trade is quoted in BTC terms, the volume is simply the quantity available times the price.
+                decimal firstBtcVolume = FirstSymbolOrderbook.SortedAsks.First().Key * FirstSymbolOrderbook.SortedAsks.First().Value;
+                if (Direction[1] == "Buy")
+                {
+                    // the second trade is in the other base's terms, so you must convert the base-terms volume into BTC using the first trade price (which is base-BTC) 
+                    // Other than that, the logic is the same as the first trade since we are buying something again.
+                    decimal secondBtcVolume = SecondSymbolOrderbook.SortedAsks.First().Key * SecondSymbolOrderbook.SortedAsks.First().Value * FirstSymbolOrderbook.SortedBids.First().Key;
+                    // the third direction must be Sell at this point (there is no other potential combination)
+                    decimal thirdBtcVolume = ThirdSymbolOrderbook.SortedBids.First().Key * ThirdSymbolOrderbook.SortedBids.First().Value;
+                    //calculate and identify the bottleneck
+                    if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
+                    {
+                        return new KeyValuePair<int, decimal>(1, firstBtcVolume);
+                    }
+                    else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
+                    {
+                        return new KeyValuePair<int, decimal>(2, secondBtcVolume);
+                    }
+                    else
+                        return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
+                }
+                else
+                {
+                    // second trade is a sell order, so the direction must be Buy Sell Sell
+                    // the depth is expressed in altcoin terms which must be converted to BTC. Price is expressed in basecoin terms.
+                    // the first order book contains the ALT-BTC price, which is therefore used to convert the volume to BTC terms
+                    decimal secondBtcVolume = SecondSymbolOrderbook.SortedBids.First().Key * SecondSymbolOrderbook.SortedBids.First().Value * ThirdSymbolOrderbook.SortedBids.First().Key;
+                    // third trade is always in BTC price terms
+                    decimal thirdBtcVolume = ThirdSymbolOrderbook.SortedBids.First().Key * ThirdSymbolOrderbook.SortedBids.First().Value;
+                    //calculate and identify the bottleneck
+                    if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
+                    {
+                        return new KeyValuePair<int, decimal>(1, firstBtcVolume);
+                    }
+                    else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
+                    {
+                        return new KeyValuePair<int, decimal>(2, secondBtcVolume);
+                    }
+                    else
+                        return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
+                }
             }
             else
             {
-                secondBtcVol = secondBid.Key * secondBid.Value * thirdBid.Key;
+                //first trade is a sell order. only one direction starts with a sell order: Sell Buy Sell
+                //the only scenario when the first trade is a sell order is USDT/TUSD based trades, in which depth is already expressed in BTC (price is expressed in USD)
+                decimal firstBtcVolume = FirstSymbolOrderbook.SortedBids.First().Value;
+                // for the second trade, the depth is expressed in the altcoin terms (price is expressed in USD). Therefore it just needs to be converted to BTC via the third order book.                
+                decimal secondBtcVolume = SecondSymbolOrderbook.SortedAsks.First().Value * ThirdSymbolOrderbook.SortedBids.First().Key;
+                //the third trade is always in BTC price terms
+                decimal thirdBtcVolume = ThirdSymbolOrderbook.SortedBids.First().Key * ThirdSymbolOrderbook.SortedBids.First().Value;
+                //calculate and identify the bottleneck
+                if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
+                {
+                    return new KeyValuePair<int, decimal>(1, firstBtcVolume);
+                }
+                else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
+                {
+                    return new KeyValuePair<int, decimal>(2, secondBtcVolume);
+                }
+                else
+                    return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
             }
-
-            var thirdBtcVol = thirdBid.Key * thirdBid.Value;
-
-            if (firstBtcVol <= secondBtcVol && firstBtcVol <= thirdBtcVol)
-            {
-                return new KeyValuePair<int, decimal>(1, firstBtcVol);
-            }
-            else if (secondBtcVol <= firstBtcVol && secondBtcVol <= thirdBtcVol)
-            {
-                return new KeyValuePair<int, decimal>(2, secondBtcVol);
-            }
-            else
-            return new KeyValuePair<int, decimal>(3, thirdBtcVol);
-        }
-
-        public decimal GetReversedProfitability()
-        {
-            return 0;
         }
     }
 }
+            
+            
+            
+            
+            
+            
+
