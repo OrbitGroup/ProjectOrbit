@@ -18,11 +18,11 @@ namespace TriangleCollector.Models
 
         public ConcurrentDictionary<decimal, decimal> asks { get; set; }
 
-        public IOrderedEnumerable<KeyValuePair<decimal, decimal>> SortedAsks { get; set; }
+        public KeyValuePair<decimal, decimal>[] SortedAsks { get; set; }
 
         public ConcurrentDictionary<decimal, decimal> bids { get; set; }
 
-        public IOrderedEnumerable<KeyValuePair<decimal, decimal>> SortedBids { get; set; }
+        public KeyValuePair<decimal, decimal>[] SortedBids { get; set; }
 
         public DateTime timestamp { get; set; }
 
@@ -49,8 +49,8 @@ namespace TriangleCollector.Models
 
                 //SortedBids = new SortedDictionary<decimal, decimal>(bids).Reverse().ToDictionary(x => x.Key, y => y.Value);
 
-                SortedBids = bids.OrderByDescending(layer => layer.Key);
-                SortedAsks = asks.OrderBy(layer => layer.Key);
+                SortedBids = bids.OrderByDescending(layer => layer.Key).ToArray();
+                SortedAsks = asks.OrderBy(layer => layer.Key).ToArray();
 
                 var oldHighestBid = HighestBid;
                 var oldLowestAsk = LowestAsk;

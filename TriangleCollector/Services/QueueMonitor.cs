@@ -58,14 +58,16 @@ namespace TriangleCollector.Services
                 var sb = new StringBuilder();
 
                 int count = 0;
-                foreach (var triangle in TriangleCollector.Triangles.OrderByDescending(x => x.Value))
+                foreach (var triangle in TriangleCollector.Triangles.Values.OrderByDescending(x => x.ProfitPercent))
                 {
-                    if (triangle.Value > 0)
+                    if (triangle.ProfitPercent > 0)
                     {
-                        TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.Key, out DateTime refreshTime);
+                        TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.ToString(), out DateTime refreshTime);
                         var delay = DateTime.UtcNow.Subtract(refreshTime).TotalSeconds;
 
-                        sb.Append($"Triangle: {triangle.Key} | Profit: {triangle.Value} | Last Updated: {refreshTime} | Delay: {delay} seconds\n");
+                        //TriangleCollector.Triangles.TryGetValue(triangle.Key, out )
+
+                        sb.Append($"Triangle: {triangle} | Profit: {triangle.ProfitPercent} | Volume: {triangle.MaxVolume} | Last Updated: {refreshTime} | Delay: {delay} seconds\n");
                         count++;
                     }
                     

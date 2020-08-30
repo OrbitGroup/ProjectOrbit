@@ -29,7 +29,7 @@ namespace TriangleCollector
 
         public static ConcurrentDictionary<string, Orderbook> OfficialOrderbooks = new ConcurrentDictionary<string, Orderbook>();
 
-        public static ConcurrentDictionary<string, decimal> Triangles = new ConcurrentDictionary<string, decimal>();
+        public static ConcurrentDictionary<string, Triangle> Triangles = new ConcurrentDictionary<string, Triangle>();
 
         public static ConcurrentDictionary<string, DateTime> TriangleRefreshTimes = new ConcurrentDictionary<string, DateTime>();
 

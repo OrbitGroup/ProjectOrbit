@@ -86,7 +86,7 @@ namespace TriangleCollector.Services
                         triangle.SetMaxVolumeAndProfitability();
                         //var reversedProfit = triangle.GetReversedProfitability();
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
-                        TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), triangle.ProfitPercent, (key, oldValue) => oldValue = triangle.ProfitPercent);
+                        TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
                         var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.timestamp, secondSymbolOrderbook.timestamp, thirdSymbolOrderbook.timestamp }.Max();
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal newEntry);
                         //totalCalculations++;
