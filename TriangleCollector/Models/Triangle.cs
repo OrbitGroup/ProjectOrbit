@@ -353,14 +353,14 @@ namespace TriangleCollector.Models
                 {
                     var firstTrade = 1 / firstSymbolPrice;
                     var secondTrade = firstTrade * secondSymbolPrice; //sell
-                    var thirdTrade = secondTrade * ThirdSymbolOrderbook.SortedBids.First().Key; //sell
+                    var thirdTrade = secondTrade * thirdSymbolPrice; //sell
                     return thirdTrade;
                 }
                 else if (Direction == Directions.BuyBuySell)
                 {
                     var firstTrade = 1 / firstSymbolPrice;
                     var secondTrade = firstTrade / secondSymbolPrice; //buy
-                    var thirdTrade = secondTrade * ThirdSymbolOrderbook.SortedBids.First().Key; //sell
+                    var thirdTrade = secondTrade * thirdSymbolPrice; //sell
                     return thirdTrade;
                 }
                 else //Sell Buy Sell
