@@ -136,12 +136,11 @@ namespace TriangleCollector.Models
 
                     KeyValuePair<decimal, decimal> nextLayer;
                     decimal newProfitPercent;
-                    if (maxVol.Key == 1)
+                    if (maxVol.Key == 1) // if the bottleneck is the first trade, then we need to call the next layer of the first order book and then pass that next layer, along with the other two layers, to GetProfitPercent
                     {
 
                         if (Direction == Directions.BuyBuySell)
-                        {
-
+                        {                            
                             nextLayer = FirstSymbolOrderbook.SortedAsks.ElementAt(FirstSymbolAsks.Count);
                             newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolAsks.Last().Key, ThirdSymbolBids.Last().Key);
 
@@ -151,6 +150,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(nextLayer, SecondSymbolAsks.Last(), ThirdSymbolBids.Last());
                                 FirstSymbolAsks.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -168,6 +168,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(nextLayer, SecondSymbolBids.Last(), ThirdSymbolBids.Last());
                                 FirstSymbolAsks.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -186,6 +187,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(nextLayer, SecondSymbolAsks.Last(), ThirdSymbolBids.Last());
                                 FirstSymbolBids.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -205,6 +207,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), nextLayer, ThirdSymbolBids.Last());
                                 SecondSymbolAsks.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -221,6 +224,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), nextLayer, ThirdSymbolBids.Last());
                                 SecondSymbolBids.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -237,6 +241,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(FirstSymbolBids.Last(), nextLayer, ThirdSymbolBids.Last());
                                 SecondSymbolAsks.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -260,6 +265,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), SecondSymbolAsks.Last(), nextLayer);
                                 ThirdSymbolBids.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -280,6 +286,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), SecondSymbolBids.Last(), nextLayer);
                                 ThirdSymbolBids.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -296,6 +303,7 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
+                                maxVol = GetMaxVolume(FirstSymbolBids.Last(), SecondSymbolAsks.Last(), nextLayer);
                                 ThirdSymbolBids.Add(nextLayer);
                                 ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
@@ -313,7 +321,7 @@ namespace TriangleCollector.Models
             }
         }
 
-        private decimal GetProfitPercent()
+        private decimal GetProfitPercent() //this method is called first when initially calculating a triangle's profitability, hence directly interfacing with the orderbooks 
         {
             try //use the direction list to understand what trades to make at each step
             {
@@ -345,7 +353,7 @@ namespace TriangleCollector.Models
             }
         }
 
-        private decimal GetProfitPercent(decimal firstSymbolPrice, decimal secondSymbolPrice, decimal thirdSymbolPrice)
+        private decimal GetProfitPercent(decimal firstSymbolPrice, decimal secondSymbolPrice, decimal thirdSymbolPrice) //this is what gets passed the updated layers (if applicable)
         {
             try //use the direction list to understand what trades to make at each step
             {

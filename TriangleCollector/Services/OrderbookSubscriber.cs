@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.AspNetCore.Mvc.Diagnostics;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -25,10 +26,7 @@ namespace TriangleCollector.Services
 
         private int CurrentClientPairCount = 0;
 
-        private readonly bool useDummySymbols = false;
-
-        // the dummy list must be in order of trade execution (sorry!)
-        private List<string> dummySymbols = new List<string> { "ETCBTC", "ETCETH", "ETHBTC" };
+        private readonly bool useTestSymbols = false;
 
         public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
@@ -47,29 +45,19 @@ namespace TriangleCollector.Services
             }, stoppingToken);
         }
 
-        private async Task BackgroundProcessing(CancellationToken stoppingToken)
+        public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            if (useDummySymbols == true)
+            if (useTestSymbols == true)
             {
-                //var dummyTriangle = new Triangle(dummySymbols[0], dummySymbols[1], dummySymbols[2], _factory.CreateLogger<Triangle>());
-                /*foreach (var pair in dummySymbols)
-                {
-                    TriangleCollector.triangleEligiblePairs.Add(pair);
-                    TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { dummyTriangle }, (key, triangleList) =>
-                    {
-                        if (key == pair)
-                        {
-                            triangleList.Add(dummyTriangle);
-                        }
-                        return triangleList;
-                    });
-                }
-                _logger.LogDebug("Using dummy list of symbols for testing purposes.");*/
+                _logger.LogDebug("using a test set of symbols");
+                var testSymbols = RestAPIResponse.TestSymbolResponse();
+                symbolGenerator(testSymbols);
             }
             else
             {
-                _logger.LogDebug("Loading triangular arbitrage eligible symbols.");
-                symbolGenerator();
+                _logger.LogDebug("Loading all triangular arbitrage eligible symbols.");
+                var actualSymbols = RestAPIResponse.ActualSymbolResponse();
+                symbolGenerator(actualSymbols);
             }
 
             _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
@@ -102,17 +90,10 @@ namespace TriangleCollector.Services
             _logger.LogDebug("Subscribing complete.");
         }
 
-        private void symbolGenerator()
+        private void symbolGenerator(JsonElement.ArrayEnumerator symbols)
         {
-            var httpClient = new HttpClient();
-            var startNetwork = DateTime.UtcNow;
-            var symbols = JsonDocument.ParseAsync(httpClient.GetStreamAsync("https://api.hitbtc.com/api/2/public/symbol").Result).Result.RootElement.EnumerateArray();
-
-            httpClient.Dispose();
             int count = 0;
-
             foreach (var firstSymbol in symbols)
-            {
                 if (firstSymbol.GetProperty("quoteCurrency").ToString() == "BTC" || firstSymbol.GetProperty("baseCurrency").ToString() == "BTC")
                 {
                     var firstMarket = firstSymbol.GetProperty("id").ToString();
@@ -188,12 +169,13 @@ namespace TriangleCollector.Services
                                 }
                             }
                         }
-                    } else
+                    }
+                    else
                     {
                         var firstDirection = "Sell";
                         foreach (var secondSymbol in symbols)
                         {
-                            if (secondSymbol.GetProperty("quoteCurrency").ToString() == firstSymbol.GetProperty("quoteCurrency").ToString() && 
+                            if (secondSymbol.GetProperty("quoteCurrency").ToString() == firstSymbol.GetProperty("quoteCurrency").ToString() &&
                                 secondSymbol.GetProperty("id").ToString() != firstMarket)
                             {
                                 var secondMarket = secondSymbol.GetProperty("id").ToString();
@@ -228,11 +210,11 @@ namespace TriangleCollector.Services
                         }
                     }
                 }
-            }
-            //Console.WriteLine(count);
         }
+        
     }
 }
+
 
                            
 /*
