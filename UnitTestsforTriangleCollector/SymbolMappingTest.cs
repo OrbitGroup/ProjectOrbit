@@ -20,7 +20,7 @@ namespace TriangleCollector.UnitTests
     [TestClass]
     public class SymbolMappingTest
     {
-        private ILoggerFactory _factory; 
+        private ILoggerFactory _factory = new NullLoggerFactory();
         //ISSUE: _factory is never assigned to and therefore is null, but I can't figure out how to assign the right value to it 
         //the TriangleCollector seems to create an instance of iloggerfactory using CreateHostBuilder and then passes that to OrderbookSubscriber - how do we do that here?
 
@@ -40,7 +40,8 @@ namespace TriangleCollector.UnitTests
             testSubscriber.symbolGenerator(apiResponse);
 
             //Assert: confirm that the results of the test symbols match the expected outcome
-            Assert.AreEqual(expectedTriangleEligiblePairs, TriangleCollector.triangleEligiblePairs);
+            
+            Assert.IsTrue(expectedTriangleEligiblePairs.SetEquals(TriangleCollector.triangleEligiblePairs));
         }
     }
 }
