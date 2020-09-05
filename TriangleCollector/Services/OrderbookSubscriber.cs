@@ -20,8 +20,6 @@ namespace TriangleCollector.Services
 
         private readonly ILoggerFactory _factory;
 
-        private readonly int MaxSymbols = 3;
-
         private readonly int MaxPairsPerClient = 40;
 
         private int CurrentClientPairCount = 0;
@@ -90,7 +88,7 @@ namespace TriangleCollector.Services
             _logger.LogDebug("Subscribing complete.");
         }
 
-        private void symbolGenerator(JsonElement.ArrayEnumerator symbols)
+        public void symbolGenerator(JsonElement.ArrayEnumerator symbols)
         {
             int count = 0;
             foreach (var firstSymbol in symbols)
