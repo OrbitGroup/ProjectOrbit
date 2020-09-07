@@ -1,22 +1,14 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Text.Json;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using TriangleCollector.Services;
 using System.Collections.Concurrent;
 using TriangleCollector.Models;
-using System.ComponentModel;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Reflection.Metadata;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using NuGet.Frameworks;
-using Microsoft.AspNetCore.Builder;
+using TriangleCollector.UnitTests.Models;
 using System.Linq;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace TriangleCollector.UnitTests
 {
@@ -24,7 +16,7 @@ namespace TriangleCollector.UnitTests
     public class SymbolMappingTests
     {
         private static ILoggerFactory _factory = new NullLoggerFactory();
-        private JsonElement.ArrayEnumerator apiResponse = RestAPIResponse.TestSymbolResponse();
+        private JsonElement.ArrayEnumerator apiResponse = MockRestResponse.GetTestSymbolResponse();
         private OrderbookSubscriber testSubscriber = new OrderbookSubscriber(_factory, _factory.CreateLogger<OrderbookSubscriber>());
         private ConcurrentDictionary<string, List<Triangle>> actualSymbolTriangleMapping = TriangleCollector.SymbolTriangleMapping;
 
@@ -77,6 +69,7 @@ namespace TriangleCollector.UnitTests
             {
                 if (actualSymbolTriangleMapping.TryGetValue(testItem.Key, out List<Triangle> value))
                 {
+                 
                     Assert.IsTrue(testItem.Value.Count == value.Count, $"the wrong number of triangles were mapped to a symbol. For {testItem.Key}, expected was {testItem.Value.Count}, but the actual count was {value.Count}");
 
                     //Now, for each symbol mapped, test that the correct triangles are being mapped to the correct symbols. This is really manual but I couldn't think of a better way
@@ -114,6 +107,10 @@ namespace TriangleCollector.UnitTests
                             Assert.IsTrue(value[1].Direction == triangles[0].Direction, $"direction is incorrect. should be {triangles[0].Direction}, is {value[1].Direction}");
                         }
                     } 
+                }
+                else
+                {
+                    Assert.Fail($"Expected symbol {testItem.Key} but did not find it in actual mapping.");
                 }
             }
         }

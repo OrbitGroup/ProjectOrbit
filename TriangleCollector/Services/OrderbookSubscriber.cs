@@ -45,18 +45,9 @@ namespace TriangleCollector.Services
 
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            if (useTestSymbols == true)
-            {
-                _logger.LogDebug("using a test set of symbols");
-                var testSymbols = RestAPIResponse.TestSymbolResponse();
-                symbolGenerator(testSymbols);
-            }
-            else
-            {
-                _logger.LogDebug("Loading all triangular arbitrage eligible symbols.");
-                var actualSymbols = RestAPIResponse.ActualSymbolResponse();
-                symbolGenerator(actualSymbols);
-            }
+            _logger.LogDebug("Loading all triangular arbitrage eligible symbols.");
+            var actualSymbols = RestResponse.GetSymbolResponse();
+            symbolGenerator(actualSymbols);
 
             _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
 
