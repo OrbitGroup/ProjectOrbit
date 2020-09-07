@@ -82,30 +82,37 @@ namespace TriangleCollector.UnitTests
                     }
                     else if (testItem.Key == "ETHBTC" || testItem.Key == "EOSETH")
                     {
-                        if (value[0].FirstSymbol == "ETHBTC")
-                        {
-                            Assert.IsTrue(value[0].FirstSymbol == triangles[0].FirstSymbol, $"first symbol is incorrect. should be {triangles[0].FirstSymbol}, is {value[0].FirstSymbol}");
-                            Assert.IsTrue(value[0].SecondSymbol == triangles[0].SecondSymbol, $"second symbol is incorrect. should be {triangles[0].SecondSymbol}, is {value[0].SecondSymbol}");
-                            Assert.IsTrue(value[0].ThirdSymbol == triangles[0].ThirdSymbol, $"third symbol is incorrect. should be {triangles[0].ThirdSymbol}, is {value[0].ThirdSymbol}");
-                            Assert.IsTrue(value[0].Direction == triangles[0].Direction, $"direction is incorrect. should be {triangles[0].Direction}, is {value[0].Direction}");
+                        Assert.IsTrue(value[0].FirstSymbol == triangles[1].FirstSymbol, $"first symbol is incorrect. should be {triangles[1].FirstSymbol}, is {value[0].FirstSymbol}");
+                        Assert.IsTrue(value[0].SecondSymbol == triangles[1].SecondSymbol, $"second symbol is incorrect. should be {triangles[1].SecondSymbol}, is {value[0].SecondSymbol}");
+                        Assert.IsTrue(value[0].ThirdSymbol == triangles[1].ThirdSymbol, $"third symbol is incorrect. should be {triangles[1].ThirdSymbol}, is {value[0].ThirdSymbol}");
+                        Assert.IsTrue(value[0].Direction == triangles[1].Direction, $"direction is incorrect. should be {triangles[1].Direction}, is {value[0].Direction}");
 
-                            Assert.IsTrue(value[1].FirstSymbol == triangles[1].FirstSymbol, $"first symbol is incorrect. should be {triangles[1].FirstSymbol}, is {value[1].FirstSymbol}");
-                            Assert.IsTrue(value[1].SecondSymbol == triangles[1].SecondSymbol, $"second symbol is incorrect. should be {triangles[1].SecondSymbol}, is {value[1].SecondSymbol}");
-                            Assert.IsTrue(value[1].ThirdSymbol == triangles[1].ThirdSymbol, $"third symbol is incorrect. should be {triangles[1].ThirdSymbol}, is {value[1].ThirdSymbol}");
-                            Assert.IsTrue(value[1].Direction == triangles[1].Direction, $"direction is incorrect. should be {triangles[1].Direction}, is {value[1].Direction}");
-                        } else if (value[0].FirstSymbol == "EOSBTC")
-                        {
-                            Assert.IsTrue(value[0].FirstSymbol == triangles[1].FirstSymbol, $"first symbol is incorrect. should be {triangles[1].FirstSymbol}, is {value[0].FirstSymbol}");
-                            Assert.IsTrue(value[0].SecondSymbol == triangles[1].SecondSymbol, $"second symbol is incorrect. should be {triangles[1].SecondSymbol}, is {value[0].SecondSymbol}");
-                            Assert.IsTrue(value[0].ThirdSymbol == triangles[1].ThirdSymbol, $"third symbol is incorrect. should be {triangles[1].ThirdSymbol}, is {value[0].ThirdSymbol}");
-                            Assert.IsTrue(value[0].Direction == triangles[1].Direction, $"direction is incorrect. should be {triangles[1].Direction}, is {value[0].Direction}");
+                        Assert.IsTrue(value[1].FirstSymbol == triangles[0].FirstSymbol, $"first symbol is incorrect. should be {triangles[0].FirstSymbol}, is {value[1].FirstSymbol}");
+                        Assert.IsTrue(value[1].SecondSymbol == triangles[0].SecondSymbol, $"second symbol is incorrect. should be {triangles[0].SecondSymbol}, is {value[1].SecondSymbol}");
+                        Assert.IsTrue(value[1].ThirdSymbol == triangles[0].ThirdSymbol, $"third symbol is incorrect. should be {triangles[0].ThirdSymbol}, is {value[1].ThirdSymbol}");
+                        Assert.IsTrue(value[1].Direction == triangles[0].Direction, $"direction is incorrect. should be {triangles[0].Direction}, is {value[1].Direction}");
+                    }
+                    else if (testItem.Key == "EOSBTC")
+                    {
+                        Assert.IsTrue(value[0].FirstSymbol == triangles[1].FirstSymbol, $"first symbol is incorrect. should be {triangles[0].FirstSymbol}, is {value[1].FirstSymbol}");
+                        Assert.IsTrue(value[0].SecondSymbol == triangles[1].SecondSymbol, $"second symbol is incorrect. should be {triangles[0].SecondSymbol}, is {value[1].SecondSymbol}");
+                        Assert.IsTrue(value[0].ThirdSymbol == triangles[1].ThirdSymbol, $"third symbol is incorrect. should be {triangles[0].ThirdSymbol}, is {value[1].ThirdSymbol}");
+                        Assert.IsTrue(value[0].Direction == triangles[1].Direction, $"direction is incorrect. should be {triangles[0].Direction}, is {value[1].Direction}");
 
-                            Assert.IsTrue(value[1].FirstSymbol == triangles[0].FirstSymbol, $"first symbol is incorrect. should be {triangles[0].FirstSymbol}, is {value[1].FirstSymbol}");
-                            Assert.IsTrue(value[1].SecondSymbol == triangles[0].SecondSymbol, $"second symbol is incorrect. should be {triangles[0].SecondSymbol}, is {value[1].SecondSymbol}");
-                            Assert.IsTrue(value[1].ThirdSymbol == triangles[0].ThirdSymbol, $"third symbol is incorrect. should be {triangles[0].ThirdSymbol}, is {value[1].ThirdSymbol}");
-                            Assert.IsTrue(value[1].Direction == triangles[0].Direction, $"direction is incorrect. should be {triangles[0].Direction}, is {value[1].Direction}");
-                        }
-                    } 
+                        Assert.IsTrue(value[1].FirstSymbol == triangles[0].FirstSymbol, $"first symbol is incorrect. should be {triangles[1].FirstSymbol}, is {value[0].FirstSymbol}");
+                        Assert.IsTrue(value[1].SecondSymbol == triangles[0].SecondSymbol, $"second symbol is incorrect. should be {triangles[1].SecondSymbol}, is {value[0].SecondSymbol}");
+                        Assert.IsTrue(value[1].ThirdSymbol == triangles[0].ThirdSymbol, $"third symbol is incorrect. should be {triangles[1].ThirdSymbol}, is {value[0].ThirdSymbol}");
+                        Assert.IsTrue(value[1].Direction == triangles[0].Direction, $"direction is incorrect. should be {triangles[1].Direction}, is {value[0].Direction}");
+
+                        Assert.IsTrue(value[2].FirstSymbol == triangles[2].FirstSymbol, $"first symbol is incorrect. should be {triangles[2].FirstSymbol}, is {value[2].FirstSymbol}");
+                        Assert.IsTrue(value[2].SecondSymbol == triangles[2].SecondSymbol, $"second symbol is incorrect. should be {triangles[2].SecondSymbol}, is {value[2].SecondSymbol}");
+                        Assert.IsTrue(value[2].ThirdSymbol == triangles[2].ThirdSymbol, $"third symbol is incorrect. should be {triangles[2].ThirdSymbol}, is {value[2].ThirdSymbol}");
+                        Assert.IsTrue(value[2].Direction == triangles[2].Direction, $"direction is incorrect. should be {triangles[2].Direction}, is {value[2].Direction}");
+                    }
+                    else
+                    {
+                        Assert.Fail($"Unexpected case {testItem.Key}");
+                    }
                 }
                 else
                 {

@@ -85,10 +85,6 @@ namespace TriangleCollector.Models
         {
             lock (nextLayerLock)
             {
-                if (FirstSymbolOrderbook.SortedAsks == null || FirstSymbolOrderbook.SortedBids == null || SecondSymbolOrderbook.SortedBids == null || SecondSymbolOrderbook.SortedAsks == null || ThirdSymbolOrderbook.SortedBids == null)
-                {
-                    return;
-                }
                 FirstSymbolAsks.Clear();
                 FirstSymbolBids.Clear();
 
@@ -115,6 +111,7 @@ namespace TriangleCollector.Models
                     SecondSymbolAsks.Add(SecondSymbolOrderbook.SortedAsks.First());
                     ThirdSymbolBids.Add(ThirdSymbolOrderbook.SortedBids.First());
                 }
+
 
                 ProfitPercent = GetProfitPercent();
 
