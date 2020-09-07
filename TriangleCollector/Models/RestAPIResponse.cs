@@ -87,12 +87,26 @@ namespace TriangleCollector.Models
                 provideLiquidityRate = 0.001m,
                 feeCurrency = "USD"
             };
+            RestAPIResponse LTCBTC = new RestAPIResponse
+            {
+                id = "LTCBTC",
+                baseCurrency = "LTC",
+                quoteCurrency = "BTC",
+                quantityIncrement = 0.001m,
+                tickSize = 0000001m,
+                takeLiquidityRate = 0.0025m,
+                provideLiquidityRate = 0.001m,
+                feeCurrency = "BTC"
+            };
+
+
             List<RestAPIResponse> Symbols = new List<RestAPIResponse>();
             Symbols.Add(EOSBTC);
             Symbols.Add(EOSETH);
             Symbols.Add(ETHBTC);
             Symbols.Add(EOSUSD);
             Symbols.Add(BTCUSD);
+            Symbols.Add(LTCBTC);
 
             var s = JsonSerializer.Serialize(Symbols);
             var apiResponse = JsonDocument.Parse(s).RootElement.EnumerateArray();
