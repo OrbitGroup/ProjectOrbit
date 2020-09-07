@@ -50,11 +50,7 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>();
 
-        public static List<ClientWebSocket> Clients = new List<ClientWebSocket>();
-
-
-
-        public IConfiguration Configuration { get; }
+        public static List<WebSocketAdapter> Clients = new List<WebSocketAdapter>();
 
         public static void Main(string[] args)
         {
@@ -65,7 +61,7 @@ namespace TriangleCollector
             Host.CreateDefaultBuilder(args)
             .ConfigureLogging(logging =>
             {
-                logging.ClearProviders(); 
+                logging.ClearProviders();
                 logging.AddDebug();
                 logging.AddConsole();
             })
@@ -79,13 +75,16 @@ namespace TriangleCollector
                 //services.AddHostedService<TrianglePublisher>();
             });
 
-        public static async Task<ClientWebSocket> GetExchangeClientAsync()
+        public static async Task<WebSocketAdapter> GetExchangeClientAsync()
         {
             var client = new ClientWebSocket();
-            Clients.Add(client);
+            var factory = new LoggerFactory();
+            var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
+            
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
             await client.ConnectAsync(new Uri(Uri), CancellationToken.None);
-            return client;
+            Clients.Add(adapter);
+            return adapter;
         }
     }
 }

@@ -18,9 +18,9 @@ namespace TriangleCollector.Services
     {
         private readonly ILogger<OrderbookListener> _logger;
 
-        private ClientWebSocket client;
+        private IClientWebSocket client;
 
-        public OrderbookListener(ILogger<OrderbookListener> logger, ClientWebSocket client)
+        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client)
         {
             _logger = logger;
             this.client = client;
@@ -49,26 +49,10 @@ namespace TriangleCollector.Services
                 var buffer = WebSocket.CreateClientBuffer(1024 * 64, 1024);
 
                 WebSocketReceiveResult result = null;
-                
+
                 using (var ms = new MemoryStream())
                 {
-
-                    do
-                    {
-                        try
-                        {
-                            result = await client.ReceiveAsync(buffer, CancellationToken.None);
-                            ms.Write(buffer.Array, buffer.Offset, result.Count);
-                        }
-                        catch (WebSocketException ex)
-                        {
-                            _logger.LogError(ex.Message);
-                            _logger.LogError(ex.InnerException.Message);
-                        }
-                    }
-                    while (!result.EndOfMessage && !stoppingToken.IsCancellationRequested);
-                    ms.Seek(0, SeekOrigin.Begin);
-
+                    result = await client.ReceiveAsync(ms, buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         using (var reader = new StreamReader(ms, Encoding.UTF8))

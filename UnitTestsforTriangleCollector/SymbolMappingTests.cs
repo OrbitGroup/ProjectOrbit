@@ -8,7 +8,6 @@ using TriangleCollector.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TriangleCollector.UnitTests.Models;
-using System.Linq;
 
 namespace TriangleCollector.UnitTests
 {
