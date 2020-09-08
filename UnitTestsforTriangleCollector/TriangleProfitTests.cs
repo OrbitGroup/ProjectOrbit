@@ -19,7 +19,7 @@ namespace TriangleCollector.UnitTests
 
 
         public Triangle EosEthBtc = new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>());
-        public decimal EosEthBtcProfit = 0.9994362518556066m;
+        public decimal EosEthBtcProfit = 0.9994362518556066475976682718m;
 
         public Triangle UsdEosBtc = new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>());
         public decimal UsdEosBtcProfit = 0.9994800007008076808521821399m;
@@ -49,7 +49,12 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestGetProfitPercentNoInputBuySellSell()
         {
+            EosEthBtc.FirstSymbolOrderbook = Orderbooks.EosBtc;
+            EosEthBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
+            EosEthBtc.ThirdSymbolOrderbook = Orderbooks.EthBtc;
 
+            EosEthBtc.SetMaxVolumeAndProfitability();
+            Assert.AreEqual(EosEthBtcProfit, EosEthBtc.ProfitPercent);
         }
 
         [TestMethod]
