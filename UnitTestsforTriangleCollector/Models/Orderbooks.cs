@@ -42,7 +42,7 @@ namespace TriangleCollector.UnitTests.Models
             }
         };
 
-        public static Orderbook EosBtc = new Orderbook 
+        public static Orderbook EosBtcUnprofitable = new Orderbook 
         { 
             SortedAsks = new KeyValuePair<decimal, decimal>[] 
             { 
@@ -55,6 +55,22 @@ namespace TriangleCollector.UnitTests.Models
                 new KeyValuePair<decimal, decimal>((decimal)0.00027500, (decimal)506.75),
                 new KeyValuePair<decimal, decimal>((decimal)0.00027300, (decimal)120.44),
                 new KeyValuePair<decimal, decimal>((decimal)0.00027100, (decimal)725.15)
+            }
+        };
+
+        public static Orderbook EosBtcProfitable = new Orderbook //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+        {
+            SortedAsks = new KeyValuePair<decimal, decimal>[] //asks are 2% lower (more favorable for buying)
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.00027000, (decimal)104.95),
+                new KeyValuePair<decimal, decimal>((decimal)0.00027100, (decimal)123.82),
+                new KeyValuePair<decimal, decimal>((decimal)0.00027200, (decimal)160.66)
+            },
+            SortedBids = new KeyValuePair<decimal, decimal>[] //bids are 2% higher (more favorable for selling). It is practically impossible for bids to be higher than asks but that is fine for these purposes
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.00028050, (decimal)506.75),
+                new KeyValuePair<decimal, decimal>((decimal)0.00028000, (decimal)120.44),
+                new KeyValuePair<decimal, decimal>((decimal)0.00027900, (decimal)725.15)
             }
         };
 
