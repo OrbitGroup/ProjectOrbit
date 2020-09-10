@@ -17,7 +17,10 @@ namespace TriangleCollector.UnitTests
         public Triangle EthEosBtc = new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>());
         public decimal EthEosBtcUnprofitableProfit = 0.9924677859176047787362868849m;
         public decimal EthEosBtcUnprofitableVolume = 0.005536389908m;
-        //public decimal EthEosBtcProfitableProfit = 0.9924677859176047787362868849m;
+        //Profitable expected outcomes
+        public decimal EthEosBtcProfitableProfitPercent = 0.007280446851m; //profit expressed as a percentage of volume traded
+        public decimal EthEosBtcProfitableProfit = 0.0008956347473m; //total profit returned in BTC
+        public decimal EthEosBtcProfitableVolume = 0.1230192m; //total volume traded
 
         public Triangle EosEthBtc = new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>());
         public decimal EosEthBtcUnprofitableProfit = 0.9994362518556066475976682718m;
@@ -94,16 +97,18 @@ namespace TriangleCollector.UnitTests
             Assert.AreEqual(EosEthBtcUnprofitableVolume, EosEthBtc.MaxVolume);
         }
 
-        /*[TestMethod]
-        public void TestGetProfitPercentWithInputBuyBuySell() //only profitable triangles require inputs - volume is calculated as well
+        [TestMethod]
+        public void TestLayersBuyBuySell() //only profitable triangles require inputs - volume is calculated as well
         {
-            EosEthBtc.FirstSymbolOrderbook = Orderbooks.EosBtcProfitable;
-            EosEthBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
-            EosEthBtc.ThirdSymbolOrderbook = Orderbooks.EthBtc;
+            EthEosBtc.FirstSymbolOrderbook = Orderbooks.EthBtc;
+            EthEosBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
+            EthEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcProfitable;
 
-            EosEthBtc.SetMaxVolumeAndProfitability();
-            Assert.AreEqual(EthEosBtcProfitableProfit, EosEthBtc.ProfitPercent);
-        }*/
+            EthEosBtc.SetMaxVolumeAndProfitability();
+            Assert.AreEqual(EthEosBtcProfitableProfit, EthEosBtc.Profit);
+            Assert.AreEqual(EthEosBtcProfitableVolume, EthEosBtc.MaxVolume);
+            Assert.AreEqual(EthEosBtcProfitableProfitPercent, EthEosBtc.ProfitPercent);
+        }
 
         [TestMethod]
         public void TestGetProfitPercentWithInputSellBuySell()

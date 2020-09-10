@@ -137,9 +137,13 @@ namespace TriangleCollector.Models
                     {
 
                         if (Direction == Directions.BuyBuySell)
-                        {                            
+                        {
+                            if (FirstSymbolAsks.Count >= FirstSymbolOrderbook.SortedAsks.Count())
+                            {
+                                return;
+                            }
                             nextLayer = FirstSymbolOrderbook.SortedAsks.ElementAt(FirstSymbolAsks.Count);
-                            newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolAsks.Last().Key, ThirdSymbolBids.Last().Key);
+                            newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolAsks.Last().Key, ThirdSymbolBids.Last().Key); 
 
                             if (newProfitPercent < 1)
                             {
@@ -147,15 +151,18 @@ namespace TriangleCollector.Models
                             }
                             else
                             {
-                                maxVol = GetMaxVolume(nextLayer, SecondSymbolAsks.Last(), ThirdSymbolBids.Last());
+                                maxVol = GetMaxVolume(nextLayer, SecondSymbolAsks.Last(), ThirdSymbolBids.Last()); //ISSUE: does not remove the liquidity taken via the first trade from the second and third order books
                                 FirstSymbolAsks.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                         else if (Direction == Directions.BuySellSell)
                         {
+                            if (FirstSymbolAsks.Count >= FirstSymbolOrderbook.SortedAsks.Count())
+                            {
+                                return;
+                            }
                             nextLayer = FirstSymbolOrderbook.SortedAsks.ElementAt(FirstSymbolAsks.Count);
                             newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolBids.Last().Key, ThirdSymbolBids.Last().Key);
 
@@ -167,14 +174,16 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(nextLayer, SecondSymbolBids.Last(), ThirdSymbolBids.Last());
                                 FirstSymbolAsks.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                         else //sell buy sell
                         {
-
+                            if (FirstSymbolBids.Count >= FirstSymbolOrderbook.SortedBids.Count())
+                            {
+                                return;
+                            }
                             nextLayer = FirstSymbolOrderbook.SortedBids.ElementAt(FirstSymbolBids.Count);
                             newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolAsks.Last().Key, ThirdSymbolBids.Last().Key);
 
@@ -186,9 +195,8 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(nextLayer, SecondSymbolAsks.Last(), ThirdSymbolBids.Last());
                                 FirstSymbolBids.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                     }
@@ -196,6 +204,10 @@ namespace TriangleCollector.Models
                     {
                         if (Direction == Directions.BuyBuySell)
                         {
+                            if (SecondSymbolAsks.Count >= SecondSymbolOrderbook.SortedAsks.Count())
+                            {
+                                return;
+                            }
                             nextLayer = SecondSymbolOrderbook.SortedAsks.ElementAt(SecondSymbolAsks.Count);
                             newProfitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, nextLayer.Key, ThirdSymbolBids.Last().Key);
                             if (newProfitPercent < 1)
@@ -206,13 +218,16 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(FirstSymbolAsks.Last(), nextLayer, ThirdSymbolBids.Last());
                                 SecondSymbolAsks.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                         else if (Direction == Directions.BuySellSell)
                         {
+                            if (SecondSymbolBids.Count >= SecondSymbolOrderbook.SortedBids.Count())
+                            {
+                                return;
+                            }
                             nextLayer = SecondSymbolOrderbook.SortedBids.ElementAt(SecondSymbolBids.Count);
                             newProfitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, nextLayer.Key, ThirdSymbolBids.Last().Key);
                             if (newProfitPercent < 1)
@@ -223,13 +238,16 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(FirstSymbolAsks.Last(), nextLayer, ThirdSymbolBids.Last());
                                 SecondSymbolBids.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                         else //sell buy sell
                         {
+                            if (SecondSymbolAsks.Count >= SecondSymbolOrderbook.SortedAsks.Count())
+                            {
+                                return;
+                            }
                             nextLayer = SecondSymbolOrderbook.SortedAsks.ElementAt(SecondSymbolAsks.Count);
                             newProfitPercent = GetProfitPercent(FirstSymbolBids.Last().Key, nextLayer.Key, ThirdSymbolBids.Last().Key);
                             if (newProfitPercent < 1)
@@ -240,9 +258,8 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(FirstSymbolBids.Last(), nextLayer, ThirdSymbolBids.Last());
                                 SecondSymbolAsks.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                     }
@@ -254,6 +271,7 @@ namespace TriangleCollector.Models
                             {
                                 return;
                             }
+
                             nextLayer = ThirdSymbolOrderbook.SortedBids.ElementAt(ThirdSymbolBids.Count);
                             newProfitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, SecondSymbolAsks.Last().Key, nextLayer.Key);
                             if (newProfitPercent < 1)
@@ -264,9 +282,8 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(FirstSymbolAsks.Last(), SecondSymbolAsks.Last(), nextLayer);
                                 ThirdSymbolBids.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                         else if (Direction == Directions.BuySellSell)
@@ -285,9 +302,8 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(FirstSymbolAsks.Last(), SecondSymbolBids.Last(), nextLayer);
                                 ThirdSymbolBids.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                         else //sell buy sell
@@ -302,9 +318,8 @@ namespace TriangleCollector.Models
                             {
                                 maxVol = GetMaxVolume(FirstSymbolBids.Last(), SecondSymbolAsks.Last(), nextLayer);
                                 ThirdSymbolBids.Add(nextLayer);
-                                ProfitPercent = newProfitPercent;
                                 volumeTraded += maxVol.Value;
-                                profitReturned += maxVol.Value * ProfitPercent;
+                                profitReturned += maxVol.Value * newProfitPercent;
                             }
                         }
                     }
