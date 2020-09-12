@@ -57,7 +57,43 @@ namespace TriangleCollector.UnitTests.Models
                 new KeyValuePair<decimal, decimal>((decimal)0.00027100, (decimal)725.15)
             }
         };
+        //ORDERBOOKS FOR TESTING PROFITABLE BUY-BUY-SELL TRIANGLES (ONE FOR EACH BOTTLENECK)
 
+        //BUYBUYSELL BOTTLENECK = TRADE 1 (USE PROFITABLE TEST ORDERBOOK FOR THIRD TRADE):
+        public static Orderbook EthBtcBuyBuySellBottleneckOne = new Orderbook
+        {
+            SortedBids = new KeyValuePair<decimal, decimal>[]
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.034139, (decimal)4.2344),
+                new KeyValuePair<decimal, decimal>((decimal)0.034110, (decimal)2.9281),
+                new KeyValuePair<decimal, decimal>((decimal)0.034070, (decimal)6.0711)
+            },
+            SortedAsks = new KeyValuePair<decimal, decimal>[]
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.034172, (decimal)0.036),
+                new KeyValuePair<decimal, decimal>((decimal)0.034200, (decimal)0.3235),
+                new KeyValuePair<decimal, decimal>((decimal)0.035210, (decimal)1.1731)
+            }
+        };
+
+        public static Orderbook EosEthBuyBuySellBottleneckOne = new Orderbook
+        {
+            SortedBids = new KeyValuePair<decimal, decimal>[]
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.0080856, (decimal)20),
+                new KeyValuePair<decimal, decimal>((decimal)0.0080810, (decimal)543.14),
+                new KeyValuePair<decimal, decimal>((decimal)0.0080500, (decimal)144.83)
+            },
+            SortedAsks = new KeyValuePair<decimal, decimal>[]
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.0081086, (decimal)2000000),
+                new KeyValuePair<decimal, decimal>((decimal)0.0081500, (decimal)3620000.18),
+                new KeyValuePair<decimal, decimal>((decimal)0.0081575, (decimal)1440000.86)
+            }
+        };
+
+
+        //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
         public static Orderbook EosBtcProfitable = new Orderbook //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
         {
             SortedAsks = new KeyValuePair<decimal, decimal>[] //asks are 2% lower (more favorable for buying)
@@ -73,6 +109,29 @@ namespace TriangleCollector.UnitTests.Models
                 new KeyValuePair<decimal, decimal>((decimal)0.00027900, (decimal)725.15)
             }
         };
+
+        //BUYBUYSELL BOTTLENECK = TRADE 3 (USE OTHER PROFITABLE TEST ORDERBOOK FOR SECOND AND THIRD TRADE):
+        public static Orderbook EthBtcBuyBuySellBottleneckThree = new Orderbook
+        {
+            SortedBids = new KeyValuePair<decimal, decimal>[]
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.034139, (decimal)4.2344),
+                new KeyValuePair<decimal, decimal>((decimal)0.034110, (decimal)2.9281),
+                new KeyValuePair<decimal, decimal>((decimal)0.034070, (decimal)6.0711)
+            },
+            SortedAsks = new KeyValuePair<decimal, decimal>[]
+            {
+                new KeyValuePair<decimal, decimal>((decimal)0.034172, (decimal)36),
+                new KeyValuePair<decimal, decimal>((decimal)0.034200, (decimal)32.35),
+                new KeyValuePair<decimal, decimal>((decimal)0.035210, (decimal)17.31)
+            }
+        };
+
+
+        //BUYSELLSELL BOTTLENECK = TRADE 3 (USE OTHER PROFITABLE TEST ORDERBOOK FOR SECOND AND THIRD TRADE):
+        //use EOSBTCProfitable, and the normal orderbooks for everything else
+
+
 
         public static Orderbook BtcUsdSortedBids = new Orderbook 
         { 
