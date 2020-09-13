@@ -3,9 +3,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using TriangleCollector.Models;
-using TriangleCollector.UnitTests.Models;
 
 namespace TriangleCollector.UnitTests
 {
@@ -48,104 +48,354 @@ namespace TriangleCollector.UnitTests
         public decimal EosEthBtcProfitableBottleneckTwoProfit = 0.001223931524m; //total profit returned in BTC
         public decimal EosEthBtcProfitableBottleneckTwoVolume = 0.06189172m; //total volume traded
 
-        [TestMethod]
-        public void TestGetProfitPercentNoInputBuyBuySell() // without any input, this tests the ProfitPercent output of an unprofitable triangle.
+        class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
         {
-            EthEosBtc.FirstSymbolOrderbook = Orderbooks.EthBtc;
-            EthEosBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
-            EthEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcUnprofitable;
-
-            EthEosBtc.SetMaxVolumeAndProfitability();
-            Assert.AreEqual(EthEosBtcUnprofitableProfit, EthEosBtc.ProfitPercent);
+            public int Compare(T x, T y)
+            {
+                return y.CompareTo(x);
+            }
         }
 
         [TestMethod]
-        public void TestVolumeNoInputBuyBuySell() // without any input, this tests the MaxVolume output of an unprofitable triangle.
+        public void TestProfitAndVolumeNoLayersBuyBuySell() // without any input, this tests the ProfitPercent output of an unprofitable triangle.
         {
-            EthEosBtc.FirstSymbolOrderbook = Orderbooks.EthBtc;
-            EthEosBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
-            EthEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcUnprofitable;
+            Orderbook EthBtc = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+                {
+                    { 0.034139m, 4.2344m },
+                    { 0.034110m, 2.9281m },
+                    { 0.034070m, 6.0711m }
+                },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+                {
+                    {0.034172m, 3.6m},
+                    {0.034200m, 0.3235m},
+                    {0.035210m, 1.1731m }
+                }
+            };
+
+            Orderbook EosEth = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+                {
+                    {0.0080856m, 20m},
+                    {0.0080810m, 543.14m},
+                    {0.0080500m, 144.83m }
+                },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+                {
+                    {0.0081086m, 20m},
+                    {0.0081500m, 362.18m},
+                    {0.0081575m, 144.86m }
+                }
+            };
+            Orderbook EosBtcUnprofitable = new Orderbook
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal>
+                {
+                    {0.00027619m, 104.95m},
+                    {0.00027750m, 123.82m},
+                    {0.00027900m, 160.66m }
+                },
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+                {
+                    {0.00027500m, 506.75m},
+                    {0.00027300m, 120.44m},
+                    {0.00027100m, 725.15m }
+                }
+            };
+
+            EthEosBtc.FirstSymbolOrderbook = EthBtc;
+            EthEosBtc.SecondSymbolOrderbook = EosEth;
+            EthEosBtc.ThirdSymbolOrderbook = EosBtcUnprofitable;
 
             EthEosBtc.SetMaxVolumeAndProfitability();
+            Assert.AreEqual(EthEosBtcUnprofitableProfit, EthEosBtc.ProfitPercent);
             Assert.AreEqual(EthEosBtcUnprofitableVolume, EthEosBtc.MaxVolume);
         }
 
         [TestMethod]
-        public void TestGetProfitPercentNoInputSellBuySell()
+        public void TestProfitAndVolumeNoLayersSellBuySell()
         {
-            UsdEosBtc.FirstSymbolOrderbook = Orderbooks.BtcUsdSortedBids;
-            UsdEosBtc.SecondSymbolOrderbook = Orderbooks.EosUsdSortedAsks;
-            UsdEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcUnprofitable;
+            Orderbook BtcUsdSortedBids = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {10372.24m, 0.75m},
+                {10370.04m, 0.12m},
+                {10367.85m, 0.24m }
+            }
+            };
+            Orderbook EosUsdSortedAsks = new Orderbook
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {2.85385m, 37.09m},
+                {2.86429m, 600m},
+                {2.86940m, 363.86m }
+            }
+            };
+
+            Orderbook EosBtcUnprofitable = new Orderbook
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.00027619m, 104.95m},
+                {0.00027750m, 123.82m},
+                {0.00027900m, 160.66m }
+            },
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.00027500m, 506.75m},
+                {0.00027300m, 120.44m},
+                {0.00027100m, 725.15m }
+            }
+            };
+
+            UsdEosBtc.FirstSymbolOrderbook = BtcUsdSortedBids;
+            UsdEosBtc.SecondSymbolOrderbook = EosUsdSortedAsks;
+            UsdEosBtc.ThirdSymbolOrderbook = EosBtcUnprofitable;
 
             UsdEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(UsdEosBtcUnprofitableProfit, UsdEosBtc.ProfitPercent);
-        }
-        
-        [TestMethod]
-        public void TestMaxVolumeNoInputSellBuySell()
-        {
-            UsdEosBtc.FirstSymbolOrderbook = Orderbooks.BtcUsdSortedBids;
-            UsdEosBtc.SecondSymbolOrderbook = Orderbooks.EosUsdSortedAsks;
-            UsdEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcUnprofitable;
-
-            UsdEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(UsdEosBtcUnprofitableVolume, UsdEosBtc.MaxVolume);
         }
 
         [TestMethod]
-        public void TestGetProfitPercentNoInputBuySellSell()
+        public void TestVolumeAndProfitNoLayersBuySellSell()
         {
-            EosEthBtc.FirstSymbolOrderbook = Orderbooks.EosBtcUnprofitable;
-            EosEthBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
-            EosEthBtc.ThirdSymbolOrderbook = Orderbooks.EthBtc;
+            Orderbook EosBtcUnprofitable = new Orderbook
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.00027619m, 104.95m},
+                {0.00027750m, 123.82m},
+                {0.00027900m, 160.66m }
+            },
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.00027500m, 506.75m},
+                {0.00027300m, 120.44m},
+                {0.00027100m, 725.15m }
+            }
+            };
+
+            Orderbook EosEth = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.0080856m, 20m},
+                {0.0080810m, 543.14m},
+                {0.0080500m, 144.83m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.0081086m, 20m},
+                {0.0081500m, 362.18m},
+                {0.0081575m, 144.86m }
+            }
+            };
+            Orderbook EthBtc = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                { 0.034139m, 4.2344m },
+                { 0.034110m, 2.9281m },
+                { 0.034070m, 6.0711m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.034172m, 3.6m},
+                {0.034200m, 0.3235m},
+                {0.035210m, 1.1731m }
+            }
+            };
+
+            EosEthBtc.FirstSymbolOrderbook = EosBtcUnprofitable;
+            EosEthBtc.SecondSymbolOrderbook = EosEth;
+            EosEthBtc.ThirdSymbolOrderbook = EthBtc;
 
             EosEthBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EosEthBtcUnprofitableProfit, EosEthBtc.ProfitPercent);
-        }
-
-        [TestMethod]
-        public void TestMaxVolumeNoInputBuySellSell()
-        {
-            EosEthBtc.FirstSymbolOrderbook = Orderbooks.EosBtcUnprofitable;
-            EosEthBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
-            EosEthBtc.ThirdSymbolOrderbook = Orderbooks.EthBtc;
-
-            EosEthBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EosEthBtcUnprofitableVolume, EosEthBtc.MaxVolume);
         }
 
         [TestMethod]
         public void TestLayersBuyBuySellBottleneckTwo() //only profitable triangles require inputs - volume is calculated as well
         {
-            EthEosBtc.FirstSymbolOrderbook = Orderbooks.EthBtc;
-            EthEosBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
-            EthEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcProfitable;
+            Orderbook EthBtc = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                { 0.034139m, 4.2344m },
+                { 0.034110m, 2.9281m },
+                { 0.034070m, 6.0711m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.034172m, 3.6m},
+                {0.034200m, 0.3235m},
+                {0.035210m, 1.1731m }
+            }
+            };
+            Orderbook EosEth = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.0080856m, 20m},
+                {0.0080810m, 543.14m},
+                {0.0080500m, 144.83m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.0081086m, 20m},
+                {0.0081500m, 362.18m},
+                {0.0081575m, 144.86m }
+            }
+            };
+            //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
+            Orderbook EosBtcProfitable = new Orderbook //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal> //asks are 2% lower (more favorable for buying)
+            {
+                {0.00027000m, 104.95m},
+                {0.00027100m, 123.82m},
+                {0.00027200m, 160.66m }
+            },
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>()) //bids are 2% higher (more favorable for selling). It is practically impossible for bids to be higher than asks but that is fine for these purposes
+            {
+                {0.00028050m, 506.75m},
+                {0.00028000m, 120.44m},
+                {0.00027900m, 725.15m }
+            }
+            };
+            EthEosBtc.FirstSymbolOrderbook = EthBtc;
+            EthEosBtc.SecondSymbolOrderbook = EosEth;
+            EthEosBtc.ThirdSymbolOrderbook = EosBtcProfitable;
 
             EthEosBtc.SetMaxVolumeAndProfitability();
-            Assert.AreEqual(EthEosBtcProfitableBottleneckTwoProfit, EthEosBtc.Profit);
-            Assert.AreEqual(EthEosBtcProfitableBottleneckTwoVolume, EthEosBtc.MaxVolume);
-            Assert.AreEqual(EthEosBtcProfitableBottleneckTwoProfitPercent, EthEosBtc.ProfitPercent);
+            Assert.AreEqual(EthEosBtcProfitableBottleneckTwoProfit, EthEosBtc.Profit, "Incorrect Profit");
+            Assert.AreEqual(EthEosBtcProfitableBottleneckTwoVolume, EthEosBtc.MaxVolume, "Incorrect Volume");
+            Assert.AreEqual(EthEosBtcProfitableBottleneckTwoProfitPercent, EthEosBtc.ProfitPercent, "Incorrect ProfitPercent");
         }
 
         [TestMethod]
         public void TestLayersBuyBuySellBottleneckOne() //only profitable triangles require inputs - volume is calculated as well
         {
-            EthEosBtc.FirstSymbolOrderbook = Orderbooks.EthBtcBuyBuySellBottleneckOne;
-            EthEosBtc.SecondSymbolOrderbook = Orderbooks.EosEthBuyBuySellBottleneckOne;
-            EthEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcProfitable;
+            //BUYBUYSELL BOTTLENECK = TRADE 1 (USE PROFITABLE TEST ORDERBOOK FOR THIRD TRADE):
+            Orderbook EthBtcBuyBuySellBottleneckOne = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.034139m, 4.2344m},
+                {0.034110m, 2.9281m},
+                {0.034070m, 6.0711m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.034172m, 0.036m},
+                {0.034200m, 0.3235m},
+                {0.035210m, 1.1731m }
+            }
+            };
+            //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
+            Orderbook EosBtcProfitable = new Orderbook //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal> //asks are 2% lower (more favorable for buying)
+            {
+                {0.00027000m, 104.95m},
+                {0.00027100m, 123.82m},
+                {0.00027200m, 160.66m }
+            },
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>()) //bids are 2% higher (more favorable for selling). It is practically impossible for bids to be higher than asks but that is fine for these purposes
+            {
+                {0.00028050m, 506.75m},
+                {0.00028000m, 120.44m},
+                {0.00027900m, 725.15m }
+            }
+            };
+
+            Orderbook EosEthBuyBuySellBottleneckOne = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.0080856m, 20m},
+                {0.0080810m, 543.14m},
+                {0.0080500m, 144.83m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.0081086m, 2000000m},
+                {0.0081500m, 3620000.18m},
+                {0.0081575m, 1440000.86m }
+            }
+            };
+
+            EthEosBtc.FirstSymbolOrderbook = EthBtcBuyBuySellBottleneckOne;
+            EthEosBtc.SecondSymbolOrderbook = EosEthBuyBuySellBottleneckOne;
+            EthEosBtc.ThirdSymbolOrderbook = EosBtcProfitable;
 
             EthEosBtc.SetMaxVolumeAndProfitability();
-            Assert.AreEqual(EthEosBtcProfitableBottleneckOneProfit, EthEosBtc.Profit);
-            Assert.AreEqual(EthEosBtcProfitableBottleneckOneVolume, EthEosBtc.MaxVolume);
-            Assert.AreEqual(EthEosBtcProfitableBottleneckOneProfitPercent, EthEosBtc.ProfitPercent);
+            Assert.AreEqual(EthEosBtcProfitableBottleneckOneProfit, EthEosBtc.Profit, "Incorrect Profit");
+            Assert.AreEqual(EthEosBtcProfitableBottleneckOneVolume, EthEosBtc.MaxVolume, "Incorrect Volume");
+            Assert.AreEqual(EthEosBtcProfitableBottleneckOneProfitPercent, EthEosBtc.ProfitPercent, "Incorrect ProfitPercent");
         }
 
         [TestMethod]
         public void TestLayersBuyBuySellBottleneckThree() //only profitable triangles require inputs - volume is calculated as well
         {
-            EthEosBtc.FirstSymbolOrderbook = Orderbooks.EthBtcBuyBuySellBottleneckThree;
-            EthEosBtc.SecondSymbolOrderbook = Orderbooks.EosEthBuyBuySellBottleneckOne;
-            EthEosBtc.ThirdSymbolOrderbook = Orderbooks.EosBtcProfitable;
+            //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
+            Orderbook EosBtcProfitable = new Orderbook //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal> //asks are 2% lower (more favorable for buying)
+            {
+                {0.00027000m, 104.95m},
+                {0.00027100m, 123.82m},
+                {0.00027200m, 160.66m }
+            },
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>()) //bids are 2% higher (more favorable for selling). It is practically impossible for bids to be higher than asks but that is fine for these purposes
+            {
+                {0.00028050m, 506.75m},
+                {0.00028000m, 120.44m},
+                {0.00027900m, 725.15m }
+            }
+            };
+
+            //BUYBUYSELL BOTTLENECK = TRADE 3 (USE OTHER PROFITABLE TEST ORDERBOOK FOR SECOND AND THIRD TRADE):
+            Orderbook EthBtcBuyBuySellBottleneckThree = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.034139m, 4.2344m},
+                {0.034110m, 2.9281m},
+                {0.034070m, 6.0711m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.034172m, 36},
+                {0.034200m, 32.35m},
+                {0.035210m, 17.31m }
+            }
+            };
+            Orderbook EosEthBuyBuySellBottleneckOne = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.0080856m, 20m},
+                {0.0080810m, 543.14m},
+                {0.0080500m, 144.83m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.0081086m, 2000000m},
+                {0.0081500m, 3620000.18m},
+                {0.0081575m, 1440000.86m }
+            }
+            };
+            EthEosBtc.FirstSymbolOrderbook = EthBtcBuyBuySellBottleneckThree;
+            EthEosBtc.SecondSymbolOrderbook = EosEthBuyBuySellBottleneckOne;
+            EthEosBtc.ThirdSymbolOrderbook = EosBtcProfitable;
 
             EthEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EthEosBtcProfitableBottleneckThreeProfit, EthEosBtc.Profit);
@@ -156,26 +406,60 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestLayersBuySellSellBottleneckTwo() //only profitable triangles require inputs - volume is calculated as well
         {
-            EosEthBtc.FirstSymbolOrderbook = Orderbooks.EosBtcProfitable;
-            EosEthBtc.SecondSymbolOrderbook = Orderbooks.EosEth;
-            EosEthBtc.ThirdSymbolOrderbook = Orderbooks.EthBtc;
+            Orderbook EthBtc = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                { 0.034139m, 4.2344m },
+                { 0.034110m, 2.9281m },
+                { 0.034070m, 6.0711m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.034172m, 3.6m},
+                {0.034200m, 0.3235m},
+                {0.035210m, 1.1731m }
+            }
+            };
+            Orderbook EosEth = new Orderbook
+            {
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
+            {
+                {0.0080856m, 20m},
+                {0.0080810m, 543.14m},
+                {0.0080500m, 144.83m }
+            },
+                SortedAsks = new SortedDictionary<decimal, decimal>
+            {
+                {0.0081086m, 20m},
+                {0.0081500m, 362.18m},
+                {0.0081575m, 144.86m }
+            }
+            };
+            //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
+            Orderbook EosBtcProfitable = new Orderbook //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal> //asks are 2% lower (more favorable for buying)
+            {
+                {0.00027000m, 104.95m},
+                {0.00027100m, 123.82m},
+                {0.00027200m, 160.66m }
+            },
+                SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>()) //bids are 2% higher (more favorable for selling). It is practically impossible for bids to be higher than asks but that is fine for these purposes
+            {
+                {0.00028050m, 506.75m},
+                {0.00028000m, 120.44m},
+                {0.00027900m, 725.15m }
+            }
+            };
+            EosEthBtc.FirstSymbolOrderbook = EosBtcProfitable;
+            EosEthBtc.SecondSymbolOrderbook = EosEth;
+            EosEthBtc.ThirdSymbolOrderbook = EthBtc;
 
             EosEthBtc.SetMaxVolumeAndProfitability();
-            Assert.AreEqual(EosEthBtcProfitableBottleneckTwoProfit, EosEthBtc.Profit);
-            Assert.AreEqual(EosEthBtcProfitableBottleneckTwoVolume, EosEthBtc.MaxVolume);
-            Assert.AreEqual(EosEthBtcProfitableBottleneckTwoProfitPercent, EosEthBtc.ProfitPercent);
-        }
-
-        [TestMethod]
-        public void TestGetProfitPercentWithInputSellBuySell()
-        {
-
-        }
-
-        [TestMethod]
-        public void TestGetProfitPercentWithInputBuySellSell()
-        {
-
+            Assert.AreEqual(EosEthBtcProfitableBottleneckTwoProfit, EosEthBtc.Profit, "Incorrect Profit");
+            Assert.AreEqual(EosEthBtcProfitableBottleneckTwoVolume, EosEthBtc.MaxVolume, "Incorrect Volume");
+            Assert.AreEqual(EosEthBtcProfitableBottleneckTwoProfitPercent, EosEthBtc.ProfitPercent, "Incorrect ProfitPercent");
         }
     }
 }

@@ -14,23 +14,13 @@ namespace TriangleCollector.Models
 
         public Orderbook FirstSymbolOrderbook { get; set; }
 
-        public List<KeyValuePair<decimal, decimal>> FirstSymbolAsks = new List<KeyValuePair<decimal, decimal>>();
-
-        public List<KeyValuePair<decimal, decimal>> FirstSymbolBids = new List<KeyValuePair<decimal, decimal>>();
-
         public string SecondSymbol { get; set; }
 
         public Orderbook SecondSymbolOrderbook { get; set; }
 
-        public List<KeyValuePair<decimal, decimal>> SecondSymbolBids = new List<KeyValuePair<decimal, decimal>>();
-
-        public List<KeyValuePair<decimal, decimal>> SecondSymbolAsks = new List<KeyValuePair<decimal, decimal>>();
-
         public string ThirdSymbol { get; set; }
 
         public Orderbook ThirdSymbolOrderbook { get; set; }
-
-        public List<KeyValuePair<decimal, decimal>> ThirdSymbolBids = new List<KeyValuePair<decimal, decimal>>();
 
         public decimal ProfitPercent { get; set; }
 
@@ -45,6 +35,13 @@ namespace TriangleCollector.Models
             BuyBuySell,
             SellBuySell,
             BuySellSell
+        }
+
+        public enum Bottlenecks
+        {
+            FirstTrade,
+            SecondTrade,
+            ThirdTrade
         }
 
         private readonly object nextLayerLock = new object();
@@ -83,289 +80,112 @@ namespace TriangleCollector.Models
 
         public void SetMaxVolumeAndProfitability()
         {
+            //FirstSymbolOrderbook.SortedAsks = FirstSymbolOrderbook.SortedAsks.Where(x => x.Key != bottleneckLayer.Key).ToArray();
             lock (nextLayerLock)
             {
-                FirstSymbolAsks.Clear();
-                FirstSymbolBids.Clear();
-
-                SecondSymbolAsks.Clear();
-                SecondSymbolBids.Clear();
-
-                ThirdSymbolBids.Clear();
-
-                if (Direction == Directions.BuyBuySell)
-                {
-                    FirstSymbolAsks.Add(FirstSymbolOrderbook.SortedAsks.First());
-                    SecondSymbolAsks.Add(SecondSymbolOrderbook.SortedAsks.First());
-                    ThirdSymbolBids.Add(ThirdSymbolOrderbook.SortedBids.First());
-                }
-                else if (Direction == Directions.BuySellSell)
-                {
-                    FirstSymbolAsks.Add(FirstSymbolOrderbook.SortedAsks.First());
-                    SecondSymbolBids.Add(SecondSymbolOrderbook.SortedBids.First());
-                    ThirdSymbolBids.Add(ThirdSymbolOrderbook.SortedBids.First());
-                }
-                else
-                {
-                    FirstSymbolBids.Add(FirstSymbolOrderbook.SortedBids.First());
-                    SecondSymbolAsks.Add(SecondSymbolOrderbook.SortedAsks.First());
-                    ThirdSymbolBids.Add(ThirdSymbolOrderbook.SortedBids.First());
-                }
-
-
-                ProfitPercent = GetProfitPercent();
-
-                var maxVol = GetMaxVolume();
-                MaxVolume = maxVol.Value;
-
-                if (ProfitPercent < 0)
-                {
-                    //_logger.LogDebug($"first: {FirstSymbolOrderbook.symbol} Price: {FirstSymbolAsks.Last().Key} depth: {FirstSymbolAsks.Last().Value} second: {SecondSymbolOrderbook.symbol} Price: {SecondSymbolBids.Last().Key} depth: {SecondSymbolBids.Last().Value} third: {ThirdSymbolOrderbook.symbol} Price: {ThirdSymbolBids.Last().Key} depth: {ThirdSymbolBids.Last().Value}");
-                    //_logger.LogDebug($"{minVol.Value} maximum BTC of volume calculated");
-                    Profit = 0;
-                    return;
-                }
-
-                Profit = MaxVolume * ProfitPercent;
                 while (true)
                 {
 
-                    KeyValuePair<decimal, decimal> nextLayer;
-                    decimal newProfitPercent;
-                    if (maxVol.Key == 1) // if the bottleneck is the first trade, then we need to call the next layer of the first order book and then pass that next layer, along with the other two layers, to GetProfitPercent
+                    var newProfitPercent = GetProfitPercent();
+                    if (newProfitPercent == -2)
                     {
-
-                        if (Direction == Directions.BuyBuySell)
-                        {
-                            if (FirstSymbolAsks.Count >= FirstSymbolOrderbook.SortedAsks.Count())
-                            {
-                                return;
-                            }
-                            nextLayer = FirstSymbolOrderbook.SortedAsks.ElementAt(FirstSymbolAsks.Count);
-                            //remove liquidity for the second and third trades (non bottleneck)
-                            var secondTradeLiquidity = maxVol.Value / FirstSymbolOrderbook.SortedBids.First().Value / SecondSymbolAsks.Last().Key ; //second trade is quoted in alt terms, so convert using first orderbook.
-                            SecondSymbolAsks.Add(new KeyValuePair<Decimal, Decimal>(SecondSymbolAsks.Last().Key, (SecondSymbolAsks.Last().Value - secondTradeLiquidity)));
-
-                            var thirdTradeLiquidity = maxVol.Value / ThirdSymbolBids.Last().Key; //last trade must be quoted in BTC terms
-                            ThirdSymbolBids.Add(new KeyValuePair<Decimal, Decimal>(ThirdSymbolBids.Last().Key, ThirdSymbolBids.Last().Value - thirdTradeLiquidity));
-
-                            newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolAsks.Last().Key, ThirdSymbolBids.Last().Key); 
-
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(nextLayer, SecondSymbolAsks.Last(), ThirdSymbolBids.Last()); 
-                                FirstSymbolAsks.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                                ProfitPercent = Profit / MaxVolume;
-                            }
-                        }
-                        else if (Direction == Directions.BuySellSell)
-                        {
-                            if (FirstSymbolAsks.Count >= FirstSymbolOrderbook.SortedAsks.Count())
-                            {
-                                return;
-                            }
-                            //remove liquidity for the second and third trades (non bottleneck)
-                            var secondTradeLiquidity = maxVol.Value / ThirdSymbolOrderbook.SortedAsks.First().Value / SecondSymbolBids.Last().Key; //second trade is quoted in alt terms, so convert using first orderbook.
-                            SecondSymbolBids.Add(new KeyValuePair<Decimal, Decimal>(SecondSymbolBids.Last().Key, (SecondSymbolBids.Last().Value - secondTradeLiquidity)));
-
-                            var thirdTradeLiquidity = maxVol.Value / ThirdSymbolBids.Last().Key; //last trade must be quoted in BTC terms
-                            ThirdSymbolBids.Add(new KeyValuePair<Decimal, Decimal>(ThirdSymbolBids.Last().Key, ThirdSymbolBids.Last().Value - thirdTradeLiquidity));
-
-                            nextLayer = FirstSymbolOrderbook.SortedAsks.ElementAt(FirstSymbolAsks.Count);
-                            newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolBids.Last().Key, ThirdSymbolBids.Last().Key);
-
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(nextLayer, SecondSymbolBids.Last(), ThirdSymbolBids.Last());
-                                FirstSymbolAsks.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                                ProfitPercent = Profit / MaxVolume;
-                            }
-                        }
-                        else //sell buy sell
-                        {
-                            if (FirstSymbolBids.Count >= FirstSymbolOrderbook.SortedBids.Count())
-                            {
-                                return;
-                            }
-                            nextLayer = FirstSymbolOrderbook.SortedBids.ElementAt(FirstSymbolBids.Count);
-                            newProfitPercent = GetProfitPercent(nextLayer.Key, SecondSymbolAsks.Last().Key, ThirdSymbolBids.Last().Key);
-
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(nextLayer, SecondSymbolAsks.Last(), ThirdSymbolBids.Last());
-                                FirstSymbolBids.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                            }
-                        }
+                        return;
                     }
-                    else if (maxVol.Key == 2)
+                    var maxVol = GetMaxVolume();
+
+                    if (newProfitPercent > 0)
                     {
-                        if (Direction == Directions.BuyBuySell)
-                        {
-                            if (SecondSymbolAsks.Count >= SecondSymbolOrderbook.SortedAsks.Count())
-                            {
-                                return;
-                            }
-                            nextLayer = SecondSymbolOrderbook.SortedAsks.ElementAt(SecondSymbolAsks.Count);
-                            //remove liquidity for the first and third trade (non bottleneck)
-                            var firstTradeLiquidity = maxVol.Value / FirstSymbolAsks.Last().Key; //first trade must be quoted in BTC terms
-                            FirstSymbolAsks.Add(new KeyValuePair<Decimal, Decimal>(FirstSymbolAsks.Last().Key, (FirstSymbolAsks.Last().Value - firstTradeLiquidity)));
-
-                            var thirdTradeLiquidity = maxVol.Value / ThirdSymbolBids.Last().Key; //last trade must be quoted in BTC terms
-                            ThirdSymbolBids.Add(new KeyValuePair<Decimal, Decimal>(ThirdSymbolBids.Last().Key, ThirdSymbolBids.Last().Value - thirdTradeLiquidity));
-
-
-                            newProfitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, nextLayer.Key, ThirdSymbolBids.Last().Key);
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), nextLayer, ThirdSymbolBids.Last());
-                                SecondSymbolAsks.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                                ProfitPercent = Profit / MaxVolume;
-                            }
-                        }
-                        else if (Direction == Directions.BuySellSell)
-                        {
-                            if (SecondSymbolBids.Count >= SecondSymbolOrderbook.SortedBids.Count())
-                            {
-                                return;
-                            }
-                            //remove liquidity for the first and third trade (non bottleneck)
-                            var firstTradeLiquidity = maxVol.Value / FirstSymbolAsks.Last().Key; //first trade must be quoted in BTC terms
-                            FirstSymbolAsks.Add(new KeyValuePair<Decimal, Decimal>(FirstSymbolAsks.Last().Key, (FirstSymbolAsks.Last().Value - firstTradeLiquidity)));
-
-                            var thirdTradeLiquidity = maxVol.Value / ThirdSymbolBids.Last().Key; //last trade must be quoted in BTC terms
-                            ThirdSymbolBids.Add(new KeyValuePair<Decimal, Decimal>(ThirdSymbolBids.Last().Key, ThirdSymbolBids.Last().Value - thirdTradeLiquidity));
-
-                            nextLayer = SecondSymbolOrderbook.SortedBids.ElementAt(SecondSymbolBids.Count);
-                            newProfitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, nextLayer.Key, ThirdSymbolBids.Last().Key);
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), nextLayer, ThirdSymbolBids.Last());
-                                SecondSymbolBids.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                                ProfitPercent = Profit / MaxVolume;
-                            }
-                        }
-                        else //sell buy sell
-                        {
-                            if (SecondSymbolAsks.Count >= SecondSymbolOrderbook.SortedAsks.Count())
-                            {
-                                return;
-                            }
-                            nextLayer = SecondSymbolOrderbook.SortedAsks.ElementAt(SecondSymbolAsks.Count);
-                            newProfitPercent = GetProfitPercent(FirstSymbolBids.Last().Key, nextLayer.Key, ThirdSymbolBids.Last().Key);
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(FirstSymbolBids.Last(), nextLayer, ThirdSymbolBids.Last());
-                                SecondSymbolAsks.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                            }
-                        }
+                        RemoveLiquidity(maxVol);
+                        MaxVolume += maxVol.Value;
+                        Profit += maxVol.Value * newProfitPercent;
+                        ProfitPercent = Profit / MaxVolume;
                     }
-                    else //maxVol.Key == 3
+                    else
                     {
-                        if (Direction == Directions.BuyBuySell)
+                        if (ProfitPercent == 0)
                         {
-                            if (ThirdSymbolBids.Count >= ThirdSymbolOrderbook.SortedBids.Count())
-                            {
-                                return;
-                            }
-
-                            nextLayer = ThirdSymbolOrderbook.SortedBids.ElementAt(ThirdSymbolBids.Count);
-
-                            //remove liquidity for the first and second trades (non bottleneck)
-                            var firstTradeLiquidity = maxVol.Value / FirstSymbolAsks.Last().Key; //first trade is quoted in btc terms
-                            FirstSymbolAsks.Add(new KeyValuePair<Decimal, Decimal>(FirstSymbolAsks.Last().Key, (FirstSymbolAsks.Last().Value - firstTradeLiquidity)));
-
-                            var secondTradeLiquidity = maxVol.Value / FirstSymbolOrderbook.SortedBids.First().Value / SecondSymbolAsks.Last().Key; //second trade is quoted in alt terms, so convert using first orderbook.
-                            SecondSymbolAsks.Add(new KeyValuePair<Decimal, Decimal>(SecondSymbolAsks.Last().Key, (SecondSymbolAsks.Last().Value - secondTradeLiquidity)));
-
-                            newProfitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, SecondSymbolAsks.Last().Key, nextLayer.Key);
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), SecondSymbolAsks.Last(), nextLayer);
-                                ThirdSymbolBids.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                                ProfitPercent = Profit / MaxVolume;
-                            }
+                            ProfitPercent = newProfitPercent;
+                            MaxVolume = maxVol.Value;
                         }
-                        else if (Direction == Directions.BuySellSell)
-                        {
-                            if (ThirdSymbolBids.Count >= ThirdSymbolOrderbook.SortedBids.Count())
-                            {
-                                return;
-                            }
-                            nextLayer = ThirdSymbolOrderbook.SortedBids.ElementAt(ThirdSymbolBids.Count);
-                            newProfitPercent = GetProfitPercent(FirstSymbolAsks.Last().Key, SecondSymbolBids.Last().Key, nextLayer.Key);
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(FirstSymbolAsks.Last(), SecondSymbolBids.Last(), nextLayer);
-                                ThirdSymbolBids.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                            }
-                        }
-                        else //sell buy sell
-                        {
-                            nextLayer = ThirdSymbolOrderbook.SortedBids.ElementAt(ThirdSymbolBids.Count);
-                            newProfitPercent = GetProfitPercent(FirstSymbolBids.Last().Key, SecondSymbolAsks.Last().Key, nextLayer.Key);
-                            if (newProfitPercent < 0)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                maxVol = GetMaxVolume(FirstSymbolBids.Last(), SecondSymbolAsks.Last(), nextLayer);
-                                ThirdSymbolBids.Add(nextLayer);
-                                MaxVolume += maxVol.Value;
-                                Profit += maxVol.Value * newProfitPercent;
-                            }
-                        }
+                        return;
                     }
                 }
+                //get the profit percent
+                //if its profitable set profitpercent etc
+                //otherwise return;
             }
+        }
+
+        public void RemoveLiquidity(KeyValuePair<Bottlenecks, decimal> bottleneck)
+        {
+            if (Direction == Directions.BuyBuySell)
+            {
+                if (bottleneck.Key == Bottlenecks.FirstTrade)
+                {
+                    FirstSymbolOrderbook.SortedAsks.Remove(FirstSymbolOrderbook.SortedAsks.First().Key);
+
+                    SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.First().Key] = SecondSymbolOrderbook.SortedAsks.First().Value -  bottleneck.Value / FirstSymbolOrderbook.SortedBids.First().Value / SecondSymbolOrderbook.SortedAsks.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
+                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //last trade must be quoted in BTC terms
+                }
+                else if (bottleneck.Key == Bottlenecks.SecondTrade)
+                {
+                    SecondSymbolOrderbook.SortedAsks.Remove(SecondSymbolOrderbook.SortedAsks.First().Key);
+
+                    FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade must be quoted in BTC terms
+                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.Last().Key; //last trade must be quoted in BTC terms
+
+                }
+                else
+                {
+                    ThirdSymbolOrderbook.SortedBids.Remove(ThirdSymbolOrderbook.SortedBids.First().Key);
+
+                    FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade is quoted in btc terms
+                    SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.First().Key] = SecondSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedBids.First().Value / SecondSymbolOrderbook.SortedAsks.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
+                }
+            }
+            else if (Direction == Directions.BuySellSell)
+            {
+                if (bottleneck.Key == Bottlenecks.FirstTrade)
+                {
+                    FirstSymbolOrderbook.SortedAsks.Remove(FirstSymbolOrderbook.SortedAsks.First().Key);
+
+                    SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.First().Key] = SecondSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedAsks.First().Value / SecondSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
+                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Key - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //last trade must be quoted in BTC terms
+
+                }
+                else if (bottleneck.Key == Bottlenecks.SecondTrade)
+                {
+                    SecondSymbolOrderbook.SortedBids.Remove(SecondSymbolOrderbook.SortedBids.First().Key);
+
+                    FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade must be quoted in BTC terms
+                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //last trade must be quoted in BTC terms
+                }
+                else
+                {
+                    ThirdSymbolOrderbook.SortedBids.Remove(ThirdSymbolOrderbook.SortedBids.First().Key);
+
+                    FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade must be quoted in BTC terms
+                    SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.First().Key] = SecondSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedAsks.First().Value / SecondSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
+                }
+            }
+            else
+            {
+                if (bottleneck.Key == Bottlenecks.FirstTrade)
+                {
+
+                }
+                else if (bottleneck.Key == Bottlenecks.SecondTrade)
+                {
+
+                }
+                else
+                {
+
+                }
+            }
+
+
+
         }
 
         private decimal GetProfitPercent() //this method is called first when initially calculating a triangle's profitability, hence directly interfacing with the orderbooks 
@@ -396,44 +216,11 @@ namespace TriangleCollector.Models
             }
             catch (Exception ex)
             {
-                return 0;
+                return -2;
             }
         }
 
-        private decimal GetProfitPercent(decimal firstSymbolPrice, decimal secondSymbolPrice, decimal thirdSymbolPrice) //this is what gets passed the updated layers (if applicable)
-        {
-            try //use the direction list to understand what trades to make at each step
-            {
-                if (Direction == Directions.BuySellSell)
-                {
-                    var firstTrade = 1 / firstSymbolPrice;
-                    var secondTrade = firstTrade * secondSymbolPrice; //sell
-                    var thirdTrade = secondTrade * thirdSymbolPrice; //sell
-                    return thirdTrade - 1;
-                }
-                else if (Direction == Directions.BuyBuySell)
-                {
-                    var firstTrade = 1 / firstSymbolPrice;
-                    var secondTrade = firstTrade / secondSymbolPrice; //buy
-                    var thirdTrade = secondTrade * thirdSymbolPrice; //sell
-                    return thirdTrade - 1;
-                }
-                else //Sell Buy Sell
-                {
-                    var firstTrade = 1 * firstSymbolPrice;
-                    var secondTrade = firstTrade / secondSymbolPrice;
-                    var thirdTrade = secondTrade * thirdSymbolPrice;
-                    return thirdTrade - 1;
-                }
-
-            }
-            catch (Exception ex)
-            {
-                return 0;
-            }
-        }
-
-        private KeyValuePair<int, decimal> GetMaxVolume()
+        private KeyValuePair<Bottlenecks, decimal> GetMaxVolume()
         {
             if (Direction == Directions.BuyBuySell)
             {
@@ -447,15 +234,15 @@ namespace TriangleCollector.Models
                 //calculate and identify the bottleneck
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
                 {
-                    return new KeyValuePair<int, decimal>(1, firstBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.FirstTrade, firstBtcVolume);
                 }
                 else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
                 {
-                    return new KeyValuePair<int, decimal>(2, secondBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.SecondTrade, secondBtcVolume);
                 }
                 else
                 {
-                    return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.ThirdTrade, thirdBtcVolume);
                 }
             }
             else if (Direction == Directions.BuySellSell)
@@ -471,15 +258,15 @@ namespace TriangleCollector.Models
                 //calculate and identify the bottleneck
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
                 {
-                    return new KeyValuePair<int, decimal>(1, firstBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.FirstTrade, firstBtcVolume);
                 }
                 else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
                 {
-                    return new KeyValuePair<int, decimal>(2, secondBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.SecondTrade, secondBtcVolume);
                 }
                 else
                 {
-                    return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.ThirdTrade, thirdBtcVolume);
                 }
             }
             else //Sell Buy Sell
@@ -494,98 +281,17 @@ namespace TriangleCollector.Models
                 //calculate and identify the bottleneck
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
                 {
-                    return new KeyValuePair<int, decimal>(1, firstBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.FirstTrade, firstBtcVolume);
                 }
                 else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
                 {
-                    return new KeyValuePair<int, decimal>(2, secondBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.SecondTrade, secondBtcVolume);
                 }
                 else
                 {
-                    return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
+                    return new KeyValuePair<Bottlenecks, decimal>(Bottlenecks.ThirdTrade, thirdBtcVolume);
                 }
             }
-        }
-
-        private KeyValuePair<int, decimal> GetMaxVolume(KeyValuePair<decimal, decimal> firstSymbolLayer, KeyValuePair<decimal, decimal> secondSymbolLayer, KeyValuePair<decimal, decimal> thirdSymbolLayer)
-        {
-            if (Direction == Directions.BuyBuySell)
-            {
-                // since the first trade is quoted in BTC terms, the volume is simply the quantity available times the price.
-                // the second trade is in the other base's terms, so you must convert the base-terms volume into BTC using the first trade price (which is base-BTC) 
-                // Other than that, the logic is the same as the first trade since we are buying something again.
-                decimal firstBtcVolume = firstSymbolLayer.Key * firstSymbolLayer.Value;
-                decimal secondBtcVolume = secondSymbolLayer.Key * secondSymbolLayer.Value * FirstSymbolOrderbook.SortedBids.First().Key;
-                // the third direction must be Sell at this point (there is no other potential combination)
-                decimal thirdBtcVolume = thirdSymbolLayer.Key * thirdSymbolLayer.Value;
-                //calculate and identify the bottleneck
-                if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
-                {
-                    return new KeyValuePair<int, decimal>(1, firstBtcVolume);
-                }
-                else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
-                {
-                    return new KeyValuePair<int, decimal>(2, secondBtcVolume);
-                }
-                else
-                {
-                    return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
-                }
-            }
-            else if (Direction == Directions.BuySellSell)
-            {
-                // since the first trade is quoted in BTC terms, the volume is simply the quantity available times the price.
-                // second trade is a sell order, so the direction must be Buy Sell Sell
-                // the depth is expressed in altcoin terms which must be converted to BTC. Price is expressed in basecoin terms.
-                // the first order book contains the ALT-BTC price, which is therefore used to convert the volume to BTC terms
-                decimal firstBtcVolume = firstSymbolLayer.Key * firstSymbolLayer.Value;
-                decimal secondBtcVolume = secondSymbolLayer.Key * secondSymbolLayer.Value * ThirdSymbolOrderbook.SortedBids.First().Key;
-                // third trade is always in BTC price terms
-                decimal thirdBtcVolume = thirdSymbolLayer.Key * thirdSymbolLayer.Value;
-                //calculate and identify the bottleneck
-                if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
-                {
-                    return new KeyValuePair<int, decimal>(1, firstBtcVolume);
-                }
-                else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
-                {
-                    return new KeyValuePair<int, decimal>(2, secondBtcVolume);
-                }
-                else
-                {
-                    return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
-                }
-            }
-            else //Sell Buy Sell
-            {
-                //first trade is a sell order. only one direction starts with a sell order: Sell Buy Sell
-                //the only scenario when the first trade is a sell order is USDT/TUSD based trades, in which depth is already expressed in BTC (price is expressed in USD)
-                decimal firstBtcVolume = firstSymbolLayer.Value;
-                // for the second trade, the depth is expressed in the altcoin terms (price is expressed in USD). Therefore it just needs to be converted to BTC via the third order book.                
-                decimal secondBtcVolume = secondSymbolLayer.Value * ThirdSymbolOrderbook.SortedBids.First().Key;
-                //the third trade is always in BTC price terms
-                decimal thirdBtcVolume = thirdSymbolLayer.Key * thirdSymbolLayer.Value;
-                //calculate and identify the bottleneck
-                if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
-                {
-                    return new KeyValuePair<int, decimal>(1, firstBtcVolume);
-                }
-                else if (secondBtcVolume <= firstBtcVolume && secondBtcVolume <= thirdBtcVolume)
-                {
-                    return new KeyValuePair<int, decimal>(2, secondBtcVolume);
-                }
-                else
-                {
-                    return new KeyValuePair<int, decimal>(3, thirdBtcVolume);
-                }
-            }   
         }
     }
 }
-            
-            
-            
-            
-            
-            
-

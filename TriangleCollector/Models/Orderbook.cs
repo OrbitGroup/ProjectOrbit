@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
@@ -18,17 +19,25 @@ namespace TriangleCollector.Models
 
         public ConcurrentDictionary<decimal, decimal> asks { get; set; }
 
-        public KeyValuePair<decimal, decimal>[] SortedAsks { get; set; }
+        public SortedDictionary<decimal, decimal> SortedAsks { get; set; }
 
         public ConcurrentDictionary<decimal, decimal> bids { get; set; }
 
-        public KeyValuePair<decimal, decimal>[] SortedBids { get; set; }
+        public SortedDictionary<decimal, decimal> SortedBids { get; set; }
 
         public DateTime timestamp { get; set; }
 
         public decimal LowestAsk { get; set; }
 
         public decimal HighestBid { get; set; }
+
+        class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
+        {
+            public int Compare(T x, T y)
+            {
+                return y.CompareTo(x);
+            }
+        }
 
         /// <summary>
         /// Takes an update and merges it with this orderbook.
@@ -46,11 +55,8 @@ namespace TriangleCollector.Models
                 update.asks.AsParallel().ForAll(UpdateAskLayer);
                 update.bids.AsParallel().ForAll(UpdateBidLayer);
 
-
-                //SortedBids = new SortedDictionary<decimal, decimal>(bids).Reverse().ToDictionary(x => x.Key, y => y.Value);
-
-                SortedBids = bids.OrderByDescending(layer => layer.Key).ToArray();
-                SortedAsks = asks.OrderBy(layer => layer.Key).ToArray();
+                SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
+                SortedAsks = new SortedDictionary<decimal, decimal>(asks);
 
                 var oldHighestBid = HighestBid;
                 var oldLowestAsk = LowestAsk;
