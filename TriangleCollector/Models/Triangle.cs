@@ -132,7 +132,7 @@ namespace TriangleCollector.Models
                     SecondSymbolOrderbook.SortedAsks.Remove(SecondSymbolOrderbook.SortedAsks.First().Key);
 
                     FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade must be quoted in BTC terms
-                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.Last().Key; //last trade must be quoted in BTC terms
+                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //last trade must be quoted in BTC terms
 
                 }
                 else
@@ -149,8 +149,8 @@ namespace TriangleCollector.Models
                 {
                     FirstSymbolOrderbook.SortedAsks.Remove(FirstSymbolOrderbook.SortedAsks.First().Key);
 
-                    SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.First().Key] = SecondSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedAsks.First().Value / SecondSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
-                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Key - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //last trade must be quoted in BTC terms
+                    SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.First().Key] = SecondSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key / SecondSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
+                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //last trade must be quoted in BTC terms
 
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
@@ -168,17 +168,20 @@ namespace TriangleCollector.Models
                     SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.First().Key] = SecondSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedAsks.First().Value / SecondSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
                 }
             }
-            else
+            else // sell buy sell
             {
                 if (bottleneck.Key == Bottlenecks.FirstTrade)
                 {
-
+                    FirstSymbolOrderbook.SortedBids.Remove(FirstSymbolOrderbook.SortedBids.First().Key); 
+                    //second trade depth is expressed in altcoin terms. to convert to BTC, use the third orderbook bid price
+                    SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.First().Key] = SecondSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Value / SecondSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
+                    ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.First().Key] = ThirdSymbolOrderbook.SortedBids.First().Key - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //last trade must be quoted in BTC terms
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
                 {
 
                 }
-                else
+                else //bottleneck is third trade
                 {
 
                 }
@@ -188,7 +191,7 @@ namespace TriangleCollector.Models
 
         }
 
-        private decimal GetProfitPercent() //this method is called first when initially calculating a triangle's profitability, hence directly interfacing with the orderbooks 
+        private decimal GetProfitPercent() 
         {
             try //use the direction list to understand what trades to make at each step
             {

@@ -34,9 +34,9 @@ namespace TriangleCollector.UnitTests
         public decimal EthEosBtcProfitableBottleneckOneVolume = 0.012293892m; //total volume traded
 
         //BuyBuySell - Bottleneck is 2
-        public decimal EthEosBtcProfitableBottleneckTwoProfitPercent = 0.0072804468509875898859648437m; //profit expressed as a percentage of volume traded
-        public decimal EthEosBtcProfitableBottleneckTwoProfit = 0.0008956347472510125176994863m; //total profit returned in BTC
-        public decimal EthEosBtcProfitableBottleneckTwoVolume = 0.1230192m; //total volume traded
+        public decimal EthEosBtcProfitableBottleneckTwoProfitPercent = 0.0071273462153337768951795121m; //profit expressed as a percentage of volume traded
+        public decimal EthEosBtcProfitableBottleneckTwoProfit = 0.0009556552498559772740586650m; //total profit returned in BTC
+        public decimal EthEosBtcProfitableBottleneckTwoVolume = 0.1340829m; //total volume traded
 
         //BuyBuySell - Bottleneck is 3
         public decimal EthEosBtcProfitableBottleneckThreeProfitPercent = 0.0092601928062477359015903732m; //profit expressed as a percentage of volume traded
@@ -44,9 +44,9 @@ namespace TriangleCollector.UnitTests
         public decimal EthEosBtcProfitableBottleneckThreeVolume = 0.378183425m; //total volume traded
 
         //BuySellSell - Bottleneck is 2
-        public decimal EosEthBtcProfitableBottleneckTwoProfitPercent = 0.01977536775m; //profit expressed as a percentage of volume traded
-        public decimal EosEthBtcProfitableBottleneckTwoProfit = 0.001223931524m; //total profit returned in BTC
-        public decimal EosEthBtcProfitableBottleneckTwoVolume = 0.06189172m; //total volume traded
+        public decimal EosEthBtcProfitableBottleneckTwoProfitPercent = 0.0174905792813558993467008561m; //profit expressed as a percentage of volume traded
+        public decimal EosEthBtcProfitableBottleneckTwoProfit = 0.0018468519546366782933333333m; //total profit returned in BTC
+        public decimal EosEthBtcProfitableBottleneckTwoVolume = 0.1055912400000000000000000000m; //total volume traded
 
         class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
         {
