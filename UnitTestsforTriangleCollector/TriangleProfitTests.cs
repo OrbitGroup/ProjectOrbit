@@ -54,9 +54,9 @@ namespace TriangleCollector.UnitTests
         public decimal EosEthBtcProfitableBottleneckThreeVolume = 0.00545389m; //total volume traded
 
         //SellBuySell - All 3 bottlenecks tested in one set of trades
-        public decimal UsdEosBtcProfitableBottlenecksProfitPercent = 0.0158254325548021240520154562m; //profit expressed as a percentage of volume traded
-        public decimal UsdEosBtcProfitableBottlenecksProfit = 0.0022494803941744463699221525m; //total profit returned in BTC
-        public decimal UsdEosBtcProfitableBottlenecksVolume = 0.142143375m; //total volume traded
+        public decimal UsdEosBtcProfitableBottlenecksProfitPercent = 0.0154232556981579960243808671m; //profit expressed as a percentage of volume traded
+        public decimal UsdEosBtcProfitableBottlenecksProfit = 0.0027124351549842805696714796m; //total profit returned in BTC
+        public decimal UsdEosBtcProfitableBottlenecksVolume = 0.175866575m; //total volume traded
 
         class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
         {
@@ -561,7 +561,7 @@ namespace TriangleCollector.UnitTests
                 SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>()) //bids are 2% higher (more favorable for selling). It is practically impossible for bids to be higher than asks but that is fine for these purposes
             {
                 {0.00028050m, 506.75m},
-                {0.00027500m, 120.44m}, //edited to stop trading at three trades
+                {0.00028000m, 120.44m}, 
                 {0.00027300m, 725.15m }
             }
             };
