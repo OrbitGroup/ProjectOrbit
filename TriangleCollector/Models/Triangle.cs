@@ -210,7 +210,7 @@ namespace TriangleCollector.Models
                     ThirdSymbolOrderbook.SortedBids.Remove(ThirdSymbolOrderbook.SortedBids.First().Key);
 
                     FirstSymbolOrderbook.SortedBids[FirstSymbolOrderbook.SortedBids.First().Key] = FirstSymbolOrderbook.SortedBids.First().Value - bottleneck.Value; //first trade depth is already in BTC terms
-                    SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.First().Key] = SecondSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key / SecondSymbolOrderbook.SortedAsks.First().Key; //second trade is quoted in alt terms, so convert using third orderbook.
+                    SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.First().Key] = SecondSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using third orderbook.
                 }
             }
 
