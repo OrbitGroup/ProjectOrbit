@@ -472,7 +472,7 @@ namespace TriangleCollector.UnitTests
             Assert.AreEqual(EosEthBtcProfitableBottleneckTwoProfitPercent, EosEthBtc.ProfitPercent, "Incorrect ProfitPercent");
         }
         [TestMethod]
-        public void TestLayersBuySellSellBottleneckThree() 
+        public void TestLayersBuySellSellBottleneckThree()
         {
             Orderbook EthBtc = new Orderbook //Bottleneck
             {
@@ -489,7 +489,7 @@ namespace TriangleCollector.UnitTests
                 {0.035210m, 1.1731m }
             }
             };
-            Orderbook EosEth = new Orderbook 
+            Orderbook EosEth = new Orderbook
             {
                 SortedBids = new SortedDictionary<decimal, decimal>(new DescendingComparer<decimal>())
             {

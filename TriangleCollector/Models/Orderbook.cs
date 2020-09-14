@@ -19,17 +19,19 @@ namespace TriangleCollector.Models
 
         public ConcurrentDictionary<decimal, decimal> asks { get; set; }
 
-        public SortedDictionary<decimal, decimal> SortedAsks { get; set; }
+        public SortedDictionary<decimal, decimal> SortedAsks { get; set; } = new SortedDictionary<decimal, decimal>();
 
         public ConcurrentDictionary<decimal, decimal> bids { get; set; }
 
-        public SortedDictionary<decimal, decimal> SortedBids { get; set; }
+        public SortedDictionary<decimal, decimal> SortedBids { get; set; } = new SortedDictionary<decimal, decimal>();
 
         public DateTime timestamp { get; set; }
 
         public decimal LowestAsk { get; set; }
 
         public decimal HighestBid { get; set; }
+
+        public readonly object orderbookLock = new object();
 
         class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
         {
@@ -55,24 +57,44 @@ namespace TriangleCollector.Models
                 update.asks.AsParallel().ForAll(UpdateAskLayer);
                 update.bids.AsParallel().ForAll(UpdateBidLayer);
 
-                SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
-                SortedAsks = new SortedDictionary<decimal, decimal>(asks);
-
-                var oldHighestBid = HighestBid;
-                var oldLowestAsk = LowestAsk;
-
-                HighestBid = SortedBids.First().Key;
-                LowestAsk = SortedAsks.First().Key;
-
-                if (oldHighestBid == HighestBid && oldLowestAsk == LowestAsk)
+                if (SignificantChange())
                 {
-                    return false;
+                    return true;
                 }
 
+                return false;
+            }
+            
+            return false;
+        }
+
+        public bool SignificantChange()
+        {
+            // TODO: Create a more scientific approach for determining if we should recalculate a triangle
+            if (bids.Count > 0 && asks.Count > 0 && !asks.TryGetValue(LowestAsk, out _) && !bids.TryGetValue(HighestBid, out _)) 
+            {
                 return true;
             }
 
             return false;
+        }
+
+        public void CreateSorted()
+        {
+            lock(orderbookLock)
+            {
+                if (bids.Count > 0 && !bids.Keys.OrderBy(x => x).SequenceEqual(SortedBids.Keys.OrderBy(x => x)))
+                {
+                    SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
+                    HighestBid = SortedBids.First().Key;
+                }
+
+                if (asks.Count > 0 && !asks.Keys.OrderBy(x => x).SequenceEqual(SortedAsks.Keys.OrderBy(x => x)))
+                {
+                    SortedAsks = new SortedDictionary<decimal, decimal>(asks);
+                    LowestAsk = SortedAsks.First().Key;
+                }
+            } 
         }
 
         private void UpdateAskLayer(KeyValuePair<decimal, decimal> layer)

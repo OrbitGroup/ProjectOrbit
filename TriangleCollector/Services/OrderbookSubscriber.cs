@@ -26,6 +26,8 @@ namespace TriangleCollector.Services
 
         private readonly bool useTestSymbols = false;
 
+        private List<string> testSymbols = new List<string>() { "BTCUSD", "VLXUSD", "VLXBTC"};
+
         public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
             _logger = logger;
@@ -57,23 +59,26 @@ namespace TriangleCollector.Services
 
             foreach (var symbol in TriangleCollector.triangleEligiblePairs)
             {
-                try
+                if (!useTestSymbols || testSymbols.Contains(symbol))
                 {
-                    if (CurrentClientPairCount > MaxPairsPerClient)
+                    try
                     {
-                        CurrentClientPairCount = 0;
-                        client = await TriangleCollector.GetExchangeClientAsync();
-                        listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client);
-                        await listener.StartAsync(stoppingToken);
+                        if (CurrentClientPairCount > MaxPairsPerClient)
+                        {
+                            CurrentClientPairCount = 0;
+                            client = await TriangleCollector.GetExchangeClientAsync();
+                            listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client);
+                            await listener.StartAsync(stoppingToken);
+                        }
+                        var cts = new CancellationToken();
+                        await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{symbol}\" }} }}")), WebSocketMessageType.Text, true, cts);
+                        CurrentClientPairCount++;
                     }
-                    var cts = new CancellationToken();
-                    await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{symbol}\" }} }}")), WebSocketMessageType.Text, true, cts);
-                    CurrentClientPairCount++;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.Message);
-                    throw ex;
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex.Message);
+                        throw ex;
+                    }
                 }
             }
             _logger.LogDebug("Subscribing complete.");

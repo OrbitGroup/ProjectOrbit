@@ -36,7 +36,7 @@ namespace TriangleCollector.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            
+
 
             stoppingToken.Register(() => _logger.LogDebug("Stopping Triangle Calculator..."));
 
@@ -61,29 +61,14 @@ namespace TriangleCollector.Services
             {
                 if (TriangleCollector.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
                 {
-                    TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out Orderbook firstSymbolOrderbook);
-                    TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out Orderbook secondSymbolOrderbook);
-                    TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out Orderbook thirdSymbolOrderbook);
+                    var firstOrderbookSet = TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out Orderbook firstSymbolOrderbook);
+                    var secondOrderbookSet = TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out Orderbook secondSymbolOrderbook);
+                    var thirdOrderbookSet = TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out Orderbook thirdSymbolOrderbook);
 
-                    if (firstSymbolOrderbook != null)
-                    {
-                        triangle.FirstSymbolOrderbook = firstSymbolOrderbook;
-                    }
-
-                    if (secondSymbolOrderbook != null)
-                    {
-                        triangle.SecondSymbolOrderbook = secondSymbolOrderbook;
-                    }
-
-                    if (thirdSymbolOrderbook != null)
-                    {
-                        triangle.ThirdSymbolOrderbook = thirdSymbolOrderbook;
-                    }
-
-                    if (triangle.AllOrderbooksSet)
+                    if (firstOrderbookSet && secondOrderbookSet && thirdOrderbookSet)
                     {
                         //_logger.LogDebug($"RECALCULATING TRIANGLE: {triangle.FirstSymbol}: {triangle.FirstSymbolAsk} - {triangle.SecondSymbol}: {triangle.SecondSymbolBid} - {triangle.ThirdSymbol}: {triangle.ThirdSymbolBid}");
-                        triangle.SetMaxVolumeAndProfitability();
+                        triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
                         //var reversedProfit = triangle.GetReversedProfitability();
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
                         TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);

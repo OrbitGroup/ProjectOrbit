@@ -44,17 +44,7 @@ namespace TriangleCollector.Models
             ThirdTrade
         }
 
-        private readonly object nextLayerLock = new object();
-
         private ILogger<Triangle> _logger;
-
-        public bool AllOrderbooksSet
-        {
-            get
-            {
-                return FirstSymbolOrderbook != null && SecondSymbolOrderbook != null && ThirdSymbolOrderbook != null;
-            }
-        }
 
         public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger)
         {
@@ -78,21 +68,53 @@ namespace TriangleCollector.Models
             return $"{FirstSymbol}-{SecondSymbol}-{ThirdSymbol}";
         }
 
+        public bool NoEmptyOrderbooks
+        {
+            get
+            {
+                if (Direction == Directions.SellBuySell)
+                {
+                    return !(FirstSymbolOrderbook.SortedBids.Count == 0 || SecondSymbolOrderbook.SortedAsks.Count == 0 || ThirdSymbolOrderbook.SortedBids.Count == 0);
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        }
+
+        public void SetMaxVolumeAndProfitability(Orderbook firstSymbolOrderbook, Orderbook secondSymbolOrderbook, Orderbook thirdSymbolOrderbook)
+        {
+            lock (firstSymbolOrderbook.orderbookLock) lock(secondSymbolOrderbook.orderbookLock) lock(thirdSymbolOrderbook.orderbookLock)
+            {
+                FirstSymbolOrderbook = firstSymbolOrderbook;
+                SecondSymbolOrderbook = secondSymbolOrderbook;
+                ThirdSymbolOrderbook = thirdSymbolOrderbook;
+                FirstSymbolOrderbook.CreateSorted();
+                SecondSymbolOrderbook.CreateSorted();
+                ThirdSymbolOrderbook.CreateSorted();
+
+                SetMaxVolumeAndProfitability();
+            }
+
+        }
+
         public void SetMaxVolumeAndProfitability()
         {
             //FirstSymbolOrderbook.SortedAsks = FirstSymbolOrderbook.SortedAsks.Where(x => x.Key != bottleneckLayer.Key).ToArray();
-            lock (nextLayerLock)
-            {
-                while (true)
-                {
 
+                while (NoEmptyOrderbooks)
+                {
                     var newProfitPercent = GetProfitPercent();
                     if (newProfitPercent == -2)
                     {
                         return;
                     }
                     var maxVol = GetMaxVolume();
-
+                    if (maxVol.Value < 0)
+                    {
+                        _logger.LogError("Volume below zero");
+                    }
                     if (newProfitPercent > 0)
                     {
                         RemoveLiquidity(maxVol);
@@ -110,10 +132,9 @@ namespace TriangleCollector.Models
                         return;
                     }
                 }
-                //get the profit percent
-                //if its profitable set profitpercent etc
-                //otherwise return;
-            }
+                FirstSymbolOrderbook.CreateSorted();
+                SecondSymbolOrderbook.CreateSorted();
+                ThirdSymbolOrderbook.CreateSorted();
         }
 
         public void RemoveLiquidity(KeyValuePair<Bottlenecks, decimal> bottleneck)

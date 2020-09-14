@@ -60,7 +60,7 @@ namespace TriangleCollector.Services
                 int count = 0;
                 foreach (var triangle in TriangleCollector.Triangles.Values.OrderByDescending(x => x.ProfitPercent))
                 {
-                    if (triangle.ProfitPercent > 0)
+                    if (true)
                     {
                         TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.ToString(), out DateTime refreshTime);
                         var delay = DateTime.UtcNow.Subtract(refreshTime).TotalSeconds;
