@@ -50,9 +50,9 @@ namespace TriangleCollector.Services
                     _logger.LogError("One or more clients have disconnected");
                 }
 
-                if (TriangleCollector.OfficialOrderbooks.Count > 0 && (TriangleCollector.UpdatedSymbols.Count > QueueSizeTarget || TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget))
+                if (TriangleCollector.OfficialOrderbooks.Count > 0 && TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget)
                 {
-                    _logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count} - SymbolsQueued: {TriangleCollector.UpdatedSymbols.Count}");
+                    _logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}");
                 }
 
                 var sb = new StringBuilder();
@@ -90,7 +90,7 @@ namespace TriangleCollector.Services
                     await newCalc.StartAsync(stoppingToken);
                 }
                 
-                await Task.Delay(2000, stoppingToken);
+                await Task.Delay(5000, stoppingToken);
             }
         }
     }

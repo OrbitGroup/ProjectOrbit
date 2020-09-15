@@ -52,11 +52,6 @@ namespace TriangleCollector.Services
 
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            //get orderbooks
-            //calculate profit
-            //push triangle:profit to Triangles
-            //push triangle name to UpdatedTriangles
-
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (TriangleCollector.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
@@ -67,9 +62,12 @@ namespace TriangleCollector.Services
 
                     if (firstOrderbookSet && secondOrderbookSet && thirdOrderbookSet)
                     {
-                        //_logger.LogDebug($"RECALCULATING TRIANGLE: {triangle.FirstSymbol}: {triangle.FirstSymbolAsk} - {triangle.SecondSymbol}: {triangle.SecondSymbolBid} - {triangle.ThirdSymbol}: {triangle.ThirdSymbolBid}");
-                        triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
-                        //var reversedProfit = triangle.GetReversedProfitability();
+                        var updated = triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
+                        if (!updated)
+                        {
+                            continue;
+                        }
+
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
                         TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
                         var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.timestamp, secondSymbolOrderbook.timestamp, thirdSymbolOrderbook.timestamp }.Max();

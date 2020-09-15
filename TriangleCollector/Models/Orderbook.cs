@@ -81,20 +81,17 @@ namespace TriangleCollector.Models
 
         public void CreateSorted()
         {
-            lock(orderbookLock)
+            if (bids.Count > 0 && (SortedBids.Count == 0 || !SortedBids.TryGetValue(HighestBid, out _)))
             {
-                if (bids.Count > 0 && !bids.Keys.OrderBy(x => x).SequenceEqual(SortedBids.Keys.OrderBy(x => x)))
-                {
-                    SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
-                    HighestBid = SortedBids.First().Key;
-                }
+                SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
+                HighestBid = SortedBids.First().Key;
+            }
 
-                if (asks.Count > 0 && !asks.Keys.OrderBy(x => x).SequenceEqual(SortedAsks.Keys.OrderBy(x => x)))
-                {
-                    SortedAsks = new SortedDictionary<decimal, decimal>(asks);
-                    LowestAsk = SortedAsks.First().Key;
-                }
-            } 
+            if (asks.Count > 0 && (SortedAsks.Count == 0 || !SortedAsks.TryGetValue(LowestAsk, out _)))
+            {
+                SortedAsks = new SortedDictionary<decimal, decimal>(asks);
+                LowestAsk = SortedAsks.First().Key;
+            }
         }
 
         private void UpdateAskLayer(KeyValuePair<decimal, decimal> layer)

@@ -39,8 +39,6 @@ namespace TriangleCollector
 
         public static ConcurrentBag<string> ActiveSymbols = new ConcurrentBag<string>();
 
-        public static ConcurrentQueue<string> UpdatedSymbols = new ConcurrentQueue<string>();
-
         public static ConcurrentQueue<Triangle> TrianglesToRecalculate = new ConcurrentQueue<Triangle>();
 
         public static ConcurrentQueue<Triangle> RecalculatedTriangles = new ConcurrentQueue<Triangle>();
@@ -68,10 +66,8 @@ namespace TriangleCollector
             .ConfigureServices((hostContext, services) =>
             {
                 services.AddHostedService<QueueMonitor>();
-                services.AddHostedService<SymbolMonitor>();
                 services.AddHostedService<OrderbookSubscriber>();
                 services.AddHostedService<TriangleCalculator>();
-                services.AddHostedService<StatisticsMonitor>();
                 //services.AddHostedService<TrianglePublisher>();
             });
 

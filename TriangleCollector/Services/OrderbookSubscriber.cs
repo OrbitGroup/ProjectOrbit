@@ -26,7 +26,7 @@ namespace TriangleCollector.Services
 
         private readonly bool useTestSymbols = false;
 
-        private List<string> testSymbols = new List<string>() { "BTCUSD", "VLXUSD", "VLXBTC"};
+        private List<string> testSymbols = new List<string>() { "BTCUSD", "VLXUSD", "VLXBTC", "FUNUSD", "FUNBTC", "AMBUSD", "AMBBTC", "STXUSD", "STXBTC", "MKRUSD", "MKRBTC"};
 
         public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
@@ -51,7 +51,14 @@ namespace TriangleCollector.Services
             var actualSymbols = RestResponse.GetSymbolResponse();
             symbolGenerator(actualSymbols);
 
-            _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
+            if (useTestSymbols)
+            {
+                _logger.LogDebug($"Subscribing to {testSymbols.Count} pairs.");
+            }
+            else
+            {
+                _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
+            }
 
             var client = await TriangleCollector.GetExchangeClientAsync();
             var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client);

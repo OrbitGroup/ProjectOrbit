@@ -80,7 +80,10 @@ namespace TriangleCollector.Services
 
                                                 if (shouldRecalculate)
                                                 {
-                                                    TriangleCollector.UpdatedSymbols.Enqueue(orderbook.symbol);
+                                                    if (TriangleCollector.SymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
+                                                    {
+                                                        impactedTriangles.ForEach(TriangleCollector.TrianglesToRecalculate.Enqueue);
+                                                    }
                                                 }
 
                                                 TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
@@ -97,7 +100,10 @@ namespace TriangleCollector.Services
                                     else if (orderbook.method == "snapshotOrderbook") 
                                     {
                                         TriangleCollector.OfficialOrderbooks.AddOrUpdate(orderbook.symbol, orderbook, (key, oldValue) => oldValue = orderbook);
-                                        TriangleCollector.UpdatedSymbols.Enqueue(orderbook.symbol);
+                                        if (TriangleCollector.SymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
+                                        {
+                                            impactedTriangles.ForEach(TriangleCollector.TrianglesToRecalculate.Enqueue);
+                                        }
                                     }
 
                                 }

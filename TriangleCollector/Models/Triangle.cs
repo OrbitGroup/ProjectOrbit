@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TriangleCollector.Models
@@ -83,10 +84,28 @@ namespace TriangleCollector.Models
             }
         }
 
-        public void SetMaxVolumeAndProfitability(Orderbook firstSymbolOrderbook, Orderbook secondSymbolOrderbook, Orderbook thirdSymbolOrderbook)
+        public bool SetMaxVolumeAndProfitability(Orderbook firstSymbolOrderbook, Orderbook secondSymbolOrderbook, Orderbook thirdSymbolOrderbook)
         {
-            lock (firstSymbolOrderbook.orderbookLock) lock(secondSymbolOrderbook.orderbookLock) lock(thirdSymbolOrderbook.orderbookLock)
+            try 
             {
+                bool firstOrderbookEntered = Monitor.TryEnter(firstSymbolOrderbook.orderbookLock, TimeSpan.FromMilliseconds(2));
+                if (!firstOrderbookEntered)
+                {
+                    return false;
+                }
+
+                bool secondOrderbookEntered = Monitor.TryEnter(secondSymbolOrderbook.orderbookLock, TimeSpan.FromMilliseconds(2));
+                if (!secondOrderbookEntered)
+                {
+                    return false;
+                }
+
+                bool thirdOrderbookEntered = Monitor.TryEnter(thirdSymbolOrderbook.orderbookLock, TimeSpan.FromMilliseconds(2));
+                if (!thirdOrderbookEntered)
+                {
+                    return false;
+                }
+
                 FirstSymbolOrderbook = firstSymbolOrderbook;
                 SecondSymbolOrderbook = secondSymbolOrderbook;
                 ThirdSymbolOrderbook = thirdSymbolOrderbook;
@@ -96,45 +115,51 @@ namespace TriangleCollector.Models
 
                 SetMaxVolumeAndProfitability();
             }
+            finally
+            {
+                if (Monitor.IsEntered(firstSymbolOrderbook.orderbookLock)) Monitor.Exit(firstSymbolOrderbook.orderbookLock);
+                if (Monitor.IsEntered(secondSymbolOrderbook.orderbookLock)) Monitor.Exit(secondSymbolOrderbook.orderbookLock);
+                if (Monitor.IsEntered(thirdSymbolOrderbook.orderbookLock)) Monitor.Exit(thirdSymbolOrderbook.orderbookLock);
+            }
 
+            return true;
         }
 
         public void SetMaxVolumeAndProfitability()
         {
-            //FirstSymbolOrderbook.SortedAsks = FirstSymbolOrderbook.SortedAsks.Where(x => x.Key != bottleneckLayer.Key).ToArray();
-
-                while (NoEmptyOrderbooks)
+            MaxVolume = 0;
+            while (NoEmptyOrderbooks)
+            {
+                var newProfitPercent = GetProfitPercent();
+                if (newProfitPercent == -2)
                 {
-                    var newProfitPercent = GetProfitPercent();
-                    if (newProfitPercent == -2)
-                    {
-                        return;
-                    }
-                    var maxVol = GetMaxVolume();
-                    if (maxVol.Value < 0)
-                    {
-                        _logger.LogError("Volume below zero");
-                    }
-                    if (newProfitPercent > 0)
-                    {
-                        RemoveLiquidity(maxVol);
-                        MaxVolume += maxVol.Value;
-                        Profit += maxVol.Value * newProfitPercent;
-                        ProfitPercent = Profit / MaxVolume;
-                    }
-                    else
-                    {
-                        if (ProfitPercent == 0)
-                        {
-                            ProfitPercent = newProfitPercent;
-                            MaxVolume = maxVol.Value;
-                        }
-                        return;
-                    }
+                    return;
                 }
-                FirstSymbolOrderbook.CreateSorted();
-                SecondSymbolOrderbook.CreateSorted();
-                ThirdSymbolOrderbook.CreateSorted();
+
+                var maxVol = GetMaxVolume();
+
+                if (newProfitPercent > 0)
+                {
+                    RemoveLiquidity(maxVol);
+                    MaxVolume += maxVol.Value;
+                    Profit += maxVol.Value * newProfitPercent;
+                    ProfitPercent = Profit / MaxVolume;
+                }
+                else
+                {
+                    if (ProfitPercent == 0)
+                    {
+                        ProfitPercent = newProfitPercent;
+                        MaxVolume = maxVol.Value;
+                    }
+                    else if (MaxVolume == 0)
+                    {
+                        MaxVolume = maxVol.Value;
+                    }
+                    break;
+                }
+            }
+            
         }
 
         public void RemoveLiquidity(KeyValuePair<Bottlenecks, decimal> bottleneck)
