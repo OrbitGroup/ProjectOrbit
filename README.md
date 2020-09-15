@@ -24,7 +24,7 @@ The models consist of Orderbook, Triangle, and OrderbookConverter. The only real
 
 ## Services
 
-Services are the construct for the BackgroundService abstraction in .NET Core. There are 6 services that are running mostly simultaneously in TriangleCollector, with the exception being OrderbookSubscriber which right now is not running continuously.
+Services are the construct for the [BackgroundService](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services?view=aspnetcore-3.1) abstraction in .NET Core. There are 6 services that are running mostly simultaneously in TriangleCollector, with the exception being OrderbookSubscriber which right now is not running continuously.
 
 ### Orderbook Subscriber
 
@@ -36,12 +36,16 @@ Orderbook Listeners are created by the OrderbookSubscriber. OrderbookSubscriber 
 
 This listens for orderbook updates and merges them into the corresponding "official" orderbook for that market. Official in this codebase simply refers to the one that the TriangleCalculator treats as the real orderbook.
 
-Once an update comes in and has been merged into the official orderbook, the symbol is added to the UpdateSymbols queue.
-
-### SymbolMonitor
-
-The SymbolMonitor is watching the UpdatedSymbols queue and getting the impacted triangular arbitrage opportunities given each market update (which was precalculated) and pushing those opportunities to the TrianglesToRecalculate queue. I think eventually this service will be combined with another.
+Once an update comes in and has been merged into the official orderbook, the impacted triangles are put in the TrianglesToRecalculate queue.
 
 ### TriangleCalculator
 
-TriangleCalculator is listening to the TrianglesToRecalculate queue and then grabbing all 3 orderbooks, updating the Triangle objects' ask/bid prices for each market, and then recalculating profitability. Triangles in the Triangles dictionary are updated and refresh times are updated in the TriangleRefreshTimes dictionary.
+TriangleCalculator is listening to the TrianglesToRecalculate queue and then grabbing all 3 orderbooks, updating the Triangle objects' ask/bid prices for each market, and then recalculating profitability and volume. Triangles in the Triangles dictionary are updated and refresh times are updated in the TriangleRefreshTimes dictionary.
+
+### QueueMonitor
+
+QueueMonitor monitors the size of the TrianglesToRecalculate queue and if the size exceeds a set limit will create additional TriangleCalculator instances. It also logs various statistics about queue sizes, refresh times, etc.
+
+### TrianglePublisher
+
+TrianglePublisher is used to publish the Triangles dictionary to redis and publish a message to redis for subscribers (the work-in-progress [frontend signalr api](https://github.com/OrbitGroup/TriArbAPI)) to get newly updated triangles.
