@@ -17,7 +17,7 @@ namespace TriangleCollector.UnitTests
         private static ILoggerFactory _factory = new NullLoggerFactory();
         private JsonElement.ArrayEnumerator apiResponse = MockRestResponse.GetTestSymbolResponse();
         private OrderbookSubscriber testSubscriber = new OrderbookSubscriber(_factory, _factory.CreateLogger<OrderbookSubscriber>());
-        private ConcurrentDictionary<string, List<Triangle>> actualSymbolTriangleMapping = TriangleCollector.SymbolTriangleMapping;
+        private ConcurrentDictionary<string, List<Triangle>> actualSymbolTriangleMapping = TriangleCollector.AllSymbolTriangleMapping;
 
         [TestMethod]
         public void TestTriangleEligblePairs() //test that the symbolGenerator method properly identifies which symbols are eligible for triangular arbitrage

@@ -127,7 +127,7 @@ namespace TriangleCollector.Services
                                             TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
                                             foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
                                             {
-                                                TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                                                TriangleCollector.AllSymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
                                                 {
                                                     if (key == pair)
                                                     {
@@ -157,7 +157,7 @@ namespace TriangleCollector.Services
                                             TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
                                             foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
                                             {
-                                                TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                                                TriangleCollector.AllSymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
                                                 {
                                                     if (key == pair)
                                                     {
@@ -197,7 +197,7 @@ namespace TriangleCollector.Services
                                         TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
                                         foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
                                         {
-                                            TriangleCollector.SymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                                            TriangleCollector.AllSymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
                                             {
                                                 if (key == pair)
                                                 {

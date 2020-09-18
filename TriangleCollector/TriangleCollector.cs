@@ -33,7 +33,9 @@ namespace TriangleCollector
 
         public static ConcurrentDictionary<string, DateTime> TriangleRefreshTimes = new ConcurrentDictionary<string, DateTime>();
 
-        public static ConcurrentDictionary<string, List<Triangle>> SymbolTriangleMapping = new ConcurrentDictionary<string, List<Triangle>>();
+        public static ConcurrentDictionary<string, List<Triangle>> AllSymbolTriangleMapping = new ConcurrentDictionary<string, List<Triangle>>();
+
+        public static ConcurrentDictionary<string, int> ProfitableSymbolMapping = new ConcurrentDictionary<string, int>();
 
         public static HashSet<string> triangleEligiblePairs = new HashSet<string>();
 

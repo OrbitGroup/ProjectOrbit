@@ -29,6 +29,8 @@ namespace TriangleCollector.Models
 
         public decimal MaxVolume { get; set; }
 
+        public int Layers { get; set; }
+
         public Directions Direction;
 
         public enum Directions
@@ -127,7 +129,10 @@ namespace TriangleCollector.Models
 
         public void SetMaxVolumeAndProfitability()
         {
+            
             MaxVolume = 0;
+            Profit = 0;
+            Layers = 0; 
             while (NoEmptyOrderbooks)
             {
                 var newProfitPercent = GetProfitPercent();
@@ -140,6 +145,7 @@ namespace TriangleCollector.Models
 
                 if (newProfitPercent > 0)
                 {
+                    Layers++;
                     RemoveLiquidity(maxVol);
                     MaxVolume += maxVol.Value;
                     Profit += maxVol.Value * newProfitPercent;
@@ -147,6 +153,7 @@ namespace TriangleCollector.Models
                 }
                 else
                 {
+                    MapResultstoSymbols();
                     if (ProfitPercent == 0)
                     {
                         ProfitPercent = newProfitPercent;
@@ -160,6 +167,19 @@ namespace TriangleCollector.Models
                 }
             }
             
+        }
+
+        public void MapResultstoSymbols()
+        {
+            if (Profit > 0)
+            {
+                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(FirstSymbol, Layers, (key, oldValue) => oldValue = Layers);
+                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(SecondSymbol, Layers, (key, oldValue) => oldValue = Layers);
+                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(ThirdSymbol, Layers, (key, oldValue) => oldValue = Layers);
+            } else
+            {
+                return;
+            }
         }
 
         public void RemoveLiquidity(KeyValuePair<Bottlenecks, decimal> bottleneck)

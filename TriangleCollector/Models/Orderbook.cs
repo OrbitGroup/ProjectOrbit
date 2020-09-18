@@ -71,12 +71,21 @@ namespace TriangleCollector.Models
         public bool SignificantChange()
         {
             // TODO: Create a more scientific approach for determining if we should recalculate a triangle
-            if (bids.Count > 0 && asks.Count > 0 && !asks.TryGetValue(LowestAsk, out _) && !bids.TryGetValue(HighestBid, out _)) 
+            //Approach: if the triangle's last run wasn't profitable, then a significant change is only a change to the lowest layer of the orderbook.
+            // if the triangle's last run was profitable, then a significant change is a change to the layers that the triangle works with (TBD how to do that)
+            if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var _))
             {
                 return true;
+            } else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed
+            {
+                if (LowestAsk != asks.Keys.Min() || HighestBid != bids.Keys.Max()) 
+                {
+                    return true;
+                } else // lowest ask and highest bid didn't change
+                {
+                    return false;
+                }
             }
-
-            return false;
         }
 
         public void CreateSorted()
