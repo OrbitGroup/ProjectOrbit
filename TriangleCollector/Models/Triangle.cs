@@ -12,14 +12,17 @@ namespace TriangleCollector.Models
     public class Triangle
     {
         public string FirstSymbol { get; set; }
+        public int FirstSymbolLayers { get; set; }
 
         public Orderbook FirstSymbolOrderbook { get; set; }
 
         public string SecondSymbol { get; set; }
+        public int SecondSymbolLayers { get; set; }
 
         public Orderbook SecondSymbolOrderbook { get; set; }
 
         public string ThirdSymbol { get; set; }
+        public int ThirdSymbolLayers { get; set; }
 
         public Orderbook ThirdSymbolOrderbook { get; set; }
 
@@ -29,7 +32,7 @@ namespace TriangleCollector.Models
 
         public decimal MaxVolume { get; set; }
 
-        public int Layers { get; set; }
+        
 
         public Directions Direction;
 
@@ -132,7 +135,10 @@ namespace TriangleCollector.Models
             
             MaxVolume = 0;
             Profit = 0;
-            Layers = 0; 
+            FirstSymbolLayers = 1;
+            SecondSymbolLayers = 1;
+            ThirdSymbolLayers = 1;
+
             while (NoEmptyOrderbooks)
             {
                 var newProfitPercent = GetProfitPercent();
@@ -145,7 +151,6 @@ namespace TriangleCollector.Models
 
                 if (newProfitPercent > 0)
                 {
-                    Layers++;
                     RemoveLiquidity(maxVol);
                     MaxVolume += maxVol.Value;
                     Profit += maxVol.Value * newProfitPercent;
@@ -171,11 +176,13 @@ namespace TriangleCollector.Models
 
         public void MapResultstoSymbols()
         {
+            //if the triangle is profitable, map each symbol to the ProfitableSymbolMapping dictionary along with the number of layers.
+            //check to see if the number of layers for this opportunity is higher than the current maximum stored. If so, update that key value pair.
             if (Profit > 0)
             {
-                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(FirstSymbol, Layers, (key, oldValue) => oldValue = Layers);
-                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(SecondSymbol, Layers, (key, oldValue) => oldValue = Layers);
-                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(ThirdSymbol, Layers, (key, oldValue) => oldValue = Layers);
+                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(FirstSymbol, FirstSymbolLayers, (key, oldValue) => Math.Max(oldValue, FirstSymbolLayers));
+                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(SecondSymbol, SecondSymbolLayers, (key, oldValue) => Math.Max(oldValue, SecondSymbolLayers));
+                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(ThirdSymbol, ThirdSymbolLayers, (key, oldValue) => Math.Max(oldValue, ThirdSymbolLayers));
             } else
             {
                 return;
@@ -188,6 +195,7 @@ namespace TriangleCollector.Models
             {
                 if (bottleneck.Key == Bottlenecks.FirstTrade)
                 {
+                    FirstSymbolLayers++;
                     FirstSymbolOrderbook.SortedAsks.Remove(FirstSymbolOrderbook.SortedAsks.First().Key);
 
                     SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.First().Key] = SecondSymbolOrderbook.SortedAsks.First().Value -  bottleneck.Value / FirstSymbolOrderbook.SortedBids.First().Value / SecondSymbolOrderbook.SortedAsks.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
@@ -195,6 +203,7 @@ namespace TriangleCollector.Models
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
                 {
+                    SecondSymbolLayers++;
                     SecondSymbolOrderbook.SortedAsks.Remove(SecondSymbolOrderbook.SortedAsks.First().Key);
 
                     FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade must be quoted in BTC terms
@@ -203,6 +212,7 @@ namespace TriangleCollector.Models
                 }
                 else
                 {
+                    ThirdSymbolLayers++;
                     ThirdSymbolOrderbook.SortedBids.Remove(ThirdSymbolOrderbook.SortedBids.First().Key);
 
                     FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade is quoted in btc terms
@@ -213,6 +223,7 @@ namespace TriangleCollector.Models
             {
                 if (bottleneck.Key == Bottlenecks.FirstTrade)
                 {
+                    FirstSymbolLayers++;
                     FirstSymbolOrderbook.SortedAsks.Remove(FirstSymbolOrderbook.SortedAsks.First().Key);
 
                     SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.First().Key] = SecondSymbolOrderbook.SortedBids.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key / SecondSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
@@ -221,6 +232,7 @@ namespace TriangleCollector.Models
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
                 {
+                    SecondSymbolLayers++;
                     SecondSymbolOrderbook.SortedBids.Remove(SecondSymbolOrderbook.SortedBids.First().Key);
 
                     FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade must be quoted in BTC terms
@@ -228,6 +240,7 @@ namespace TriangleCollector.Models
                 }
                 else //bottleneck is third trade
                 {
+                    ThirdSymbolLayers++;
                     ThirdSymbolOrderbook.SortedBids.Remove(ThirdSymbolOrderbook.SortedBids.First().Key);
 
                     FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.First().Key] = FirstSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / FirstSymbolOrderbook.SortedAsks.First().Key; //first trade must be quoted in BTC terms
@@ -238,6 +251,7 @@ namespace TriangleCollector.Models
             {
                 if (bottleneck.Key == Bottlenecks.FirstTrade)
                 {
+                    FirstSymbolLayers++;
                     FirstSymbolOrderbook.SortedBids.Remove(FirstSymbolOrderbook.SortedBids.First().Key); 
                     //second trade depth is expressed in altcoin terms. to convert to BTC, use the third orderbook bid price
                     SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.First().Key] = SecondSymbolOrderbook.SortedAsks.First().Value - bottleneck.Value / ThirdSymbolOrderbook.SortedBids.First().Key; //second trade is quoted in alt terms, so convert using first orderbook.
@@ -245,6 +259,7 @@ namespace TriangleCollector.Models
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
                 {
+                    SecondSymbolLayers++;
                     SecondSymbolOrderbook.SortedAsks.Remove(SecondSymbolOrderbook.SortedAsks.First().Key);
 
                     FirstSymbolOrderbook.SortedBids[FirstSymbolOrderbook.SortedBids.First().Key] = FirstSymbolOrderbook.SortedBids.First().Value - bottleneck.Value; //first trade depth is already in BTC terms
@@ -252,6 +267,7 @@ namespace TriangleCollector.Models
                 }
                 else //bottleneck is third trade
                 {
+                    ThirdSymbolLayers++;
                     ThirdSymbolOrderbook.SortedBids.Remove(ThirdSymbolOrderbook.SortedBids.First().Key);
 
                     FirstSymbolOrderbook.SortedBids[FirstSymbolOrderbook.SortedBids.First().Key] = FirstSymbolOrderbook.SortedBids.First().Value - bottleneck.Value; //first trade depth is already in BTC terms

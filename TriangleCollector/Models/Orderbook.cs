@@ -73,8 +73,11 @@ namespace TriangleCollector.Models
             // TODO: Create a more scientific approach for determining if we should recalculate a triangle
             //Approach: if the triangle's last run wasn't profitable, then a significant change is only a change to the lowest layer of the orderbook.
             // if the triangle's last run was profitable, then a significant change is a change to the layers that the triangle works with (TBD how to do that)
-            if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var _))
+            if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var layers))
             {
+                //the variable layers is the number of layers that get accessed for this symbol.
+                //the goal is to use that number of layers in conjunction with the SortedBids/Asks to determine whether the price update is within that number
+                //of layers in the orderbook.
                 return true;
             } else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed
             {
