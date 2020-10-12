@@ -53,11 +53,16 @@ namespace TriangleCollector.Models
                 this.timestamp = update.timestamp;
                 this.method = update.method;
 
+                TriangleCollector.allOrderBookCounter++;
+
+                var previousLowestAsk = LowestAsk;
+                var previousHighestBid = HighestBid;
+
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
                 update.asks.AsParallel().ForAll(UpdateAskLayer);
                 update.bids.AsParallel().ForAll(UpdateBidLayer);
 
-                if (SignificantChange())
+                if (SignificantChange(update, previousHighestBid, previousLowestAsk))
                 {
                     return true;
                 }
@@ -68,41 +73,55 @@ namespace TriangleCollector.Models
             return false;
         }
 
-        public bool SignificantChange()
+        public bool SignificantChange(Orderbook update, decimal previousHighestBid, decimal previousLowestAsk)
         {
             // TODO: Create a more scientific approach for determining if we should recalculate a triangle
             //Approach: if the triangle's last run wasn't profitable, then a significant change is only a change to the lowest layer of the orderbook.
             // if the triangle's last run was profitable, then a significant change is a change to the layers that the triangle works with (TBD how to do that)
             if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var layers))
             {
+                if ((update.asks.Count > 0 && update.asks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.bids.Count > 0 && update.bids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
+                {
+                    TriangleCollector.LayerCounter++;
+                    return true;
+                }
+                //
                 //the variable layers is the number of layers that get accessed for this symbol.
                 //the goal is to use that number of layers in conjunction with the SortedBids/Asks to determine whether the price update is within that number
                 //of layers in the orderbook.
-                return true;
-            } else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed
+
+            } 
+            else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed
             {
-                if (LowestAsk != asks.Keys.Min() || HighestBid != bids.Keys.Max()) 
+                if (previousLowestAsk != asks.Keys.Min() || previousHighestBid != bids.Keys.Max()) 
                 {
+                    TriangleCollector.BestPriceChangeCounter++;
                     return true;
-                } else // lowest ask and highest bid didn't change
-                {
-                    return false;
                 }
             }
+
+            return false;
         }
 
         public void CreateSorted()
         {
+            var previousHighestBid = HighestBid;
             if (bids.Count > 0 && (SortedBids.Count == 0 || !SortedBids.TryGetValue(HighestBid, out _)))
             {
                 SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
                 HighestBid = SortedBids.First().Key;
             }
 
+            var previousLowestAsk = LowestAsk;
             if (asks.Count > 0 && (SortedAsks.Count == 0 || !SortedAsks.TryGetValue(LowestAsk, out _)))
             {
                 SortedAsks = new SortedDictionary<decimal, decimal>(asks);
                 LowestAsk = SortedAsks.First().Key;
+            }
+
+            if (HighestBid != previousHighestBid || LowestAsk != previousLowestAsk)
+            {
+                TriangleCollector.CreateSortedCounter++;
             }
         }
 

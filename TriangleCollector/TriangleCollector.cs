@@ -52,6 +52,16 @@ namespace TriangleCollector
 
         public static List<WebSocketAdapter> Clients = new List<WebSocketAdapter>();
 
+        public static double CreateSortedCounter = 0;
+
+        public static double SignificantChangeCounter = 0;
+
+        public static double LayerCounter = 0;
+
+        public static double BestPriceChangeCounter = 0;
+
+        public static double allOrderBookCounter = 0;
+
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
