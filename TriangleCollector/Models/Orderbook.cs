@@ -75,28 +75,24 @@ namespace TriangleCollector.Models
 
         public bool SignificantChange(Orderbook update, decimal previousHighestBid, decimal previousLowestAsk)
         {
-            // TODO: Create a more scientific approach for determining if we should recalculate a triangle
-            //Approach: if the triangle's last run wasn't profitable, then a significant change is only a change to the lowest layer of the orderbook.
-            // if the triangle's last run was profitable, then a significant change is a change to the layers that the triangle works with (TBD how to do that)
-            if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var layers))
+            if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
             {
                 if ((update.asks.Count > 0 && update.asks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.bids.Count > 0 && update.bids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
                 {
                     TriangleCollector.LayerCounter++;
                     return true;
                 }
-                //
-                //the variable layers is the number of layers that get accessed for this symbol.
-                //the goal is to use that number of layers in conjunction with the SortedBids/Asks to determine whether the price update is within that number
-                //of layers in the orderbook.
-
             } 
-            else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed
+            else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
             {
-                if (previousLowestAsk != asks.Keys.Min() || previousHighestBid != bids.Keys.Max()) 
+                if (asks.Keys.Min() < previousLowestAsk || bids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
-                    TriangleCollector.BestPriceChangeCounter++;
+                    TriangleCollector.PositivePriceChangeCounter++;
                     return true;
+                } else //price got worse or did not change
+                {
+                    TriangleCollector.NegativePriceChangeCounter++;
+                    return false;
                 }
             }
 
@@ -105,24 +101,24 @@ namespace TriangleCollector.Models
 
         public void CreateSorted()
         {
-            var previousHighestBid = HighestBid;
+            //var previousHighestBid = HighestBid;
             if (bids.Count > 0 && (SortedBids.Count == 0 || !SortedBids.TryGetValue(HighestBid, out _)))
             {
                 SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
                 HighestBid = SortedBids.First().Key;
             }
 
-            var previousLowestAsk = LowestAsk;
+            //var previousLowestAsk = LowestAsk;
             if (asks.Count > 0 && (SortedAsks.Count == 0 || !SortedAsks.TryGetValue(LowestAsk, out _)))
             {
                 SortedAsks = new SortedDictionary<decimal, decimal>(asks);
                 LowestAsk = SortedAsks.First().Key;
             }
 
-            if (HighestBid != previousHighestBid || LowestAsk != previousLowestAsk)
+/*            if (HighestBid != previousHighestBid || LowestAsk != previousLowestAsk)
             {
                 TriangleCollector.CreateSortedCounter++;
-            }
+            }*/
         }
 
         private void UpdateAskLayer(KeyValuePair<decimal, decimal> layer)

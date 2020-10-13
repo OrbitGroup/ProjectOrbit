@@ -50,7 +50,8 @@ namespace TriangleCollector.Services
                     _logger.LogError("One or more clients have disconnected");
                 }
 
-                _logger.LogDebug($"Total Updates: {TriangleCollector.allOrderBookCounter} - CreateSorted: {TriangleCollector.CreateSortedCounter} - LayerCounter %: {TriangleCollector.LayerCounter/TriangleCollector.allOrderBookCounter} - BestPrice %: {TriangleCollector.BestPriceChangeCounter / TriangleCollector.allOrderBookCounter}");
+                _logger.LogDebug($"Total Updates: {TriangleCollector.allOrderBookCounter} - LayerCounter %: {TriangleCollector.LayerCounter/TriangleCollector.allOrderBookCounter} - Positive Price Change%: {TriangleCollector.PositivePriceChangeCounter / TriangleCollector.allOrderBookCounter}");
+
 
                 if (TriangleCollector.OfficialOrderbooks.Count > 0 && TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget)
                 {

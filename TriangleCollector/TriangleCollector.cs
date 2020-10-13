@@ -54,11 +54,11 @@ namespace TriangleCollector
 
         public static double CreateSortedCounter = 0;
 
-        public static double SignificantChangeCounter = 0;
-
         public static double LayerCounter = 0;
+        
+        public static double PositivePriceChangeCounter = 0;
 
-        public static double BestPriceChangeCounter = 0;
+        public static double NegativePriceChangeCounter = 0;
 
         public static double allOrderBookCounter = 0;
 
