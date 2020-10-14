@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
@@ -18,11 +20,9 @@ namespace TriangleCollector.Models
         public string method { get; set; }
 
         public ConcurrentDictionary<decimal, decimal> asks { get; set; }
-
         public SortedDictionary<decimal, decimal> SortedAsks { get; set; } = new SortedDictionary<decimal, decimal>();
 
         public ConcurrentDictionary<decimal, decimal> bids { get; set; }
-
         public SortedDictionary<decimal, decimal> SortedBids { get; set; } = new SortedDictionary<decimal, decimal>();
 
         public DateTime timestamp { get; set; }
@@ -55,8 +55,8 @@ namespace TriangleCollector.Models
 
                 TriangleCollector.allOrderBookCounter++;
 
-                var previousLowestAsk = LowestAsk;
-                var previousHighestBid = HighestBid;
+                var previousLowestAsk = asks.Keys.Min();
+                var previousHighestBid = bids.Keys.Max();
 
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
                 update.asks.AsParallel().ForAll(UpdateAskLayer);
@@ -77,6 +77,7 @@ namespace TriangleCollector.Models
         {
             if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
             {
+                CreateSorted();
                 if ((update.asks.Count > 0 && update.asks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.bids.Count > 0 && update.bids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
                 {
                     TriangleCollector.LayerCounter++;
@@ -114,11 +115,6 @@ namespace TriangleCollector.Models
                 SortedAsks = new SortedDictionary<decimal, decimal>(asks);
                 LowestAsk = SortedAsks.First().Key;
             }
-
-/*            if (HighestBid != previousHighestBid || LowestAsk != previousLowestAsk)
-            {
-                TriangleCollector.CreateSortedCounter++;
-            }*/
         }
 
         private void UpdateAskLayer(KeyValuePair<decimal, decimal> layer)
