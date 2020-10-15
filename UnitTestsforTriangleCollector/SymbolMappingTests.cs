@@ -41,9 +41,9 @@ namespace TriangleCollector.UnitTests
             //Arrange: list all of the possible triangles and map them to their symbols
             List<Triangle> triangles = new List<Triangle>()
             {
-                new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>()),
-                new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>()),
-                new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>())
+                new Triangle("ETHBTCEOSETHEOSBTC","ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>()),
+                new Triangle("EOSBTCEOSETHETHBTC","EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>()),
+                new Triangle("BTCUSDEOSUSDEOSBTC","BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>())
 
             };
 
