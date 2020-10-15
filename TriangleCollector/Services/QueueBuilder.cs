@@ -45,14 +45,23 @@ namespace TriangleCollector.Services
                 var redundantSymbols = triangleIDs.Count - uniqueTriangles.Count;
                 _logger.LogDebug($"{redundantSymbols} redundant triangles in the last {buffer} seconds.");
 
-                foreach(var UniqueTriangle in uniqueTriangles)
+                Monitor.Enter(uniqueTriangles);
+                Monitor.Enter(triangleIDs);
+                try
                 {
-                    TriangleCollector.TrianglesToRecalculate.Enqueue(UniqueTriangle.Value);
+                    foreach (var UniqueTriangle in uniqueTriangles) 
+                    {
+                        TriangleCollector.TrianglesToRecalculate.Enqueue(UniqueTriangle.Value);
+                    }
+                    triangleIDs.Clear();
+                    uniqueTriangles.Clear(); 
+
+                } finally
+                {
+                    Monitor.Exit(uniqueTriangles);
+                    Monitor.Exit(triangleIDs);
                 }
-                triangleIDs.Clear();
-                uniqueTriangles.Clear();
             }
         }
-
     }
 }

@@ -153,10 +153,6 @@ namespace TriangleCollector.Models
             while (NoEmptyOrderbooks)
             {
                 var newProfitPercent = GetProfitPercent();
-                if (newProfitPercent == -2)
-                {
-                    return;
-                }
 
                 var maxVol = GetMaxVolume();
 
@@ -292,33 +288,27 @@ namespace TriangleCollector.Models
 
         private decimal GetProfitPercent() 
         {
-            try //use the direction list to understand what trades to make at each step
+             //use the direction list to understand what trades to make at each step
+            if (Direction == Directions.BuySellSell)
             {
-                if (Direction == Directions.BuySellSell)
-                {
-                    var firstTrade = 1 / FirstSymbolOrderbook.asks.Keys.Min();
-                    var secondTrade = firstTrade * SecondSymbolOrderbook.bids.Keys.Max(); //sell
-                    var thirdTrade = secondTrade * ThirdSymbolOrderbook.bids.Keys.Max(); //sell
-                    return thirdTrade - 1;
-                }
-                else if (Direction == Directions.BuyBuySell)
-                {
-                    var firstTrade = 1 / FirstSymbolOrderbook.asks.Keys.Min();
-                    var secondTrade = firstTrade / SecondSymbolOrderbook.asks.Keys.Min(); //buy
-                    var thirdTrade = secondTrade * ThirdSymbolOrderbook.bids.Keys.Max(); //sell
-                    return thirdTrade - 1;
-                }
-                else //Sell Buy Sell
-                {
-                    var firstTrade = 1 * FirstSymbolOrderbook.bids.Keys.Max();
-                    var secondTrade = firstTrade / SecondSymbolOrderbook.asks.Keys.Min();
-                    var thirdTrade = secondTrade * ThirdSymbolOrderbook.bids.Keys.Max();
-                    return thirdTrade - 1;
-                }
+                var firstTrade = 1 / FirstSymbolOrderbook.asks.Keys.Min();
+                var secondTrade = firstTrade * SecondSymbolOrderbook.bids.Keys.Max(); //sell
+                var thirdTrade = secondTrade * ThirdSymbolOrderbook.bids.Keys.Max(); //sell
+                return thirdTrade - 1;
             }
-            catch (Exception ex)
+            else if (Direction == Directions.BuyBuySell)
             {
-                return -2;
+                var firstTrade = 1 / FirstSymbolOrderbook.asks.Keys.Min();
+                var secondTrade = firstTrade / SecondSymbolOrderbook.asks.Keys.Min(); //buy
+                var thirdTrade = secondTrade * ThirdSymbolOrderbook.bids.Keys.Max(); //sell
+                return thirdTrade - 1;
+            }
+            else //Sell Buy Sell
+            {
+                var firstTrade = 1 * FirstSymbolOrderbook.bids.Keys.Max();
+                var secondTrade = firstTrade / SecondSymbolOrderbook.asks.Keys.Min();
+                var thirdTrade = secondTrade * ThirdSymbolOrderbook.bids.Keys.Max();
+                return thirdTrade - 1;
             }
         }
 
