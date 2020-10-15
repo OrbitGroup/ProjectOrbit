@@ -12,6 +12,7 @@ namespace TriangleCollector.Models
 {
     public class Triangle
     {
+        public string TriangleID { get; set; } //concatenated string of all three symbols for easy identification in Queue Builder
         public string FirstSymbol { get; set; }
         public int FirstSymbolLayers { get; set; }
 
@@ -53,8 +54,9 @@ namespace TriangleCollector.Models
 
         private ILogger<Triangle> _logger;
 
-        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger)
+        public Triangle(string TriangleID, string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger)
         {
+            this.TriangleID = TriangleID;
             this.FirstSymbol = FirstSymbol;
             this.SecondSymbol = SecondSymbol;
             this.ThirdSymbol = ThirdSymbol;
@@ -75,17 +77,28 @@ namespace TriangleCollector.Models
             return $"{FirstSymbol}-{SecondSymbol}-{ThirdSymbol}";
         }
 
-        public bool NoEmptyOrderbooks //Why does it only encompass one direction?
+        public bool NoEmptyOrderbooks 
         {
             get
             {
+                if (ThirdSymbolOrderbook.bids.Count == 0) //the third trade is always a bid
+                {
+                    return false;
+                }
                 if (Direction == Directions.SellBuySell)
                 {
-                    return !(FirstSymbolOrderbook.bids.Count == 0 || SecondSymbolOrderbook.asks.Count == 0 || ThirdSymbolOrderbook.bids.Count == 0);
+                    return !(FirstSymbolOrderbook.bids.Count == 0 || SecondSymbolOrderbook.asks.Count == 0);
                 }
-                else
+                else if (Direction == Directions.BuyBuySell)
                 {
-                    return true;
+                    return !(FirstSymbolOrderbook.asks.Count == 0 || SecondSymbolOrderbook.asks.Count == 0);
+                } 
+                else if (Direction == Directions.BuySellSell)
+                {
+                    return !(FirstSymbolOrderbook.asks.Count == 0 || SecondSymbolOrderbook.bids.Count == 0);
+                } else
+                {
+                    return false;
                 }
             }
         }

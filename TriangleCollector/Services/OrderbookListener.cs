@@ -82,10 +82,15 @@ namespace TriangleCollector.Services
                                                 {
                                                     if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
                                                     {
-                                                        impactedTriangles.ForEach(TriangleCollector.TrianglesToRecalculate.Enqueue);
+                                                        foreach(var impactedTriangle in impactedTriangles)
+                                                        {
+                                                            string TriangleID = impactedTriangle.TriangleID;
+                                                            QueueBuilder.triangleIDs.Add(TriangleID);
+                                                            QueueBuilder.uniqueTriangles.TryAdd(TriangleID, impactedTriangle);
+                                                        } 
+                                                        //impactedTriangles.ForEach(TriangleCollector.TrianglesToRecalculate.Enqueue);
                                                     }
                                                 }
-
                                                 TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
                                             }
                                         }

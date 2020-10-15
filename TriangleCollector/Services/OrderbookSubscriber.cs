@@ -120,7 +120,8 @@ namespace TriangleCollector.Services
                                             var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
 
                                             _logger.LogDebug($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                            var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
+                                            string TriangleID = $"{firstMarket}{secondMarket}{thirdMarket}";
+                                            var newTriangle = new Triangle(TriangleID, firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
                                             count++;
                                             TriangleCollector.triangleEligiblePairs.Add(firstMarket);
                                             TriangleCollector.triangleEligiblePairs.Add(secondMarket);
@@ -150,7 +151,8 @@ namespace TriangleCollector.Services
                                             var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
 
                                             _logger.LogDebug($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                            var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
+                                            string TriangleID = $"{firstMarket}{secondMarket}{thirdMarket}";
+                                            var newTriangle = new Triangle(TriangleID, firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
                                             count++;
                                             TriangleCollector.triangleEligiblePairs.Add(firstMarket);
                                             TriangleCollector.triangleEligiblePairs.Add(secondMarket);
@@ -190,7 +192,8 @@ namespace TriangleCollector.Services
                                         var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
 
                                         _logger.LogDebug($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                        var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
+                                        string TriangleID = $"{firstMarket}{secondMarket}{thirdMarket}";
+                                        var newTriangle = new Triangle(TriangleID, firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
                                         count++;
                                         TriangleCollector.triangleEligiblePairs.Add(firstMarket);
                                         TriangleCollector.triangleEligiblePairs.Add(secondMarket);
