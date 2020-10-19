@@ -19,10 +19,10 @@ namespace TriangleCollector.Models
 
         public string method { get; set; }
 
-        public ConcurrentDictionary<decimal, decimal> asks { get; set; }
+        public ConcurrentDictionary<decimal, decimal> officialAsks { get; set; }
         public SortedDictionary<decimal, decimal> SortedAsks { get; set; } = new SortedDictionary<decimal, decimal>();
 
-        public ConcurrentDictionary<decimal, decimal> bids { get; set; }
+        public ConcurrentDictionary<decimal, decimal> officialBids { get; set; }
         public SortedDictionary<decimal, decimal> SortedBids { get; set; } = new SortedDictionary<decimal, decimal>();
 
         public DateTime timestamp { get; set; }
@@ -55,12 +55,12 @@ namespace TriangleCollector.Models
 
                 TriangleCollector.allOrderBookCounter++;
 
-                var previousLowestAsk = asks.Keys.Min();
-                var previousHighestBid = bids.Keys.Max();
+                var previousLowestAsk = officialAsks.Keys.Min();
+                var previousHighestBid = officialBids.Keys.Max();
 
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
-                update.asks.AsParallel().ForAll(UpdateAskLayer);
-                update.bids.AsParallel().ForAll(UpdateBidLayer);
+                update.officialAsks.AsParallel().ForAll(UpdateAskLayer);
+                update.officialBids.AsParallel().ForAll(UpdateBidLayer);
 
                 if (SignificantChange(update, previousHighestBid, previousLowestAsk))
                 {
@@ -78,7 +78,7 @@ namespace TriangleCollector.Models
             if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
             {
                 CreateSorted();
-                if ((update.asks.Count > 0 && update.asks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.bids.Count > 0 && update.bids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
+                if ((update.officialAsks.Count > 0 && update.officialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.officialBids.Count > 0 && update.officialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
                 {
                     TriangleCollector.LayerCounter++;
                     return true;
@@ -86,7 +86,7 @@ namespace TriangleCollector.Models
             } 
             else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
             {
-                if (asks.Keys.Min() < previousLowestAsk || bids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
+                if (officialAsks.Keys.Min() < previousLowestAsk || officialBids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
                     TriangleCollector.PositivePriceChangeCounter++;
                     return true;
@@ -103,16 +103,16 @@ namespace TriangleCollector.Models
         public void CreateSorted()
         {
             //var previousHighestBid = HighestBid;
-            if (bids.Count > 0 && (SortedBids.Count == 0 || !SortedBids.TryGetValue(HighestBid, out _)))
+            if (officialBids.Count > 0 && (SortedBids.Count == 0 || !SortedBids.TryGetValue(HighestBid, out _)))
             {
-                SortedBids = new SortedDictionary<decimal, decimal>(bids, new DescendingComparer<decimal>());
+                SortedBids = new SortedDictionary<decimal, decimal>(officialBids, new DescendingComparer<decimal>());
                 HighestBid = SortedBids.First().Key;
             }
 
             //var previousLowestAsk = LowestAsk;
-            if (asks.Count > 0 && (SortedAsks.Count == 0 || !SortedAsks.TryGetValue(LowestAsk, out _)))
+            if (officialAsks.Count > 0 && (SortedAsks.Count == 0 || !SortedAsks.TryGetValue(LowestAsk, out _)))
             {
-                SortedAsks = new SortedDictionary<decimal, decimal>(asks);
+                SortedAsks = new SortedDictionary<decimal, decimal>(officialAsks);
                 LowestAsk = SortedAsks.First().Key;
             }
         }
@@ -121,11 +121,11 @@ namespace TriangleCollector.Models
         {
             if (layer.Value > 0)
             {
-                asks.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
+                officialAsks.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
             }
             else
             {
-                asks.TryRemove(layer.Key, out var _);
+                officialAsks.TryRemove(layer.Key, out var _);
             }
         }
 
@@ -133,11 +133,11 @@ namespace TriangleCollector.Models
         {
             if (layer.Value > 0)
             {
-                bids.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
+                officialBids.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
             }
             else
             {
-                bids.TryRemove(layer.Key, out var _);
+                officialBids.TryRemove(layer.Key, out var _);
             }
         }
     }

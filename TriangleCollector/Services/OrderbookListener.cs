@@ -75,22 +75,23 @@ namespace TriangleCollector.Services
                                             {
                                                 stopwatch.Reset();
                                                 stopwatch.Start();
-                                                var shouldRecalculate = OfficialOrderbook.Merge(orderbook);
-                                                stopwatch.Stop();
-
-                                                if (shouldRecalculate)
+                                                lock (OfficialOrderbook.orderbookLock)
                                                 {
-                                                    if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
+                                                    var shouldRecalculate = OfficialOrderbook.Merge(orderbook);
+                                                    if (shouldRecalculate)
                                                     {
-                                                        foreach(var impactedTriangle in impactedTriangles)
+                                                        if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
                                                         {
-                                                            string TriangleID = impactedTriangle.TriangleID;
-                                                            QueueBuilder.triangleIDs.Add(TriangleID);
-                                                            QueueBuilder.uniqueTriangles.TryAdd(TriangleID, impactedTriangle);
-                                                        } 
-                                                        //impactedTriangles.ForEach(TriangleCollector.TrianglesToRecalculate.Enqueue);
+                                                            foreach (var impactedTriangle in impactedTriangles)
+                                                            {
+                                                                string TriangleID = impactedTriangle.TriangleID;
+                                                                QueueBuilder.triangleIDs.Add(TriangleID);
+                                                                QueueBuilder.uniqueTriangles.TryAdd(TriangleID, impactedTriangle);
+                                                            }
+                                                        }
                                                     }
                                                 }
+                                                stopwatch.Stop();
                                                 TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
                                             }
                                         }

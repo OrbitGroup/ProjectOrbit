@@ -87,12 +87,12 @@ namespace TriangleCollector.Models
                 {
                     if (ask)
                     {
-                        ob.asks = orders;
+                        ob.officialAsks = orders;
                         orders = new ConcurrentDictionary<decimal, decimal>();
                     }
                     else
                     {
-                        ob.bids = orders;
+                        ob.officialBids = orders;
                         orders = new ConcurrentDictionary<decimal, decimal>();
                     }
                 }

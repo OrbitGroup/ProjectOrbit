@@ -9,6 +9,7 @@ using System.Xml;
 using System.Collections.Concurrent;
 using TriangleCollector.Models;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace TriangleCollector.Services
 {
@@ -41,26 +42,25 @@ namespace TriangleCollector.Services
         {
             while (!stoppingtoken.IsCancellationRequested)
             {
-                Thread.Sleep(buffer * 1000);
+                await Task.Delay(buffer * 1000);
                 var redundantSymbols = triangleIDs.Count - uniqueTriangles.Count;
-                _logger.LogDebug($"{redundantSymbols} redundant triangles in the last {buffer} seconds.");
+                //_logger.LogDebug($"{redundantSymbols} redundant triangles in the last {buffer} seconds.");
 
-                Monitor.Enter(uniqueTriangles);
-                Monitor.Enter(triangleIDs);
-                try
+                var preQueueCount = uniqueTriangles.Count;
+                var numberQueued = 0;
+                foreach (var UniqueTriangle in uniqueTriangles) 
                 {
-                    foreach (var UniqueTriangle in uniqueTriangles) 
-                    {
-                        TriangleCollector.TrianglesToRecalculate.Enqueue(UniqueTriangle.Value);
-                    }
-                    triangleIDs.Clear();
-                    uniqueTriangles.Clear(); 
-
-                } finally
-                {
-                    Monitor.Exit(uniqueTriangles);
-                    Monitor.Exit(triangleIDs);
+                    TriangleCollector.TrianglesToRecalculate.Enqueue(UniqueTriangle.Value);
+                    numberQueued++;
                 }
+                triangleIDs.Clear();
+                var deleteCount = uniqueTriangles.Count;
+                    
+                if(preQueueCount != numberQueued || numberQueued != deleteCount)
+                {
+                _logger.LogError("threading issue on uniqueTriangles");
+                }
+                uniqueTriangles.Clear(); 
             }
         }
     }
