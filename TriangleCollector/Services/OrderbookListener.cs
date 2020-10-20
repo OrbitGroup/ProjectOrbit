@@ -84,9 +84,7 @@ namespace TriangleCollector.Services
                                                         {
                                                             foreach (var impactedTriangle in impactedTriangles)
                                                             {
-                                                                string TriangleID = impactedTriangle.TriangleID;
-                                                                QueueBuilder.triangleIDs.Add(TriangleID);
-                                                                QueueBuilder.uniqueTriangles.TryAdd(TriangleID, impactedTriangle);
+                                                                QueueBuilder.updateQueue.Enqueue(impactedTriangle);
                                                             }
                                                         }
                                                     }

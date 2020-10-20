@@ -17,8 +17,9 @@ namespace TriangleCollector.Services
     {
         private int buffer = 1; //time (in seconds) of the interval that the queue builder evaluates orderbook updates
 
-        public static List<string> triangleIDs = new List<string>();
-        public static ConcurrentDictionary<string,Triangle> uniqueTriangles = new ConcurrentDictionary<string, Triangle>();
+        public static ConcurrentQueue<Triangle> updateQueue = new ConcurrentQueue<Triangle>();
+
+        private ConcurrentDictionary<string, DateTime> QueueTimes = new ConcurrentDictionary<string, DateTime>(); //stores the most recent queue time for all triangle IDs
         
         private readonly ILoggerFactory _factory;
 
@@ -42,25 +43,24 @@ namespace TriangleCollector.Services
         {
             while (!stoppingtoken.IsCancellationRequested)
             {
-                await Task.Delay(buffer * 1000);
-                var redundantSymbols = triangleIDs.Count - uniqueTriangles.Count;
-                //_logger.LogDebug($"{redundantSymbols} redundant triangles in the last {buffer} seconds.");
-
-                var preQueueCount = uniqueTriangles.Count;
-                var numberQueued = 0;
-                foreach (var UniqueTriangle in uniqueTriangles) 
+                bool triangleDequeued = updateQueue.TryDequeue(out Triangle impactedTriangle);
+                if(triangleDequeued)
                 {
-                    TriangleCollector.TrianglesToRecalculate.Enqueue(UniqueTriangle.Value);
-                    numberQueued++;
+                    bool previouslyQueued = QueueTimes.TryGetValue(impactedTriangle.TriangleID, out DateTime lastTime);
+                    if (previouslyQueued)
+                    {
+                        var queueDelay = DateTime.UtcNow - lastTime;
+                        if (queueDelay.TotalSeconds > buffer) //queue triangle update if this distinct triangle hasn't been updated in N seconds
+                        {
+                            TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                        }
+                    }
+                    else //this disctinct triangle hasn't been queued yet this session
+                    {
+                        TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                        QueueTimes.TryAdd(impactedTriangle.TriangleID, DateTime.UtcNow);
+                    }
                 }
-                triangleIDs.Clear();
-                var deleteCount = uniqueTriangles.Count;
-                    
-                if(preQueueCount != numberQueued || numberQueued != deleteCount)
-                {
-                _logger.LogError("threading issue on uniqueTriangles");
-                }
-                uniqueTriangles.Clear(); 
             }
         }
     }
