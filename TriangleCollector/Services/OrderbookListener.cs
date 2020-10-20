@@ -75,6 +75,15 @@ namespace TriangleCollector.Services
                                             {
                                                 stopwatch.Reset();
                                                 stopwatch.Start();
+
+                                                if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> rawimpactedTriangles))
+                                                {
+                                                    foreach (var impactedTriangle in rawimpactedTriangles)
+                                                    {
+                                                        TriangleCollector.rawUpdateCounter++;
+                                                    }
+                                                }
+
                                                 lock (OfficialOrderbook.orderbookLock)
                                                 {
                                                     var shouldRecalculate = OfficialOrderbook.Merge(orderbook);
@@ -85,6 +94,7 @@ namespace TriangleCollector.Services
                                                             foreach (var impactedTriangle in impactedTriangles)
                                                             {
                                                                 QueueBuilder.updateQueue.Enqueue(impactedTriangle);
+                                                                TriangleCollector.significantUpdateCounter++;
                                                             }
                                                         }
                                                     }

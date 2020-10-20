@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -125,12 +126,13 @@ namespace TriangleCollector.Models
                 {
                     return false;
                 }
-
-                FirstSymbolOrderbook = firstSymbolOrderbook;
-                SecondSymbolOrderbook = secondSymbolOrderbook;
-                ThirdSymbolOrderbook = thirdSymbolOrderbook;
-
-                SetMaxVolumeAndProfitability();
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                FirstSymbolOrderbook = firstSymbolOrderbook.DeepCopy();
+                SecondSymbolOrderbook = secondSymbolOrderbook.DeepCopy();
+                ThirdSymbolOrderbook = thirdSymbolOrderbook.DeepCopy();
+                stopwatch.Stop();
+                _logger.LogDebug($"time to DeepCopy: {stopwatch.ElapsedMilliseconds} milliseconds");
             }
             finally
             {
@@ -139,6 +141,7 @@ namespace TriangleCollector.Models
                 if (Monitor.IsEntered(thirdSymbolOrderbook.orderbookLock)) Monitor.Exit(thirdSymbolOrderbook.orderbookLock);
             }
 
+            SetMaxVolumeAndProfitability();
             return true;
         }
 

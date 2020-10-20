@@ -53,13 +53,16 @@ namespace TriangleCollector.Services
                         if (queueDelay.TotalSeconds > buffer) //queue triangle update if this distinct triangle hasn't been updated in N seconds
                         {
                             TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                            TriangleCollector.QueuedUpdateCounter++;
                         }
                     }
                     else //this disctinct triangle hasn't been queued yet this session
                     {
                         TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                        TriangleCollector.QueuedUpdateCounter++;
                         QueueTimes.TryAdd(impactedTriangle.TriangleID, DateTime.UtcNow);
                     }
+                    _logger.LogDebug($"raw orderbook updates: {TriangleCollector.rawUpdateCounter} - significant updates: {TriangleCollector.significantUpdateCounter} - queued: {TriangleCollector.QueuedUpdateCounter}");
                 }
             }
         }

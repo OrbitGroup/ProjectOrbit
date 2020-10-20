@@ -62,6 +62,13 @@ namespace TriangleCollector
 
         public static double allOrderBookCounter = 0;
 
+        public static double rawUpdateCounter = 0;
+
+        public static double significantUpdateCounter = 0;
+        
+        public static double QueuedUpdateCounter = 0;
+
+
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();

@@ -41,6 +41,14 @@ namespace TriangleCollector.Models
             }
         }
 
+        public Orderbook DeepCopy()
+        {
+            Orderbook DeepCopy = (Orderbook)this.MemberwiseClone();
+            DeepCopy.officialAsks = new ConcurrentDictionary<decimal, decimal>(officialAsks);
+            DeepCopy.officialBids = new ConcurrentDictionary<decimal, decimal>(officialBids);            
+            return (DeepCopy);
+        }
+
         /// <summary>
         /// Takes an update and merges it with this orderbook.
         /// </summary>
