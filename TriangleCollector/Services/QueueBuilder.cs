@@ -62,7 +62,7 @@ namespace TriangleCollector.Services
                         TriangleCollector.QueuedUpdateCounter++;
                         QueueTimes.TryAdd(impactedTriangle.TriangleID, DateTime.UtcNow);
                     }
-                    _logger.LogDebug($"raw orderbook updates: {TriangleCollector.rawUpdateCounter} - significant updates: {TriangleCollector.significantUpdateCounter} - queued: {TriangleCollector.QueuedUpdateCounter}");
+                    _logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - significant updates: {TriangleCollector.significantUpdateCounter} - dequeued: {TriangleCollector.QueuedUpdateCounter} - Queue Size: {updateQueue.Count}");
                 }
             }
         }
