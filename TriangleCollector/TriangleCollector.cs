@@ -54,8 +54,10 @@ namespace TriangleCollector
 
         public static double CreateSortedCounter = 0;
 
-        public static double LayerCounter = 0;
-        
+        public static double InsideLayerCounter = 0;
+
+        public static double OutsideLayerCounter = 0;
+
         public static double PositivePriceChangeCounter = 0;
 
         public static double NegativePriceChangeCounter = 0;
@@ -84,7 +86,7 @@ namespace TriangleCollector
             {
                 services.AddHostedService<QueueMonitor>();
                 services.AddHostedService<OrderbookSubscriber>();
-                //services.AddHostedService<QueueBuilder>();
+                services.AddHostedService<QueueBuilder>();
                 services.AddHostedService<TriangleCalculator>();
                 //services.AddHostedService<TrianglePublisher>();
             });

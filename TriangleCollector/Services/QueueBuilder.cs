@@ -43,7 +43,13 @@ namespace TriangleCollector.Services
         {
             while (!stoppingtoken.IsCancellationRequested)
             {
-                bool triangleDequeued = updateQueue.TryDequeue(out Triangle impactedTriangle);
+                if (TriangleCollector.TrianglesToRecalculate.Count != 0)
+                {
+                    await Task.Delay(1000);
+                    _logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Inside Layers {TriangleCollector.InsideLayerCounter} - Outside Layers {TriangleCollector.OutsideLayerCounter} - impacted triangles: {TriangleCollector.impactedTriangleCounter} - redundant triangles eliminated: {TriangleCollector.redundantTriangleCounter} - Triangle Queue Size: {TriangleCollector.TrianglesToRecalculate.Count} - Triangles Calculated: {TriangleCollector.RecalculatedTriangles.Count}");
+                }
+                
+                /*bool triangleDequeued = updateQueue.TryDequeue(out Triangle impactedTriangle);
                 if(triangleDequeued)
                 {
                     bool previouslyQueued = QueueTimes.TryGetValue(impactedTriangle.TriangleID, out DateTime lastTime);
@@ -61,10 +67,10 @@ namespace TriangleCollector.Services
                         TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
                         //TriangleCollector.QueuedUpdateCounter++;
                         QueueTimes.TryAdd(impactedTriangle.TriangleID, DateTime.UtcNow);
-                    }
-                    //_logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Layers {TriangleCollector.LayerCounter} - significant updates: {TriangleCollector.impactedTriangleCounter} - sent to Triangle Queue: {TriangleCollector.QueuedUpdateCounter} - Queue Size: {updateQueue.Count}");
-                }
+                    }*/
+                //_logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Layers {TriangleCollector.LayerCounter} - significant updates: {TriangleCollector.impactedTriangleCounter} - sent to Triangle Queue: {TriangleCollector.QueuedUpdateCounter} - Queue Size: {updateQueue.Count}");
             }
+            
         }
     }
 }

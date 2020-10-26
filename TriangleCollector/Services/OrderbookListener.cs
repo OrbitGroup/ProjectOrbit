@@ -101,7 +101,7 @@ namespace TriangleCollector.Services
                                                         }
                                                     }
                                                 }
-                                                _logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Layers {TriangleCollector.LayerCounter} - impacted triangles: {TriangleCollector.impactedTriangleCounter} - redundant triangles eliminated: {TriangleCollector.redundantTriangleCounter} - Trianle Queue Size: {TriangleCollector.TrianglesToRecalculate.Count}");
+                                                
                                                 stopwatch.Stop();
                                                 TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
                                             }

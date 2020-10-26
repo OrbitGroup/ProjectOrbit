@@ -88,8 +88,12 @@ namespace TriangleCollector.Models
                 CreateSorted();
                 if ((update.officialAsks.Count > 0 && update.officialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.officialBids.Count > 0 && update.officialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
                 {
-                    TriangleCollector.LayerCounter++;
+                    TriangleCollector.InsideLayerCounter++;
                     return true;
+                } else
+                {
+                    TriangleCollector.OutsideLayerCounter++;
+                    return false;
                 }
             } 
             else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
@@ -104,8 +108,6 @@ namespace TriangleCollector.Models
                     return false;
                 }
             }
-
-            return false;
         }
 
         public void CreateSorted()
