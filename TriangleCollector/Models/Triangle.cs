@@ -15,6 +15,9 @@ namespace TriangleCollector.Models
     public class Triangle
     {
         public string TriangleID { get; set; } //concatenated string of all three symbols for easy identification in Queue Builder
+
+        public DateTime lastQueued = new DateTime(); //records the last time that this triangle was added to TrianglesToRecalculate
+
         public string FirstSymbol { get; set; }
         public int FirstSymbolLayers { get; set; }
 
@@ -132,7 +135,7 @@ namespace TriangleCollector.Models
                 SecondSymbolOrderbook = secondSymbolOrderbook.DeepCopy();
                 ThirdSymbolOrderbook = thirdSymbolOrderbook.DeepCopy();
                 stopwatch.Stop();
-                _logger.LogDebug($"time to DeepCopy: {stopwatch.ElapsedMilliseconds} milliseconds");
+                //_logger.LogDebug($"time to DeepCopy: {stopwatch.ElapsedMilliseconds} milliseconds");
             }
             finally
             {
@@ -147,7 +150,6 @@ namespace TriangleCollector.Models
 
         public void SetMaxVolumeAndProfitability()
         {
-            
             MaxVolume = 0;
             Profit = 0;
             FirstSymbolLayers = 1;

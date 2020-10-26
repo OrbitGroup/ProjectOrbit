@@ -62,9 +62,9 @@ namespace TriangleCollector
 
         public static double allOrderBookCounter = 0;
 
-        public static double significantUpdateCounter = 0;
+        public static double impactedTriangleCounter = 0;
         
-        public static double QueuedUpdateCounter = 0;
+        public static double redundantTriangleCounter = 0;
 
 
         public static void Main(string[] args)
@@ -84,7 +84,7 @@ namespace TriangleCollector
             {
                 services.AddHostedService<QueueMonitor>();
                 services.AddHostedService<OrderbookSubscriber>();
-                services.AddHostedService<QueueBuilder>();
+                //services.AddHostedService<QueueBuilder>();
                 services.AddHostedService<TriangleCalculator>();
                 //services.AddHostedService<TrianglePublisher>();
             });

@@ -53,16 +53,16 @@ namespace TriangleCollector.Services
                         if (queueDelay.TotalSeconds > buffer) //queue triangle update if this distinct triangle hasn't been updated in N seconds
                         {
                             TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                            TriangleCollector.QueuedUpdateCounter++;
+                            //TriangleCollector.QueuedUpdateCounter++;
                         }
                     }
                     else //this disctinct triangle hasn't been queued yet this session
                     {
                         TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                        TriangleCollector.QueuedUpdateCounter++;
+                        //TriangleCollector.QueuedUpdateCounter++;
                         QueueTimes.TryAdd(impactedTriangle.TriangleID, DateTime.UtcNow);
                     }
-                    _logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - significant updates: {TriangleCollector.significantUpdateCounter} - dequeued: {TriangleCollector.QueuedUpdateCounter} - Queue Size: {updateQueue.Count}");
+                    //_logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Layers {TriangleCollector.LayerCounter} - significant updates: {TriangleCollector.impactedTriangleCounter} - sent to Triangle Queue: {TriangleCollector.QueuedUpdateCounter} - Queue Size: {updateQueue.Count}");
                 }
             }
         }

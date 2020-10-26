@@ -76,21 +76,32 @@ namespace TriangleCollector.Services
                                                 stopwatch.Reset();
                                                 stopwatch.Start();
 
-                                                lock (OfficialOrderbook.orderbookLock)
+                                                bool shouldRecalculate = false;
+                                                lock (OfficialOrderbook.orderbookLock) //only lock the orderbook when the orderbook is actually being modified
                                                 {
-                                                    var shouldRecalculate = OfficialOrderbook.Merge(orderbook);
-                                                    if (shouldRecalculate)
+                                                    shouldRecalculate = OfficialOrderbook.Merge(orderbook);
+                                                }    
+                                                if (shouldRecalculate)
+                                                {
+                                                    if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
                                                     {
-                                                        if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
+                                                        foreach (var impactedTriangle in impactedTriangles)
                                                         {
-                                                            foreach (var impactedTriangle in impactedTriangles)
+                                                            TriangleCollector.impactedTriangleCounter++;
+                                                            if ((DateTime.UtcNow - impactedTriangle.lastQueued).TotalSeconds > 1) //this triangle hasn't been queued in the last second
                                                             {
-                                                                QueueBuilder.updateQueue.Enqueue(impactedTriangle);
-                                                                TriangleCollector.significantUpdateCounter++;
+                                                                TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                                                                impactedTriangle.lastQueued = DateTime.UtcNow;
+                                                            } else
+                                                            {
+                                                                TriangleCollector.redundantTriangleCounter++;
                                                             }
+/*                                                            QueueBuilder.updateQueue.Enqueue(impactedTriangle);
+                                                            TriangleCollector.significantUpdateCounter++;*/
                                                         }
                                                     }
                                                 }
+                                                _logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Layers {TriangleCollector.LayerCounter} - impacted triangles: {TriangleCollector.impactedTriangleCounter} - redundant triangles eliminated: {TriangleCollector.redundantTriangleCounter} - Trianle Queue Size: {TriangleCollector.TrianglesToRecalculate.Count}");
                                                 stopwatch.Stop();
                                                 TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
                                             }
@@ -108,7 +119,11 @@ namespace TriangleCollector.Services
                                         TriangleCollector.OfficialOrderbooks.AddOrUpdate(orderbook.symbol, orderbook, (key, oldValue) => oldValue = orderbook);
                                         if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
                                         {
-                                            impactedTriangles.ForEach(TriangleCollector.TrianglesToRecalculate.Enqueue);
+                                            foreach(var impactedTriangle in impactedTriangles)
+                                            {
+                                                TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                                                impactedTriangle.lastQueued = DateTime.UtcNow;
+                                            }
                                         }
                                     }
 

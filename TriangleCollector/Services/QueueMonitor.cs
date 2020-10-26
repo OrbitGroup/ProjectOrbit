@@ -50,12 +50,12 @@ namespace TriangleCollector.Services
                     _logger.LogError("One or more clients have disconnected");
                 }
 
-                _logger.LogDebug($"Total Updates: {TriangleCollector.allOrderBookCounter} - LayerCounter %: {TriangleCollector.LayerCounter/TriangleCollector.allOrderBookCounter} - Positive Price Change%: {TriangleCollector.PositivePriceChangeCounter / TriangleCollector.allOrderBookCounter}");
+               // _logger.LogDebug($"Total Updates: {TriangleCollector.allOrderBookCounter} - LayerCounter %: {TriangleCollector.LayerCounter/TriangleCollector.allOrderBookCounter} - Positive Price Change%: {TriangleCollector.PositivePriceChangeCounter / TriangleCollector.allOrderBookCounter}");
 
 
                 if (TriangleCollector.OfficialOrderbooks.Count > 0 && TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget)
                 {
-                    _logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}");
+                    //_logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}");
                 }
 
                 var sb = new StringBuilder();
@@ -82,7 +82,7 @@ namespace TriangleCollector.Services
 
                 if (TriangleCollector.Triangles.Count > 0)
                 {
-                    _logger.LogDebug($"{sb}");
+                    //_logger.LogDebug($"{sb}");
                 }
 
                 if (TriangleCollector.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && calculatorCount < MaxTriangleCalculators)
