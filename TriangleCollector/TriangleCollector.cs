@@ -86,7 +86,6 @@ namespace TriangleCollector
             {
                 services.AddHostedService<QueueMonitor>();
                 services.AddHostedService<OrderbookSubscriber>();
-                services.AddHostedService<QueueBuilder>();
                 services.AddHostedService<TriangleCalculator>();
                 //services.AddHostedService<TrianglePublisher>();
             });

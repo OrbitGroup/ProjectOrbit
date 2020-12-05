@@ -50,8 +50,8 @@ namespace TriangleCollector.Services
                     _logger.LogError("One or more clients have disconnected");
                 }
 
-               // _logger.LogDebug($"Total Updates: {TriangleCollector.allOrderBookCounter} - LayerCounter %: {TriangleCollector.LayerCounter/TriangleCollector.allOrderBookCounter} - Positive Price Change%: {TriangleCollector.PositivePriceChangeCounter / TriangleCollector.allOrderBookCounter}");
-
+                // _logger.LogDebug($"Total Updates: {TriangleCollector.allOrderBookCounter} - LayerCounter %: {TriangleCollector.LayerCounter/TriangleCollector.allOrderBookCounter} - Positive Price Change%: {TriangleCollector.PositivePriceChangeCounter / TriangleCollector.allOrderBookCounter}");
+                _logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Inside Layers {TriangleCollector.InsideLayerCounter} - Outside Layers {TriangleCollector.OutsideLayerCounter} - impacted triangles: {TriangleCollector.impactedTriangleCounter} - redundant triangles eliminated: {TriangleCollector.redundantTriangleCounter} - Triangle Queue Size: {TriangleCollector.TrianglesToRecalculate.Count} - Triangles Calculated: {TriangleCollector.RecalculatedTriangles.Count}");
 
                 if (TriangleCollector.OfficialOrderbooks.Count > 0 && TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget)
                 {

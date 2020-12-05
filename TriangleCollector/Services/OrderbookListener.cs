@@ -96,8 +96,6 @@ namespace TriangleCollector.Services
                                                             {
                                                                 TriangleCollector.redundantTriangleCounter++;
                                                             }
-/*                                                            QueueBuilder.updateQueue.Enqueue(impactedTriangle);
-                                                            TriangleCollector.significantUpdateCounter++;*/
                                                         }
                                                     }
                                                 }
