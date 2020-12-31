@@ -37,7 +37,7 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                try
+                /*try
                 {
                     if (TriangleCollector.RecalculatedTriangles.TryDequeue(out Triangle triangle))
                     {
@@ -49,7 +49,7 @@ namespace TriangleCollector.Services
                 catch(Exception ex)
                 {
                     _logger.LogError(ex.Message);
-                }
+                }*/
             }
         }
     }

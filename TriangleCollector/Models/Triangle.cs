@@ -14,9 +14,9 @@ namespace TriangleCollector.Models
 {
     public class Triangle
     {
-        public string TriangleID { get; set; } //concatenated string of all three symbols for easy identification in Queue Builder
-
         public DateTime lastQueued = new DateTime(); //records the last time that this triangle was added to TrianglesToRecalculate
+
+        public string exchange { get; set; }
 
         public string FirstSymbol { get; set; }
         public int FirstSymbolLayers { get; set; }
@@ -59,9 +59,8 @@ namespace TriangleCollector.Models
 
         private ILogger<Triangle> _logger;
 
-        public Triangle(string TriangleID, string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger)
+        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger)
         {
-            this.TriangleID = TriangleID;
             this.FirstSymbol = FirstSymbol;
             this.SecondSymbol = SecondSymbol;
             this.ThirdSymbol = ThirdSymbol;

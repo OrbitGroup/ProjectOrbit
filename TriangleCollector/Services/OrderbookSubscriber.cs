@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.Services
 {
@@ -23,10 +24,6 @@ namespace TriangleCollector.Services
         private readonly int MaxPairsPerClient = 40;
 
         private int CurrentClientPairCount = 0;
-
-        private readonly bool useTestSymbols = false;
-
-        private List<string> testSymbols = new List<string>() { "BTCUSD", "VLXUSD", "VLXBTC", "FUNUSD", "FUNBTC", "AMBUSD", "AMBBTC", "STXUSD", "STXBTC", "MKRUSD", "MKRBTC"};
 
         public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
@@ -47,38 +44,46 @@ namespace TriangleCollector.Services
 
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            _logger.LogDebug("Loading all triangular arbitrage eligible symbols.");
-            var actualSymbols = RestResponse.GetSymbolResponse();
-            symbolGenerator(actualSymbols);
-
-            if (useTestSymbols)
+            foreach (Exchange exchange in TriangleCollector.exchanges)
             {
-                _logger.LogDebug($"Subscribing to {testSymbols.Count} pairs.");
-            }
-            else
-            {
-                _logger.LogDebug($"Subscribing to {TriangleCollector.triangleEligiblePairs.Count()} pairs.");
-            }
+                string exchangeName = exchange.exchangeName;
+                _logger.LogDebug($"{exchange.exchangeName}: Subscribing to {exchange.triarbEligibleMarkets.Count()} pairs.");
 
-            var client = await TriangleCollector.GetExchangeClientAsync();
-            var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client);
-            await listener.StartAsync(stoppingToken);
+                var client = await ExchangeAPI.GetExchangeClientAsync(exchangeName);
+                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
+                await listener.StartAsync(stoppingToken);
 
-            foreach (var symbol in TriangleCollector.triangleEligiblePairs)
-            {
-                if (!useTestSymbols || testSymbols.Contains(symbol))
+                //we also start a TriangleCalculator for each exchange here so that we are ready to dequeue and calculate triangles as soon as the subscriptions are intialized.
+                var calculator = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), exchange);
+                await calculator.StartAsync(stoppingToken);
+
+                //also a QueueMonitor for each exchange
+
+                var monitor = new QueueMonitor(_factory,_factory.CreateLogger<QueueMonitor>(), exchange);
+                await monitor.StartAsync(stoppingToken);
+
+
+                foreach (var market in exchange.triarbEligibleMarkets)
                 {
                     try
                     {
                         if (CurrentClientPairCount > MaxPairsPerClient)
                         {
                             CurrentClientPairCount = 0;
-                            client = await TriangleCollector.GetExchangeClientAsync();
-                            listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client);
+                            client = await ExchangeAPI.GetExchangeClientAsync(exchangeName);
+                            listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
                             await listener.StartAsync(stoppingToken);
                         }
                         var cts = new CancellationToken();
-                        await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{symbol}\" }} }}")), WebSocketMessageType.Text, true, cts);
+                        if (exchangeName == "hitbtc")
+                        {
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.symbol}\" }} }}")), WebSocketMessageType.Text, true, cts);
+                        }
+                        else if (exchangeName == "binance")
+                        {
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"wss://stream.binance.com:9443/ws/{market.symbol}@depth")), WebSocketMessageType.Text, true, cts);
+                        }
+
                         CurrentClientPairCount++;
                     }
                     catch (Exception ex)
@@ -87,135 +92,9 @@ namespace TriangleCollector.Services
                         throw ex;
                     }
                 }
+                _logger.LogDebug($"Subscribing complete for {exchangeName}.");
             }
-            _logger.LogDebug("Subscribing complete.");
         }
-
-        public void symbolGenerator(JsonElement.ArrayEnumerator symbols)
-        {
-            int count = 0;
-            foreach (var firstSymbol in symbols)
-                if (firstSymbol.GetProperty("quoteCurrency").ToString() == "BTC" || firstSymbol.GetProperty("baseCurrency").ToString() == "BTC")
-                {
-                    var firstMarket = firstSymbol.GetProperty("id").ToString();
-                    if (firstSymbol.GetProperty("quoteCurrency").ToString() == "BTC")
-                    {
-                        var firstDirection = "Buy";
-                        foreach (var secondSymbol in symbols)
-                        {
-                            if (secondSymbol.GetProperty("baseCurrency").ToString() == firstSymbol.GetProperty("baseCurrency").ToString() ||
-                            secondSymbol.GetProperty("quoteCurrency").ToString() == firstSymbol.GetProperty("baseCurrency").ToString() &&
-                            secondSymbol.GetProperty("id").ToString() != firstMarket)
-                            {
-                                var secondMarket = secondSymbol.GetProperty("id").ToString();
-                                if (secondSymbol.GetProperty("baseCurrency").ToString() == firstSymbol.GetProperty("baseCurrency").ToString())
-                                {
-                                    var secondDirection = "Sell";
-                                    foreach (var thirdSymbol in symbols)
-                                        if (thirdSymbol.GetProperty("quoteCurrency").ToString() == "BTC" &&
-                                            thirdSymbol.GetProperty("baseCurrency").ToString() == secondSymbol.GetProperty("quoteCurrency").ToString())
-                                        {
-                                            var thirdDirection = "Sell";
-                                            var thirdMarket = thirdSymbol.GetProperty("id").ToString();
-                                            var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
-
-                                            _logger.LogDebug($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                            string TriangleID = $"{firstMarket}{secondMarket}{thirdMarket}";
-                                            var newTriangle = new Triangle(TriangleID, firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
-                                            count++;
-                                            TriangleCollector.triangleEligiblePairs.Add(firstMarket);
-                                            TriangleCollector.triangleEligiblePairs.Add(secondMarket);
-                                            TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
-                                            foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
-                                            {
-                                                TriangleCollector.AllSymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
-                                                {
-                                                    if (key == pair)
-                                                    {
-                                                        triangleList.Add(newTriangle);
-                                                    }
-                                                    return triangleList;
-                                                });
-                                            }
-                                        }
-                                }
-                                else
-                                {
-                                    var secondDirection = "Buy";
-                                    foreach (var thirdSymbol in symbols)
-                                        if (thirdSymbol.GetProperty("quoteCurrency").ToString() == "BTC" &&
-                                            thirdSymbol.GetProperty("baseCurrency").ToString() == secondSymbol.GetProperty("baseCurrency").ToString())
-                                        {
-                                            var thirdDirection = "Sell";
-                                            var thirdMarket = thirdSymbol.GetProperty("id").ToString();
-                                            var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
-
-                                            _logger.LogDebug($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                            string TriangleID = $"{firstMarket}{secondMarket}{thirdMarket}";
-                                            var newTriangle = new Triangle(TriangleID, firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
-                                            count++;
-                                            TriangleCollector.triangleEligiblePairs.Add(firstMarket);
-                                            TriangleCollector.triangleEligiblePairs.Add(secondMarket);
-                                            TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
-                                            foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
-                                            {
-                                                TriangleCollector.AllSymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
-                                                {
-                                                    if (key == pair)
-                                                    {
-                                                        triangleList.Add(newTriangle);
-                                                    }
-                                                    return triangleList;
-                                                });
-                                            }
-                                        }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var firstDirection = "Sell";
-                        foreach (var secondSymbol in symbols)
-                        {
-                            if (secondSymbol.GetProperty("quoteCurrency").ToString() == firstSymbol.GetProperty("quoteCurrency").ToString() &&
-                                secondSymbol.GetProperty("id").ToString() != firstMarket)
-                            {
-                                var secondMarket = secondSymbol.GetProperty("id").ToString();
-                                var secondDirection = "Buy";
-                                foreach (var thirdSymbol in symbols)
-                                    if (thirdSymbol.GetProperty("quoteCurrency").ToString() == "BTC" &&
-                                        thirdSymbol.GetProperty("baseCurrency").ToString() == secondSymbol.GetProperty("baseCurrency").ToString())
-                                    {
-                                        var thirdDirection = "Sell";
-                                        var thirdMarket = thirdSymbol.GetProperty("id").ToString();
-                                        var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
-
-                                        _logger.LogDebug($"{firstDirection} {firstMarket}, {secondDirection} {secondMarket}, {thirdDirection} {thirdMarket}");
-                                        string TriangleID = $"{firstMarket}{secondMarket}{thirdMarket}";
-                                        var newTriangle = new Triangle(TriangleID, firstMarket, secondMarket, thirdMarket, direction, _factory.CreateLogger<Triangle>());
-                                        count++;
-                                        TriangleCollector.triangleEligiblePairs.Add(firstMarket);
-                                        TriangleCollector.triangleEligiblePairs.Add(secondMarket);
-                                        TriangleCollector.triangleEligiblePairs.Add(thirdMarket);
-                                        foreach (var pair in new List<string> { firstMarket, secondMarket, thirdMarket })
-                                        {
-                                            TriangleCollector.AllSymbolTriangleMapping.AddOrUpdate(pair, new List<Triangle>() { newTriangle }, (key, triangleList) =>
-                                            {
-                                                if (key == pair)
-                                                {
-                                                    triangleList.Add(newTriangle);
-                                                }
-                                                return triangleList;
-                                            });
-                                        }
-                                    }
-                            }
-                        }
-                    }
-                }
-        }
-        
     }
 }
 

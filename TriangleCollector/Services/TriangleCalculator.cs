@@ -7,6 +7,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.Services
 {
@@ -22,16 +23,20 @@ namespace TriangleCollector.Services
 
         private double percentWasted = 0;
 
-        public TriangleCalculator(ILogger<TriangleCalculator> logger)
+        private Exchange exchange { get; set; }
+
+        public TriangleCalculator(ILogger<TriangleCalculator> logger, Exchange exch)
         {
             _logger = logger;
             CalculatorId = 1;
+            exchange = exch;
         }
 
-        public TriangleCalculator(ILogger<TriangleCalculator> logger, int calculatorCount)
+        public TriangleCalculator(ILogger<TriangleCalculator> logger, int calculatorCount, Exchange exch)
         {
             _logger = logger;
             CalculatorId = calculatorCount;
+            exchange = exch;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -54,11 +59,11 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (TriangleCollector.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
+                if (exchange.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
                 {
-                    var firstOrderbookSet = TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out Orderbook firstSymbolOrderbook);
-                    var secondOrderbookSet = TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out Orderbook secondSymbolOrderbook);
-                    var thirdOrderbookSet = TriangleCollector.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out Orderbook thirdSymbolOrderbook);
+                    var firstOrderbookSet = exchange.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out Orderbook firstSymbolOrderbook);
+                    var secondOrderbookSet = exchange.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out Orderbook secondSymbolOrderbook);
+                    var thirdOrderbookSet = exchange.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out Orderbook thirdSymbolOrderbook);
 
                     if (firstOrderbookSet && secondOrderbookSet && thirdOrderbookSet)
                     {
@@ -80,7 +85,7 @@ namespace TriangleCollector.Services
                         //percentWasted = (timeWasters / totalCalculations) * 100;
                         //_logger.LogDebug($"Total calcs: {totalCalculations} | Time wasters: {timeWasters} | % time wasters {percentWasted}");
                         TriangleCollector.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), newestTimestamp, (key, oldValue) => oldValue = newestTimestamp);
-                        TriangleCollector.RecalculatedTriangles.Enqueue(triangle);
+                        exchange.RecalculatedTriangles.Enqueue(triangle);
                     }
                 }
             }

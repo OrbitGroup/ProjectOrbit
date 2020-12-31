@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.Models
 {
@@ -14,6 +15,10 @@ namespace TriangleCollector.Models
     public class Orderbook
     {
         public string symbol { get; set; }
+
+        public string baseCurrency { get; set; } //the base currency expresses the currency in which the quantity of the order is expressed. I.E. when you are buying/selling ETHBTC you are buying selling a qty of ETH.
+        public string quoteCurrency { get; set; } //quote currency expresses the currency in which the price of this market is quoted. I.E. 'ETHBTC's price is quoted in BTC.
+        public Exchange exchange { get; set; } //which exchange the market belongs to
 
         public int sequence { get; set; }
 

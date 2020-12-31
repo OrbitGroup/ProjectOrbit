@@ -19,40 +19,33 @@ using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using TriangleCollector.Models;
 using TriangleCollector.Services;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector
 {
     public class TriangleCollector
     {
-
-        private const string Uri = "wss://api.hitbtc.com/api/2/ws";
-
-        public static ConcurrentDictionary<string, Orderbook> OfficialOrderbooks = new ConcurrentDictionary<string, Orderbook>();
-
-        public static ConcurrentDictionary<string, Triangle> Triangles = new ConcurrentDictionary<string, Triangle>();
+        public static ConcurrentDictionary<string, Triangle> Triangles = new ConcurrentDictionary<string, Triangle>(); //delete once QueueMonitor refactored
 
         public static ConcurrentDictionary<string, DateTime> TriangleRefreshTimes = new ConcurrentDictionary<string, DateTime>();
 
-        public static ConcurrentDictionary<string, List<Triangle>> AllSymbolTriangleMapping = new ConcurrentDictionary<string, List<Triangle>>();
+        public static ConcurrentDictionary<string, int> ProfitableSymbolMapping = new ConcurrentDictionary<string, int>(); //this can stay here for now, but ultimately will reside within the exchange objects
 
-        public static ConcurrentDictionary<string, int> ProfitableSymbolMapping = new ConcurrentDictionary<string, int>();
-
-        public static HashSet<string> triangleEligiblePairs = new HashSet<string>();
-
-        public static ConcurrentBag<string> ActiveSymbols = new ConcurrentBag<string>();
-
-        public static ConcurrentQueue<Triangle> TrianglesToRecalculate = new ConcurrentQueue<Triangle>();
+        public static ConcurrentQueue<Triangle> TrianglesToRecalculate = new ConcurrentQueue<Triangle>(); //delete once QueueMonitor refactored
 
         public static ConcurrentQueue<Triangle> RecalculatedTriangles = new ConcurrentQueue<Triangle>();
 
-        //stats data structures:
-        public static ConcurrentQueue<long> MergeTimings = new ConcurrentQueue<long>();
+        public static ConcurrentQueue<long> MergeTimings = new ConcurrentQueue<long>(); //I don't think this is needed?
 
-        public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>();
+        public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<WebSocketAdapter> Clients = new List<WebSocketAdapter>();
+        public static List<String> exchangeList = new List<String>() { "hitbtc" };//, "binance" }; 
+        public static List<Exchange> exchanges = new List<Exchange>();
+        public static ExchangeAPI restAPIs = new ExchangeAPI();
 
-        public static double CreateSortedCounter = 0;
+
+        //TO-DO: have these counters either included in the exchange objects or in another object 
+        public static double allOrderBookCounter = 0;
 
         public static double InsideLayerCounter = 0;
 
@@ -62,16 +55,11 @@ namespace TriangleCollector
 
         public static double NegativePriceChangeCounter = 0;
 
-        public static double allOrderBookCounter = 0;
-
-        public static double impactedTriangleCounter = 0;
-        
-        public static double redundantTriangleCounter = 0;
-
 
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            initializeExchanges(); //exchange objects are initialized synchronously and their constructors map out every possible triangular arbitrage trade. 
+            CreateHostBuilder(args).Build().Run(); //the orderbooksubscriber service then references those mapped markets 
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -84,22 +72,20 @@ namespace TriangleCollector
             })
             .ConfigureServices((hostContext, services) =>
             {
-                services.AddHostedService<QueueMonitor>();
-                services.AddHostedService<OrderbookSubscriber>();
-                services.AddHostedService<TriangleCalculator>();
+                //services.AddHostedService<QueueMonitor>(); one is started for each exchange
+                services.AddHostedService<OrderbookSubscriber>(); //this is the only service that starts standalone
+                //services.AddHostedService<TriangleCalculator>(); one is started for each exchange
                 //services.AddHostedService<TrianglePublisher>();
             });
 
-        public static async Task<WebSocketAdapter> GetExchangeClientAsync()
+       
+        public static void initializeExchanges()
         {
-            var client = new ClientWebSocket();
-            var factory = new LoggerFactory();
-            var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
-            
-            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
-            await client.ConnectAsync(new Uri(Uri), CancellationToken.None);
-            Clients.Add(adapter);
-            return adapter;
+            foreach(string exchangeName in exchangeList)
+            {
+                var exchange = new Exchange(exchangeName);
+                exchanges.Add(exchange);
+            }
         }
     }
 }

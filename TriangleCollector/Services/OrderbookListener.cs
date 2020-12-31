@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.Services
 {
@@ -20,10 +21,13 @@ namespace TriangleCollector.Services
 
         private IClientWebSocket client;
 
-        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client)
+        private Exchange exchange { get; set; }
+
+        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, Exchange exch)
         {
             _logger = logger;
             this.client = client;
+            exchange = exch;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -63,19 +67,13 @@ namespace TriangleCollector.Services
 
                                 if (orderbook.symbol != null)
                                 {
-                                    var orderbookUpdateDelta = DateTime.UtcNow.Subtract(orderbook.timestamp);
-                                    TriangleCollector.OrderbookUpdateDeltas.Enqueue(orderbookUpdateDelta);
-
                                     if (orderbook.method == "updateOrderbook") // if its an update, merge with the OfficialOrderbook
                                     {
                                         try
                                         {
-                                            TriangleCollector.OfficialOrderbooks.TryGetValue(orderbook.symbol, out Orderbook OfficialOrderbook);
+                                            exchange.OfficialOrderbooks.TryGetValue(orderbook.symbol, out Orderbook OfficialOrderbook);
                                             if (OfficialOrderbook != null)
                                             {
-                                                stopwatch.Reset();
-                                                stopwatch.Start();
-
                                                 bool shouldRecalculate = false;
                                                 lock (OfficialOrderbook.orderbookLock) //only lock the orderbook when the orderbook is actually being modified
                                                 {
@@ -83,25 +81,22 @@ namespace TriangleCollector.Services
                                                 }    
                                                 if (shouldRecalculate)
                                                 {
-                                                    if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
+                                                    if (exchange.triarbMarketMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
                                                     {
                                                         foreach (var impactedTriangle in impactedTriangles)
                                                         {
-                                                            TriangleCollector.impactedTriangleCounter++;
+                                                            exchange.impactedTriangleCounter++;
                                                             if ((DateTime.UtcNow - impactedTriangle.lastQueued).TotalSeconds > 1) //this triangle hasn't been queued in the last second
                                                             {
-                                                                TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                                                                exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
                                                                 impactedTriangle.lastQueued = DateTime.UtcNow;
                                                             } else
                                                             {
-                                                                TriangleCollector.redundantTriangleCounter++;
+                                                                exchange.redundantTriangleCounter++;
                                                             }
                                                         }
                                                     }
                                                 }
-                                                
-                                                stopwatch.Stop();
-                                                TriangleCollector.MergeTimings.Enqueue(stopwatch.ElapsedMilliseconds);
                                             }
                                         }
                                         catch (Exception ex)
@@ -109,22 +104,20 @@ namespace TriangleCollector.Services
                                             Console.WriteLine($"Error merging orderbook for symbol {orderbook.symbol}");
                                             Console.WriteLine(ex.Message);
                                         }
-
                                     }
                                     //This is called whenever the method is not update. The first response we get is just confirmation we subscribed, second response is the "snapshot" which becomes the OfficialOrderbook
                                     else if (orderbook.method == "snapshotOrderbook") 
                                     {
-                                        TriangleCollector.OfficialOrderbooks.AddOrUpdate(orderbook.symbol, orderbook, (key, oldValue) => oldValue = orderbook);
-                                        if (TriangleCollector.AllSymbolTriangleMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
+                                        exchange.OfficialOrderbooks.AddOrUpdate(orderbook.symbol, orderbook, (key, oldValue) => oldValue = orderbook);
+                                        if (exchange.triarbMarketMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
                                         {
                                             foreach(var impactedTriangle in impactedTriangles)
                                             {
-                                                TriangleCollector.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                                                exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
                                                 impactedTriangle.lastQueued = DateTime.UtcNow;
                                             }
                                         }
                                     }
-
                                 }
                             }
                             catch (Exception ex)

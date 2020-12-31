@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.WebSockets;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.Services
 {
@@ -26,10 +27,13 @@ namespace TriangleCollector.Services
 
         private int NumberOfSecondsUntilStale = 60;
 
-        public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger)
+        private Exchange exchange { get; set; }
+
+        public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger, Exchange exch)
         {
             _factory = factory;
             _logger = logger;
+            exchange = exch;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -45,18 +49,18 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (TriangleCollector.Clients.Any(x => x.State != WebSocketState.Open && x.State != WebSocketState.Connecting))
+                /*if (TriangleCollector.Clients.Any(x => x.State != WebSocketState.Open && x.State != WebSocketState.Connecting))
                 {
                     _logger.LogError("One or more clients have disconnected");
-                }
+                }*/
 
-                // _logger.LogDebug($"Total Updates: {TriangleCollector.allOrderBookCounter} - LayerCounter %: {TriangleCollector.LayerCounter/TriangleCollector.allOrderBookCounter} - Positive Price Change%: {TriangleCollector.PositivePriceChangeCounter / TriangleCollector.allOrderBookCounter}");
-                _logger.LogDebug($"raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Inside Layers {TriangleCollector.InsideLayerCounter} - Outside Layers {TriangleCollector.OutsideLayerCounter} - impacted triangles: {TriangleCollector.impactedTriangleCounter} - redundant triangles eliminated: {TriangleCollector.redundantTriangleCounter} - Triangle Queue Size: {TriangleCollector.TrianglesToRecalculate.Count} - Triangles Calculated: {TriangleCollector.RecalculatedTriangles.Count}");
 
-                if (TriangleCollector.OfficialOrderbooks.Count > 0 && TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget)
-                {
+                _logger.LogDebug($"Grand total raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Inside Layers {TriangleCollector.InsideLayerCounter} - Outside Layers {TriangleCollector.OutsideLayerCounter} - impacted triangles: {exchange.impactedTriangleCounter} - redundant triangles eliminated: {exchange.redundantTriangleCounter} - Triangle Queue Size: {exchange.TrianglesToRecalculate.Count} - Triangles Calculated: {exchange.RecalculatedTriangles.Count}");
+
+                //if (TriangleCollector.OfficialOrderbooks.Count > 0 && TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget)
+                //{
                     //_logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}");
-                }
+                //}
 
                 var sb = new StringBuilder();
 
@@ -85,11 +89,11 @@ namespace TriangleCollector.Services
                     //_logger.LogDebug($"{sb}");
                 }
 
-                if (TriangleCollector.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && calculatorCount < MaxTriangleCalculators)
+                if (exchange.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && calculatorCount < MaxTriangleCalculators)
                 {
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
                     calculatorCount++;
-                    var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), calculatorCount);
+                    var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), calculatorCount, exchange);
                     await newCalc.StartAsync(stoppingToken);
                 }
                 
