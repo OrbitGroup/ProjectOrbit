@@ -47,7 +47,7 @@ namespace TriangleCollector.Services
             foreach (Exchange exchange in TriangleCollector.exchanges)
             {
                 string exchangeName = exchange.exchangeName;
-                _logger.LogDebug($"{exchange.exchangeName}: Subscribing to {exchange.triarbEligibleMarkets.Count()} pairs.");
+                _logger.LogDebug($"{exchange.exchangeName}: Subscribing to {exchange.triarbEligibleMarkets.Count()} markets.");
 
                 var client = await ExchangeAPI.GetExchangeClientAsync(exchangeName);
                 var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
@@ -65,6 +65,7 @@ namespace TriangleCollector.Services
 
                 foreach (var market in exchange.triarbEligibleMarkets)
                 {
+                    int BinanceID = 1; //binance requires that every websocket subscription has an ID, which the subscriber needs to define.
                     try
                     {
                         if (CurrentClientPairCount > MaxPairsPerClient)
@@ -81,7 +82,8 @@ namespace TriangleCollector.Services
                         }
                         else if (exchangeName == "binance")
                         {
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"wss://stream.binance.com:9443/ws/{market.symbol}@depth")), WebSocketMessageType.Text, true, cts);
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\":  [\"{market.symbol}@depth\"], \"ID\":{BinanceID}\" }}")), WebSocketMessageType.Text, true, cts);
+                            BinanceID++;
                         }
 
                         CurrentClientPairCount++;

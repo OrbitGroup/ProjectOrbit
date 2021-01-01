@@ -130,6 +130,9 @@ namespace TriangleCollector.Models.Exchange_Models
             triarbEligibleMarkets.Add(firstMarket);
             triarbEligibleMarkets.Add(secondMarket);
             triarbEligibleMarkets.Add(thirdMarket);
+            OfficialOrderbooks.AddOrUpdate(firstMarket.symbol, firstMarket, (key, oldValue) => oldValue = firstMarket);
+            OfficialOrderbooks.AddOrUpdate(secondMarket.symbol, secondMarket, (key, oldValue) => oldValue = secondMarket);
+            OfficialOrderbooks.AddOrUpdate(thirdMarket.symbol, thirdMarket, (key, oldValue) => oldValue = thirdMarket);
             foreach (var trade in new List<string> { firstMarket.symbol, secondMarket.symbol, thirdMarket.symbol })
             {
                 triarbMarketMapping.AddOrUpdate(trade, new List<Triangle>() { newTriangle }, (key, triangleList) =>

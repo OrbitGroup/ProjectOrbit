@@ -62,61 +62,45 @@ namespace TriangleCollector.Services
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
                         {
                             try
-                            {
+                            {   
                                 var orderbook = JsonSerializer.Deserialize<Orderbook>(await reader.ReadToEndAsync());
 
                                 if (orderbook.symbol != null)
                                 {
-                                    if (orderbook.method == "updateOrderbook") // if its an update, merge with the OfficialOrderbook
+                                    try
                                     {
-                                        try
+                                        exchange.OfficialOrderbooks.TryGetValue(orderbook.symbol, out Orderbook OfficialOrderbook);
+                                        if (OfficialOrderbook != null)
                                         {
-                                            exchange.OfficialOrderbooks.TryGetValue(orderbook.symbol, out Orderbook OfficialOrderbook);
-                                            if (OfficialOrderbook != null)
+                                            bool shouldRecalculate = false;
+                                            lock (OfficialOrderbook.orderbookLock) //only lock the orderbook when the orderbook is actually being modified
                                             {
-                                                bool shouldRecalculate = false;
-                                                lock (OfficialOrderbook.orderbookLock) //only lock the orderbook when the orderbook is actually being modified
+                                                shouldRecalculate = OfficialOrderbook.Merge(orderbook);
+                                            }    
+                                            if (shouldRecalculate)
+                                            {
+                                                if (exchange.triarbMarketMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
                                                 {
-                                                    shouldRecalculate = OfficialOrderbook.Merge(orderbook);
-                                                }    
-                                                if (shouldRecalculate)
-                                                {
-                                                    if (exchange.triarbMarketMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
+                                                    foreach (var impactedTriangle in impactedTriangles)
                                                     {
-                                                        foreach (var impactedTriangle in impactedTriangles)
+                                                        exchange.impactedTriangleCounter++;
+                                                        if ((DateTime.UtcNow - impactedTriangle.lastQueued).TotalSeconds > 1) //this triangle hasn't been queued in the last second
                                                         {
-                                                            exchange.impactedTriangleCounter++;
-                                                            if ((DateTime.UtcNow - impactedTriangle.lastQueued).TotalSeconds > 1) //this triangle hasn't been queued in the last second
-                                                            {
-                                                                exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                                                                impactedTriangle.lastQueued = DateTime.UtcNow;
-                                                            } else
-                                                            {
-                                                                exchange.redundantTriangleCounter++;
-                                                            }
+                                                            exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                                                            impactedTriangle.lastQueued = DateTime.UtcNow;
+                                                        } else
+                                                        {
+                                                            exchange.redundantTriangleCounter++;
                                                         }
                                                     }
                                                 }
                                             }
                                         }
-                                        catch (Exception ex)
-                                        {
-                                            Console.WriteLine($"Error merging orderbook for symbol {orderbook.symbol}");
-                                            Console.WriteLine(ex.Message);
-                                        }
                                     }
-                                    //This is called whenever the method is not update. The first response we get is just confirmation we subscribed, second response is the "snapshot" which becomes the OfficialOrderbook
-                                    else if (orderbook.method == "snapshotOrderbook") 
+                                    catch (Exception ex)
                                     {
-                                        exchange.OfficialOrderbooks.AddOrUpdate(orderbook.symbol, orderbook, (key, oldValue) => oldValue = orderbook);
-                                        if (exchange.triarbMarketMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles))
-                                        {
-                                            foreach(var impactedTriangle in impactedTriangles)
-                                            {
-                                                exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                                                impactedTriangle.lastQueued = DateTime.UtcNow;
-                                            }
-                                        }
+                                        Console.WriteLine($"Error merging orderbook for symbol {orderbook.symbol}");
+                                        Console.WriteLine(ex.Message);
                                     }
                                 }
                             }

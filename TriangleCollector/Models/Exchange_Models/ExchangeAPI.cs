@@ -23,7 +23,7 @@ namespace TriangleCollector.Models.Exchange_Models
             tickerRESTAPI.Add("hitbtc", "https://api.hitbtc.com/api/2/public/symbol");
             tickerRESTAPI.Add("binance", "https://api.binance.com/api/v3/exchangeInfo");
             socketClientAPI.Add("hitbtc", "wss://api.hitbtc.com/api/2/ws");
-            socketClientAPI.Add("binance", "wss://stream.binance.com:9443");
+            socketClientAPI.Add("binance", "wss://stream.binance.com:9443/ws");
             PingRESTAPI();
         }
         public void PingRESTAPI() //each exchange requires a different method to parse their REST API output

@@ -24,10 +24,10 @@ namespace TriangleCollector.Models
 
         public string method { get; set; }
 
-        public ConcurrentDictionary<decimal, decimal> officialAsks { get; set; }
+        public ConcurrentDictionary<decimal, decimal> officialAsks { get; set; } = new ConcurrentDictionary<decimal, decimal>();
         public SortedDictionary<decimal, decimal> SortedAsks { get; set; } = new SortedDictionary<decimal, decimal>();
 
-        public ConcurrentDictionary<decimal, decimal> officialBids { get; set; }
+        public ConcurrentDictionary<decimal, decimal> officialBids { get; set; } = new ConcurrentDictionary<decimal, decimal>();
         public SortedDictionary<decimal, decimal> SortedBids { get; set; } = new SortedDictionary<decimal, decimal>();
 
         public DateTime timestamp { get; set; }
@@ -68,8 +68,14 @@ namespace TriangleCollector.Models
 
                 TriangleCollector.allOrderBookCounter++;
 
-                var previousLowestAsk = officialAsks.Keys.Min();
-                var previousHighestBid = officialBids.Keys.Max();
+                decimal previousLowestAsk = 0;
+                decimal previousHighestBid = 0;
+                if(officialAsks.Count() != 0 && officialBids.Count() != 0)
+                {
+                    previousLowestAsk = officialAsks.Keys.Min();
+                    previousHighestBid = officialBids.Keys.Max();
+                }
+                
 
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
                 update.officialAsks.AsParallel().ForAll(UpdateAskLayer);
