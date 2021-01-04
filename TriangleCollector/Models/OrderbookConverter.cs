@@ -33,72 +33,141 @@ namespace TriangleCollector.Models
             bool ask = true;
             decimal lastPrice = 0;
 
-            string currentProperty = string.Empty;
-
-            while (reader.Read())
+            var firstLine = string.Empty; //the first line will determine which exchange the JSON response is from
+            if(reader.Read() && reader.TokenType != JsonTokenType.StartObject)
             {
-                if (reader.TokenType == JsonTokenType.PropertyName)
+                firstLine = reader.GetString();
+                //Console.WriteLine($"first line is {firstLine}");
+            }
+            string currentProperty = string.Empty;
+            
+            if(firstLine == "jsonrpc") //hitbtc
+            {
+                while (reader.Read())
                 {
-                    currentProperty = reader.GetString();
-                }
-                else if (reader.TokenType == JsonTokenType.True || reader.TokenType == JsonTokenType.False)
-                {
-                    var value = reader.GetBoolean();
-                }
-                else if (reader.TokenType == JsonTokenType.String)
-                {
-                    if (currentProperty == "price")
+                    if (reader.TokenType == JsonTokenType.PropertyName)
                     {
-                        lastPrice = decimal.Parse(reader.GetString());
+                        currentProperty = reader.GetString();
                     }
-                    else if (currentProperty == "size")
+                    else if (reader.TokenType == JsonTokenType.True || reader.TokenType == JsonTokenType.False)
                     {
-                        var size = decimal.Parse(reader.GetString());
-                        orders.TryAdd(lastPrice, size);
+                        var value = reader.GetBoolean();
                     }
-                    else
+                    else if (reader.TokenType == JsonTokenType.String)
                     {
-                        if (currentProperty == "symbol")
+                        if (currentProperty == "price")
+                        {
+                            lastPrice = decimal.Parse(reader.GetString());
+                        }
+                        else if (currentProperty == "size")
+                        {
+                            var size = decimal.Parse(reader.GetString());
+                            orders.TryAdd(lastPrice, size);
+                        }
+                        else
+                        {
+                            if (currentProperty == "symbol")
+                            {
+                                ob.symbol = reader.GetString();
+                            }
+                            else if (currentProperty == "timestamp")
+                            {
+                                ob.timestamp = reader.GetDateTime();
+                            }
+                            else if (currentProperty == "method") //can potentially remove this as the method no longer has any implications
+                            {
+                                ob.method = reader.GetString();
+                            }
+                        }
+                    }
+                    else if (reader.TokenType == JsonTokenType.StartArray)
+                    {
+                        if (currentProperty == "ask")
+                        {
+                            ask = true;
+                        }
+                        else
+                        {
+                            ask = false;
+                        }
+                    }
+                    else if (reader.TokenType == JsonTokenType.Number)
+                    {
+                        if (currentProperty == "sequence") 
+                        {
+                            ob.sequence = reader.GetInt64();
+                        }
+                    }
+                    else if (reader.TokenType == JsonTokenType.EndArray)
+                    {
+                        if (ask)
+                        {
+                            ob.officialAsks = orders;
+                            orders = new ConcurrentDictionary<decimal, decimal>();
+                        }
+                        else
+                        {
+                            ob.officialBids = orders;
+                            orders = new ConcurrentDictionary<decimal, decimal>();
+                        }
+                    }
+                }
+                //Console.WriteLine($"{ob.symbol}, {ob.sequence}, {ob.officialAsks.Count()}, {ob.officialBids.Count()}");
+                return ob;
+
+
+            } else if (firstLine == "e" || firstLine == "result") //binance
+            {
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.PropertyName)
+                    {
+                        currentProperty = reader.GetString();
+                    }
+                    else if (reader.TokenType == JsonTokenType.Number && currentProperty == "u")
+                    {
+                        ob.sequence = reader.GetInt64();
+                    }
+                    else if (reader.TokenType == JsonTokenType.String)
+                    {
+                        if (currentProperty == "s")
                         {
                             ob.symbol = reader.GetString();
                         }
-                        else if (currentProperty == "timestamp")
+                    }
+                    else if (reader.TokenType == JsonTokenType.StartArray)
+                    {
+                        reader.Read();
+                        if (reader.TokenType == JsonTokenType.StartArray)
                         {
-                            ob.timestamp = reader.GetDateTime();
+                            reader.Read();
                         }
-                        else if (currentProperty == "method")
+                        var layers = new List<decimal>();
+                        while (reader.TokenType != JsonTokenType.EndArray && reader.TokenType != JsonTokenType.StartArray)
                         {
-                            ob.method = reader.GetString();
+                            var price = Convert.ToDecimal(reader.GetString());
+                            reader.Read();
+                            var size = Convert.ToDecimal(reader.GetString());
+                            if (currentProperty == "a")
+                            {
+                                ob.officialAsks.TryAdd(price, size);
+                            }
+                            else if (currentProperty == "b")
+                            {
+                                ob.officialBids.TryAdd(price, size);
+                            }
+                            reader.Read();
                         }
-                    }
+                    } 
                 }
-                else if (reader.TokenType == JsonTokenType.StartArray)
-                {
-                    ask = currentProperty == "ask" ? true : false;
-                }
-                else if (reader.TokenType == JsonTokenType.Number)
-                {
-                    if (currentProperty == "sequence")
-                    {
-                        ob.sequence = reader.GetInt32();
-                    }
-                }
-                else if (reader.TokenType == JsonTokenType.EndArray)
-                {
-                    if (ask)
-                    {
-                        ob.officialAsks = orders;
-                        orders = new ConcurrentDictionary<decimal, decimal>();
-                    }
-                    else
-                    {
-                        ob.officialBids = orders;
-                        orders = new ConcurrentDictionary<decimal, decimal>();
-                    }
-                }
+                
+                return ob;
             }
+            return ob;  
 
-            return ob;
+
+
+            
         }
 
         /// <summary>

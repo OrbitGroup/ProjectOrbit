@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models;
 using TriangleCollector.Models.Exchange_Models;
+using System.Net.Http;
 
 namespace TriangleCollector.Services
 {
@@ -24,6 +25,7 @@ namespace TriangleCollector.Services
         private readonly int MaxPairsPerClient = 40;
 
         private int CurrentClientPairCount = 0;
+        private int BinanceID = 1; //binance requires that every websocket subscription has an ID.
 
         public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
@@ -65,7 +67,6 @@ namespace TriangleCollector.Services
 
                 foreach (var market in exchange.triarbEligibleMarkets)
                 {
-                    int BinanceID = 1; //binance requires that every websocket subscription has an ID, which the subscriber needs to define.
                     try
                     {
                         if (CurrentClientPairCount > MaxPairsPerClient)
@@ -76,16 +77,18 @@ namespace TriangleCollector.Services
                             await listener.StartAsync(stoppingToken);
                         }
                         var cts = new CancellationToken();
-                        if (exchangeName == "hitbtc")
+                        if (exchangeName == "hitbtc") //hitbtc provdes both a snapshot of the orderbook and subsequent updates.
                         {
                             await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.symbol}\" }} }}")), WebSocketMessageType.Text, true, cts);
                         }
-                        else if (exchangeName == "binance")
+                        else if (exchangeName == "binance") //binance's websocket doesn't provide a snapshot of the orderbook; you must create your own snapshot first by requesting a rest API response for every market. The websocket then provides subsequent updates.
                         {
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\":  [\"{market.symbol}@depth\"], \"ID\":{BinanceID}\" }}")), WebSocketMessageType.Text, true, cts);
-                            BinanceID++;
+                            await binanceSnapshot(market); //get snapshot via REST api
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.symbol.ToLower()}@depth\"], \"id\": {BinanceID} }}")), WebSocketMessageType.Text, true, cts);
+                            await Task.Delay(500); //wait 500 ms for the connection to be established
                         }
-
+                        _logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
+                        BinanceID++;
                         CurrentClientPairCount++;
                     }
                     catch (Exception ex)
@@ -95,6 +98,31 @@ namespace TriangleCollector.Services
                     }
                 }
                 _logger.LogDebug($"Subscribing complete for {exchangeName}.");
+            }
+        }
+        public async Task binanceSnapshot(Orderbook market)
+        {
+            var httpClient = new HttpClient();
+            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={market.symbol}&limit=1000").Result).Result.RootElement;
+            var bids = snapshot.GetProperty("bids").EnumerateArray();
+            foreach (var bid in bids)
+            {
+                string price = bid[0].GetString();
+                decimal priceDecimal = Convert.ToDecimal(price);
+                string size = bid[1].GetString();
+                decimal sizeDecimal = Convert.ToDecimal(size);
+
+                market.officialBids.TryAdd(priceDecimal, sizeDecimal);
+            }
+            var asks = snapshot.GetProperty("asks").EnumerateArray();
+            foreach (var ask in asks)
+            {
+                string price = ask[0].GetString();
+                decimal priceDecimal = Convert.ToDecimal(price);
+                string size = ask[1].GetString();
+                decimal sizeDecimal = Convert.ToDecimal(size);
+
+                market.officialAsks.TryAdd(priceDecimal, sizeDecimal);
             }
         }
     }

@@ -20,7 +20,7 @@ namespace TriangleCollector.Models
         public string quoteCurrency { get; set; } //quote currency expresses the currency in which the price of this market is quoted. I.E. 'ETHBTC's price is quoted in BTC.
         public Exchange exchange { get; set; } //which exchange the market belongs to
 
-        public int sequence { get; set; }
+        public long sequence { get; set; }
 
         public string method { get; set; }
 
@@ -65,7 +65,6 @@ namespace TriangleCollector.Models
                 this.sequence = update.sequence;
                 this.timestamp = update.timestamp;
                 this.method = update.method;
-
                 TriangleCollector.allOrderBookCounter++;
 
                 decimal previousLowestAsk = 0;

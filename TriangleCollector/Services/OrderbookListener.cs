@@ -62,8 +62,11 @@ namespace TriangleCollector.Services
                         using (var reader = new StreamReader(ms, Encoding.UTF8))
                         {
                             try
-                            {   
-                                var orderbook = JsonSerializer.Deserialize<Orderbook>(await reader.ReadToEndAsync());
+                            {
+
+                                var payload = await reader.ReadToEndAsync();
+
+                                var orderbook = JsonSerializer.Deserialize<Orderbook>(payload); //takes a string and returns an orderbook
 
                                 if (orderbook.symbol != null)
                                 {
@@ -93,15 +96,24 @@ namespace TriangleCollector.Services
                                                             exchange.redundantTriangleCounter++;
                                                         }
                                                     }
+                                                } else
+                                                {
+                                                    Console.WriteLine("no mapped triangles corresponding to orderbook");
                                                 }
                                             }
+                                        } else
+                                        {
+                                            Console.WriteLine("there was no corresponding official orderbook to merge to");
                                         }
                                     }
                                     catch (Exception ex)
                                     {
-                                        Console.WriteLine($"Error merging orderbook for symbol {orderbook.symbol}");
+                                        Console.WriteLine($"Error merging orderbook for market {orderbook.symbol} on {exchange.exchangeName}. Websocket payload was {payload}");
                                         Console.WriteLine(ex.Message);
                                     }
+                                } else
+                                {
+                                    //Console.WriteLine($"orderbook is null, websocket payload was {payload}");
                                 }
                             }
                             catch (Exception ex)
