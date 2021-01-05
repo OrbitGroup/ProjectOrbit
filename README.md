@@ -4,7 +4,7 @@ TriangleCollector is a containerized .NET Core app which determines all possible
 
 Currently the application initiates and maintains websocket connections for 1,949 markets, which interact with each other to form 2,070 possible triangular arbitrage opportunities. In receiving real-time orderbook updates to 1,949 markets via the exchange's websocket API, this yields thousands of triangular arbitrage opportunities to calculate per second. 
 
-This is very much a work-in-progress and there is still a lot to be done, including connecting to multiple exchanges, storing market data and triangular arbitrage oppportunies in a database, and publishing this data via a front-end solution.
+This is very much a work-in-progress and there is still a lot to be done, including storing market data and triangular arbitrage oppportunies in a database, and publishing this data via a front-end solution.
 
 ## Development
 
