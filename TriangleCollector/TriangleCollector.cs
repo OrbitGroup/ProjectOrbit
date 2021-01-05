@@ -25,36 +25,13 @@ namespace TriangleCollector
 {
     public class TriangleCollector
     {
-        public static ConcurrentDictionary<string, Triangle> Triangles = new ConcurrentDictionary<string, Triangle>(); //delete once QueueMonitor refactored
-
-        public static ConcurrentDictionary<string, DateTime> TriangleRefreshTimes = new ConcurrentDictionary<string, DateTime>();
-
-        public static ConcurrentDictionary<string, int> ProfitableSymbolMapping = new ConcurrentDictionary<string, int>(); //this can stay here for now, but ultimately will reside within the exchange objects
-
-        public static ConcurrentQueue<Triangle> TrianglesToRecalculate = new ConcurrentQueue<Triangle>(); //delete once QueueMonitor refactored
-
-        public static ConcurrentQueue<Triangle> RecalculatedTriangles = new ConcurrentQueue<Triangle>();
-
         public static ConcurrentQueue<long> MergeTimings = new ConcurrentQueue<long>(); //I don't think this is needed?
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<String> exchangeList = new List<String>() { "hitbtc" , "binance" }; 
-        public static List<Exchange> exchanges = new List<Exchange>();
-        public static ExchangeAPI restAPIs = new ExchangeAPI();
-
-
-        //TO-DO: have these counters either included in the exchange objects or in another object 
-        public static double allOrderBookCounter = 0;
-
-        public static double InsideLayerCounter = 0;
-
-        public static double OutsideLayerCounter = 0;
-
-        public static double PositivePriceChangeCounter = 0;
-
-        public static double NegativePriceChangeCounter = 0;
-
+        public static List<String> exchangeList = new List<String>() { "hitbtc" , "binance" }; //list of exchanges to initialize
+        public static List<Exchange> exchanges = new List<Exchange>(); //contains all exchange objects
+        public static ExchangeAPI restAPIs = new ExchangeAPI(); //contains the unique API URLs for each exchange
 
         public static void Main(string[] args)
         {
@@ -74,7 +51,8 @@ namespace TriangleCollector
             {
                 //services.AddHostedService<QueueMonitor>(); one is started for each exchange
                 services.AddHostedService<OrderbookSubscriber>(); //this is the only service that starts standalone
-                //services.AddHostedService<TriangleCalculator>(); one is started for each exchange
+                services.AddHostedService<ActivityMonitor>();
+                //services.AddHostedService<TriangleCalculator>(); started for each exchange
                 //services.AddHostedService<TrianglePublisher>();
             });
 

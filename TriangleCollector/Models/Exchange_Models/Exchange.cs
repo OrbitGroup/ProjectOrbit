@@ -45,6 +45,10 @@ namespace TriangleCollector.Models.Exchange_Models
 
         public double NegativePriceChangeCounter = 0;
 
+        public ConcurrentDictionary<string, int> ProfitableSymbolMapping = new ConcurrentDictionary<string, int>();
+
+        public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes = new ConcurrentDictionary<string, DateTime>();
+
         public ConcurrentQueue<Triangle> RecalculatedTriangles = new ConcurrentQueue<Triangle>();
 
         public string tickerRESTAPI { get; set; } //the URL of rest API call for the exchange
@@ -125,7 +129,7 @@ namespace TriangleCollector.Models.Exchange_Models
         public void mapHelper(string firstDirection, string secondDirection, string thirdDirection, Orderbook firstMarket, Orderbook secondMarket, Orderbook thirdMarket)
         {
             var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
-            var newTriangle = new Triangle(firstMarket.symbol, secondMarket.symbol, thirdMarket.symbol, direction, _factory.CreateLogger<Triangle>());
+            var newTriangle = new Triangle(firstMarket.symbol, secondMarket.symbol, thirdMarket.symbol, direction, _factory.CreateLogger<Triangle>(), this);
             //Console.WriteLine($"{exchangeName}: {firstDirection} {firstMarket.symbol}, {secondDirection} {secondMarket.symbol}, {thirdDirection} {thirdMarket.symbol}");
             triarbEligibleMarkets.Add(firstMarket);
             triarbEligibleMarkets.Add(secondMarket);

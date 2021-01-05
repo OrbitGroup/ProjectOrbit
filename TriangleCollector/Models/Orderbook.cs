@@ -65,7 +65,7 @@ namespace TriangleCollector.Models
                 this.sequence = update.sequence;
                 this.timestamp = update.timestamp;
                 this.method = update.method;
-                TriangleCollector.allOrderBookCounter++;
+                exchange.allOrderBookCounter++;
 
                 decimal previousLowestAsk = 0;
                 decimal previousHighestBid = 0;
@@ -93,16 +93,16 @@ namespace TriangleCollector.Models
 
         public bool SignificantChange(Orderbook update, decimal previousHighestBid, decimal previousLowestAsk)
         {
-            if (TriangleCollector.ProfitableSymbolMapping.TryGetValue(symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
+            if (exchange.ProfitableSymbolMapping.TryGetValue(symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
             {
                 CreateSorted();
                 if ((update.officialAsks.Count > 0 && update.officialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.officialBids.Count > 0 && update.officialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
                 {
-                    TriangleCollector.InsideLayerCounter++;
+                    exchange.InsideLayerCounter++;
                     return true;
                 } else
                 {
-                    TriangleCollector.OutsideLayerCounter++;
+                    exchange.OutsideLayerCounter++;
                     return false;
                 }
             } 
@@ -110,11 +110,11 @@ namespace TriangleCollector.Models
             {
                 if (officialAsks.Keys.Min() < previousLowestAsk || officialBids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
-                    TriangleCollector.PositivePriceChangeCounter++;
+                    exchange.PositivePriceChangeCounter++;
                     return true;
                 } else //price got worse or did not change
                 {
-                    TriangleCollector.NegativePriceChangeCounter++;
+                    exchange.NegativePriceChangeCounter++;
                     return false;
                 }
             }

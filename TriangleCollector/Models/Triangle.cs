@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Services;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.Models
 {
@@ -16,7 +17,7 @@ namespace TriangleCollector.Models
     {
         public DateTime lastQueued = new DateTime(); //records the last time that this triangle was added to TrianglesToRecalculate
 
-        public string exchange { get; set; }
+        public Exchange exchange { get; set; }
 
         public string FirstSymbol { get; set; }
         public int FirstSymbolLayers { get; set; }
@@ -59,13 +60,14 @@ namespace TriangleCollector.Models
 
         private ILogger<Triangle> _logger;
 
-        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger)
+        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger, Exchange exch)
         {
             this.FirstSymbol = FirstSymbol;
             this.SecondSymbol = SecondSymbol;
             this.ThirdSymbol = ThirdSymbol;
             this.Direction = Direction;
             _logger = logger;
+            exchange = exch;
         }
 
         public IEnumerator<string> GetEnumerator()
@@ -196,9 +198,9 @@ namespace TriangleCollector.Models
             //check to see if the number of layers for this opportunity is higher than the current maximum stored. If so, update that key value pair.
             if (Profit > 0)
             {
-                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(FirstSymbol, FirstSymbolLayers, (key, oldValue) => Math.Max(oldValue, FirstSymbolLayers));
-                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(SecondSymbol, SecondSymbolLayers, (key, oldValue) => Math.Max(oldValue, SecondSymbolLayers));
-                TriangleCollector.ProfitableSymbolMapping.AddOrUpdate(ThirdSymbol, ThirdSymbolLayers, (key, oldValue) => Math.Max(oldValue, ThirdSymbolLayers));
+                exchange.ProfitableSymbolMapping.AddOrUpdate(FirstSymbol, FirstSymbolLayers, (key, oldValue) => Math.Max(oldValue, FirstSymbolLayers));
+                exchange.ProfitableSymbolMapping.AddOrUpdate(SecondSymbol, SecondSymbolLayers, (key, oldValue) => Math.Max(oldValue, SecondSymbolLayers));
+                exchange.ProfitableSymbolMapping.AddOrUpdate(ThirdSymbol, ThirdSymbolLayers, (key, oldValue) => Math.Max(oldValue, ThirdSymbolLayers));
             } else
             {
                 return;

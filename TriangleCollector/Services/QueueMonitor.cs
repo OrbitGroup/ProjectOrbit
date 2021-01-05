@@ -49,46 +49,6 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                /*if (TriangleCollector.Clients.Any(x => x.State != WebSocketState.Open && x.State != WebSocketState.Connecting))
-                {
-                    _logger.LogError("One or more clients have disconnected");
-                }*/
-
-
-                _logger.LogDebug($"Grand total raw orderbook updates: {TriangleCollector.allOrderBookCounter} - positive price change {TriangleCollector.PositivePriceChangeCounter} - negative price change {TriangleCollector.NegativePriceChangeCounter} - Inside Layers {TriangleCollector.InsideLayerCounter} - Outside Layers {TriangleCollector.OutsideLayerCounter} - impacted triangles: {exchange.impactedTriangleCounter} - redundant triangles eliminated: {exchange.redundantTriangleCounter} - Triangle Queue Size: {exchange.TrianglesToRecalculate.Count} - Triangles Calculated: {exchange.RecalculatedTriangles.Count}");
-
-                //if (TriangleCollector.OfficialOrderbooks.Count > 0 && TriangleCollector.TrianglesToRecalculate.Count > QueueSizeTarget)
-                //{
-                    //_logger.LogWarning($"Orderbooks: {TriangleCollector.OfficialOrderbooks.Count} - Triangles: {TriangleCollector.Triangles.Count} - TrianglesToRecalc: {TriangleCollector.TrianglesToRecalculate.Count}");
-                //}
-
-                var sb = new StringBuilder();
-
-                int count = 0;
-                foreach (var triangle in TriangleCollector.Triangles.Values.OrderByDescending(x => x.ProfitPercent))
-                {
-                    if (true)
-                    {
-                        TriangleCollector.TriangleRefreshTimes.TryGetValue(triangle.ToString(), out DateTime refreshTime);
-                        var delay = DateTime.UtcNow.Subtract(refreshTime).TotalSeconds;
-
-                        //TriangleCollector.Triangles.TryGetValue(triangle.Key, out )
-
-                        sb.Append($"Triangle: {triangle} | Profit: {triangle.ProfitPercent} | Volume: {triangle.MaxVolume} | Last Updated: {refreshTime} | Delay: {delay} seconds\n");
-                        count++;
-                    }
-                    
-                    if (count == 5)
-                    {
-                        break;
-                    }
-                }
-
-                if (TriangleCollector.Triangles.Count > 0)
-                {
-                    //_logger.LogDebug($"{sb}");
-                }
-
                 if (exchange.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && calculatorCount < MaxTriangleCalculators)
                 {
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
@@ -96,8 +56,7 @@ namespace TriangleCollector.Services
                     var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), calculatorCount, exchange);
                     await newCalc.StartAsync(stoppingToken);
                 }
-                
-                await Task.Delay(5000, stoppingToken);
+                await Task.Delay(5000);
             }
         }
     }

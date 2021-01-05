@@ -45,7 +45,7 @@ namespace TriangleCollector.Services
 
             stoppingToken.Register(() => _logger.LogDebug("Stopping Triangle Calculator..."));
 
-            _logger.LogDebug($"Starting Triangle Calculator {CalculatorId}");
+            _logger.LogDebug($"Starting Triangle Calculator {CalculatorId} for {exchange.exchangeName}");
 
             await Task.Run(async () =>
             {
@@ -72,9 +72,13 @@ namespace TriangleCollector.Services
                         {
                             continue;
                         }
+                        if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
+                        {
+                            Console.WriteLine($"Profitable Triangular Arbitrage Opportunity --- Exchange: {exchange.exchangeName} - Markets: {firstSymbolOrderbook.symbol}, {secondSymbolOrderbook.symbol} , {thirdSymbolOrderbook.symbol} - Profitability: {triangle.ProfitPercent} - Liquidity: {triangle.MaxVolume} - Profit: {triangle.Profit}BTC");
+                        }
 
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);
-                        TriangleCollector.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
+                        exchange.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
                         var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.timestamp, secondSymbolOrderbook.timestamp, thirdSymbolOrderbook.timestamp }.Max();
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal newEntry);
                         //totalCalculations++;
@@ -84,8 +88,8 @@ namespace TriangleCollector.Services
                         //}
                         //percentWasted = (timeWasters / totalCalculations) * 100;
                         //_logger.LogDebug($"Total calcs: {totalCalculations} | Time wasters: {timeWasters} | % time wasters {percentWasted}");
-                        TriangleCollector.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), newestTimestamp, (key, oldValue) => oldValue = newestTimestamp);
-                        exchange.RecalculatedTriangles.Enqueue(triangle);
+                        exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), newestTimestamp, (key, oldValue) => oldValue = newestTimestamp);
+                        exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued
                     }
                 }
             }

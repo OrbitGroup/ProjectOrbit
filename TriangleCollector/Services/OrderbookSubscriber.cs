@@ -87,7 +87,7 @@ namespace TriangleCollector.Services
                             await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.symbol.ToLower()}@depth\"], \"id\": {BinanceID} }}")), WebSocketMessageType.Text, true, cts);
                             await Task.Delay(500); //wait 500 ms for the connection to be established
                         }
-                        _logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
+                        //_logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
                         BinanceID++;
                         CurrentClientPairCount++;
                     }
