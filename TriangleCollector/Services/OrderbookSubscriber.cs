@@ -84,7 +84,7 @@ namespace TriangleCollector.Services
                         else if (exchangeName == "binance") //binance's websocket doesn't provide a snapshot of the orderbook; you must create your own snapshot first by requesting a rest API response for every market. The websocket then provides subsequent updates.
                         {
                             await binanceSnapshot(market); //get snapshot via REST api
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.symbol.ToLower()}@depth\"], \"id\": {BinanceID} }}")), WebSocketMessageType.Text, true, cts);
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.symbol.ToLower()}@depth@100ms\"], \"id\": {BinanceID} }}")), WebSocketMessageType.Text, true, cts);
                             await Task.Delay(500); //wait 500 ms for the connection to be established
                         }
                         //_logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");

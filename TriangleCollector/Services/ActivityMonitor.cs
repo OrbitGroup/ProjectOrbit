@@ -26,6 +26,9 @@ namespace TriangleCollector.Services
 
         private int loopTimer = 5;
 
+        private Dictionary<string, int> lastOBCounter = new Dictionary<string, int>();
+        private Dictionary<string, int> lasttriarbCounter = new Dictionary<string, int>();
+
         public ActivityMonitor(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
             _logger = logger;
@@ -43,13 +46,23 @@ namespace TriangleCollector.Services
         }
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
+            foreach(var exchange in TriangleCollector.exchanges)
+            {
+                lastOBCounter.Add(exchange.exchangeName, 0);
+                lasttriarbCounter.Add(exchange.exchangeName, 0);
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 foreach (var exchange in TriangleCollector.exchanges)
                 {
-                    Console.WriteLine($"{exchange.exchangeName} --- Data Points Received: {exchange.allOrderBookCounter}. Data Receipts/Second (Session): {exchange.allOrderBookCounter / loopCounter / loopTimer}.");
-                    Console.WriteLine($"{exchange.exchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(Session): {exchange.RecalculatedTriangles.Count() / loopCounter / loopTimer}");
-                    
+                    var lastOBcount = lastOBCounter[exchange.exchangeName];
+                    var lasttriarbCount = lasttriarbCounter[exchange.exchangeName];
+                    Console.WriteLine($"{exchange.exchangeName} --- Data Points Received: {exchange.allOrderBookCounter}. Data Receipts/Second (last 5s): {(exchange.allOrderBookCounter - lastOBcount) / loopTimer}.");
+                    Console.WriteLine($"{exchange.exchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last 5s): {(exchange.RecalculatedTriangles.Count() - lasttriarbCount) / loopTimer}");
+
+                    lastOBCounter[exchange.exchangeName] = Convert.ToInt32(exchange.allOrderBookCounter);
+                    lasttriarbCounter[exchange.exchangeName] = exchange.RecalculatedTriangles.Count();
                     /*Triarb Opportunities Calculated: { exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(Session): { exchange.RecalculatedTriangles.Count() / loopCounter / loopTimer}
                     Triarb Queue: { exchange.TrianglesToRecalculate.Count()}
                     ");*/
