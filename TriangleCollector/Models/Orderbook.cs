@@ -22,8 +22,6 @@ namespace TriangleCollector.Models
 
         public long sequence { get; set; }
 
-        public string method { get; set; }
-
         public ConcurrentDictionary<decimal, decimal> officialAsks { get; set; } = new ConcurrentDictionary<decimal, decimal>();
         public SortedDictionary<decimal, decimal> SortedAsks { get; set; } = new SortedDictionary<decimal, decimal>();
 
@@ -64,7 +62,6 @@ namespace TriangleCollector.Models
             {
                 this.sequence = update.sequence;
                 this.timestamp = update.timestamp;
-                this.method = update.method;
                 exchange.allOrderBookCounter++;
 
                 decimal previousLowestAsk = 0;

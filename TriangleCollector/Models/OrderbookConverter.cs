@@ -74,10 +74,6 @@ namespace TriangleCollector.Models
                             {
                                 ob.timestamp = reader.GetDateTime();
                             }
-                            else if (currentProperty == "method") //can potentially remove this as the method no longer has any implications
-                            {
-                                ob.method = reader.GetString();
-                            }
                         }
                     }
                     else if (reader.TokenType == JsonTokenType.StartArray)

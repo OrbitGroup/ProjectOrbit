@@ -45,6 +45,8 @@ namespace TriangleCollector.Models.Exchange_Models
 
         public double NegativePriceChangeCounter = 0;
 
+        public int uniqueTriangleCount = 0;
+
         public ConcurrentDictionary<string, int> ProfitableSymbolMapping = new ConcurrentDictionary<string, int>();
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes = new ConcurrentDictionary<string, DateTime>();
@@ -60,7 +62,7 @@ namespace TriangleCollector.Models.Exchange_Models
             exchangeName = name;
             tradedMarkets = parseMarkets(TriangleCollector.restAPIs.tickers[exchangeName]); //pull the REST API response from the restAPI object which stores the restAPI responses for each exchange, indexed by exchange name.
             mapOpportunities();
-            Console.WriteLine($"there are {tradedMarkets.Count} markets traded on {exchangeName}. Of these markets, {triarbEligibleMarkets.Count} participate in at least one triangular arbitrage opportunity");
+            Console.WriteLine($"there are {tradedMarkets.Count} markets traded on {exchangeName}. Of these markets, {triarbEligibleMarkets.Count} markets interact to form {uniqueTriangleCount} triangular arbitrage opportunities");
         }
 
         public void mapOpportunities() //this will be its own class
@@ -131,6 +133,7 @@ namespace TriangleCollector.Models.Exchange_Models
             var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
             var newTriangle = new Triangle(firstMarket.symbol, secondMarket.symbol, thirdMarket.symbol, direction, _factory.CreateLogger<Triangle>(), this);
             //Console.WriteLine($"{exchangeName}: {firstDirection} {firstMarket.symbol}, {secondDirection} {secondMarket.symbol}, {thirdDirection} {thirdMarket.symbol}");
+            uniqueTriangleCount++;
             triarbEligibleMarkets.Add(firstMarket);
             triarbEligibleMarkets.Add(secondMarket);
             triarbEligibleMarkets.Add(thirdMarket);
@@ -174,6 +177,30 @@ namespace TriangleCollector.Models.Exchange_Models
                     market.symbol = responseItem.GetProperty("symbol").ToString();
                     market.baseCurrency = responseItem.GetProperty("baseAsset").ToString();
                     market.quoteCurrency = responseItem.GetProperty("quoteAsset").ToString();
+                    market.exchange = this;
+                    output.Add(market);
+                }
+            }
+            else if (exchangeName == "bittrex") //https://bittrex.github.io/api/v3
+            {
+                foreach (var responseItem in symbols)
+                {
+                    var market = new Orderbook();
+                    market.symbol = responseItem.GetProperty("symbol").ToString();
+                    market.baseCurrency = responseItem.GetProperty("baseCurrencySymbol").ToString();
+                    market.quoteCurrency = responseItem.GetProperty("quoteCurrencySymbol").ToString();
+                    market.exchange = this;
+                    output.Add(market);
+                }
+            }
+            else if (exchangeName == "huobi") //https://huobiapi.github.io/docs/spot/v1/en/#get-all-supported-trading-symbol
+            {
+                foreach (var responseItem in symbols)
+                {
+                    var market = new Orderbook();
+                    market.symbol = responseItem.GetProperty("symbol").ToString().ToUpper();
+                    market.baseCurrency = responseItem.GetProperty("base-currency").ToString().ToUpper();
+                    market.quoteCurrency = responseItem.GetProperty("quote-currency").ToString().ToUpper();
                     market.exchange = this;
                     output.Add(market);
                 }

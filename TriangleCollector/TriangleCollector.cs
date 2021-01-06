@@ -29,7 +29,7 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<String> exchangeList = new List<String>() { "hitbtc" , "binance" }; //list of exchanges to initialize
+        public static List<String> exchangeList = new List<String>() { "hitbtc", "binance" }; //list of exchanges to initialize. Hitbtc and binance are fully supported currently
         public static List<Exchange> exchanges = new List<Exchange>(); //contains all exchange objects
         public static ExchangeAPI restAPIs = new ExchangeAPI(); //contains the unique API URLs for each exchange
 
@@ -50,6 +50,7 @@ namespace TriangleCollector
             .ConfigureServices((hostContext, services) =>
             {
                 //services.AddHostedService<QueueMonitor>(); one is started for each exchange
+                services.AddHostedService<USDMonitor>();
                 services.AddHostedService<OrderbookSubscriber>(); //this is the only service that starts standalone
                 services.AddHostedService<ActivityMonitor>();
                 //services.AddHostedService<TriangleCalculator>(); started for each exchange

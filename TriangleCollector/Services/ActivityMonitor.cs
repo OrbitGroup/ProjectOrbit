@@ -18,7 +18,7 @@ namespace TriangleCollector.Services
 {
     public class ActivityMonitor: BackgroundService
     {
-        private readonly ILogger<OrderbookSubscriber> _logger;
+        private readonly ILogger<ActivityMonitor> _logger;
 
         private readonly ILoggerFactory _factory;
 
@@ -29,7 +29,7 @@ namespace TriangleCollector.Services
         private Dictionary<string, int> lastOBCounter = new Dictionary<string, int>();
         private Dictionary<string, int> lasttriarbCounter = new Dictionary<string, int>();
 
-        public ActivityMonitor(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
+        public ActivityMonitor(ILoggerFactory factory, ILogger<ActivityMonitor> logger)
         {
             _logger = logger;
             _factory = factory;

@@ -22,8 +22,13 @@ namespace TriangleCollector.Models.Exchange_Models
         {
             tickerRESTAPI.Add("hitbtc", "https://api.hitbtc.com/api/2/public/symbol");
             tickerRESTAPI.Add("binance", "https://api.binance.com/api/v3/exchangeInfo");
+            tickerRESTAPI.Add("bittrex", "https://api.bittrex.com/v3/markets");
+            tickerRESTAPI.Add("huobi", "https://api.huobi.pro/v1/common/symbols");
             socketClientAPI.Add("hitbtc", "wss://api.hitbtc.com/api/2/ws");
             socketClientAPI.Add("binance", "wss://stream.binance.com:9443/ws");
+            socketClientAPI.Add("bittrex", "https://socket-v3.bittrex.com/signalr");
+            socketClientAPI.Add("huobi", "wss://api.huobi.pro/ws");
+            socketClientAPI.Add("bitstamp", "wss://ws.bitstamp.net");
             PingRESTAPI();
         }
         public void PingRESTAPI() //each exchange requires a different method to parse their REST API output
@@ -46,6 +51,22 @@ namespace TriangleCollector.Models.Exchange_Models
                     var rootElement = JsonDocument.ParseAsync(httpClient.GetStreamAsync(URL).Result).Result.RootElement;
                     var symbols = rootElement.GetProperty("symbols").EnumerateArray();
                     tickers.Add(exchange, symbols);
+                    httpClient.Dispose();
+                }
+                else if (exchange == "bittrex")
+                {
+                    var httpClient = new HttpClient();
+                    var symbols = JsonDocument.ParseAsync(httpClient.GetStreamAsync(URL).Result).Result.RootElement.EnumerateArray();
+                    tickers.Add(exchange, symbols);
+                    httpClient.Dispose();
+                }
+                else if (exchange == "huobi")
+                {
+                    var httpClient = new HttpClient();
+                    var rootElement = JsonDocument.ParseAsync(httpClient.GetStreamAsync(URL).Result).Result.RootElement;
+                    var symbols = rootElement.GetProperty("data").EnumerateArray();
+                    tickers.Add(exchange, symbols);
+                    httpClient.Dispose();
                 }
             }
         }

@@ -74,7 +74,7 @@ namespace TriangleCollector.Services
                         }
                         if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
                         {
-                            Console.WriteLine($"Profitable Triangular Arbitrage Opportunity --- Exchange: {exchange.exchangeName} - Markets: {firstSymbolOrderbook.symbol}, {secondSymbolOrderbook.symbol} , {thirdSymbolOrderbook.symbol} - Profitability: {triangle.ProfitPercent} - Liquidity: {triangle.MaxVolume} - Profit: {triangle.Profit}BTC");
+                            Console.WriteLine($"Profitable Triangular Arbitrage Opportunity --- Exchange: {exchange.exchangeName} - Markets: {firstSymbolOrderbook.symbol}, {secondSymbolOrderbook.symbol} , {thirdSymbolOrderbook.symbol} - Profitability: {Math.Round(triangle.ProfitPercent,4)} - Liquidity: {Math.Round(triangle.MaxVolume, 4)} - Profit: {Math.Round(triangle.Profit,4)} BTC. USD Profit: ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice,2)}");
                         }
 
                         //TriangleCollector.Triangles.TryGetValue(triangle.ToString(), out decimal oldEntry);

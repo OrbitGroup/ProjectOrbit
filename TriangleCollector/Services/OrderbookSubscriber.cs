@@ -25,7 +25,6 @@ namespace TriangleCollector.Services
         private readonly int MaxPairsPerClient = 40;
 
         private int CurrentClientPairCount = 0;
-        private int BinanceID = 1; //binance requires that every websocket subscription has an ID.
 
         public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger)
         {
@@ -69,6 +68,7 @@ namespace TriangleCollector.Services
                 {
                     try
                     {
+                        int ID = 1;
                         if (CurrentClientPairCount > MaxPairsPerClient)
                         {
                             CurrentClientPairCount = 0;
@@ -84,11 +84,15 @@ namespace TriangleCollector.Services
                         else if (exchangeName == "binance") //binance's websocket doesn't provide a snapshot of the orderbook; you must create your own snapshot first by requesting a rest API response for every market. The websocket then provides subsequent updates.
                         {
                             await binanceSnapshot(market); //get snapshot via REST api
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.symbol.ToLower()}@depth@100ms\"], \"id\": {BinanceID} }}")), WebSocketMessageType.Text, true, cts);
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")), WebSocketMessageType.Text, true, cts);
                             await Task.Delay(500); //wait 500 ms for the connection to be established
                         }
+                        else if (exchangeName == "huobi")
+                        {
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.symbol.ToLower()}.depth.step0\",\n  \"id\": \"id1\"\n }}")), WebSocketMessageType.Text, true, cts);
+                        }
                         //_logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
-                        BinanceID++;
+                        ID++;
                         CurrentClientPairCount++;
                     }
                     catch (Exception ex)

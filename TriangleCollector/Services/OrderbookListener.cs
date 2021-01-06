@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
@@ -56,73 +57,86 @@ namespace TriangleCollector.Services
 
                 using (var ms = new MemoryStream())
                 {
+                    string payload = string.Empty;
                     result = await client.ReceiveAsync(ms, buffer, CancellationToken.None);
-                    if (result.MessageType == WebSocketMessageType.Text)
+
+                    if(result.MessageType == WebSocketMessageType.Text) //hitbtc, binance
                     {
-                        using (var reader = new StreamReader(ms, Encoding.UTF8))
+                        var reader = new StreamReader(ms, Encoding.UTF8);
+                        payload = await reader.ReadToEndAsync();
+                    } else if (result.MessageType == WebSocketMessageType.Binary) //huobi global sends all data in a compressed GZIP format. This is a work in process.
+                    {
+                        byte[] array = ms.ToArray();
+
+                        using var decompressedStream = new MemoryStream();
+                        using var compressedStream = new MemoryStream(array);
+                        using var reader = new GZipStream(compressedStream, CompressionMode.Decompress);
+                        reader.BaseStream.CopyTo(decompressedStream);
+
+                        using var stringReader = new StreamReader(decompressedStream);
+                        payload = await stringReader.ReadToEndAsync();
+                    }
+                    try
+                    {
+                        //Console.WriteLine(payload);
+
+                        var orderbook = JsonSerializer.Deserialize<Orderbook>(payload); //takes a string and returns an orderbook
+
+                        if (orderbook.symbol != null)
                         {
                             try
                             {
-
-                                var payload = await reader.ReadToEndAsync();
-
-                                var orderbook = JsonSerializer.Deserialize<Orderbook>(payload); //takes a string and returns an orderbook
-
-                                if (orderbook.symbol != null)
+                                exchange.OfficialOrderbooks.TryGetValue(orderbook.symbol, out Orderbook OfficialOrderbook);
+                                if (OfficialOrderbook != null)
                                 {
-                                    try
+                                    bool shouldRecalculate = false;
+                                    lock (OfficialOrderbook.orderbookLock) //only lock the orderbook when the orderbook is actually being modified
                                     {
-                                        exchange.OfficialOrderbooks.TryGetValue(orderbook.symbol, out Orderbook OfficialOrderbook);
-                                        if (OfficialOrderbook != null)
+                                        shouldRecalculate = OfficialOrderbook.Merge(orderbook);
+                                    }    
+                                    if (shouldRecalculate)
+                                    {
+                                        if (exchange.triarbMarketMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
                                         {
-                                            bool shouldRecalculate = false;
-                                            lock (OfficialOrderbook.orderbookLock) //only lock the orderbook when the orderbook is actually being modified
+                                            foreach (var impactedTriangle in impactedTriangles)
                                             {
-                                                shouldRecalculate = OfficialOrderbook.Merge(orderbook);
-                                            }    
-                                            if (shouldRecalculate)
-                                            {
-                                                if (exchange.triarbMarketMapping.TryGetValue(orderbook.symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
+                                                exchange.impactedTriangleCounter++;
+                                                if ((DateTime.UtcNow - impactedTriangle.lastQueued).TotalSeconds > 1) //this triangle hasn't been queued in the last second
                                                 {
-                                                    foreach (var impactedTriangle in impactedTriangles)
-                                                    {
-                                                        exchange.impactedTriangleCounter++;
-                                                        if ((DateTime.UtcNow - impactedTriangle.lastQueued).TotalSeconds > 1) //this triangle hasn't been queued in the last second
-                                                        {
-                                                            exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                                                            impactedTriangle.lastQueued = DateTime.UtcNow;
-                                                        } else
-                                                        {
-                                                            exchange.redundantTriangleCounter++;
-                                                        }
-                                                    }
+                                                    exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                                                    impactedTriangle.lastQueued = DateTime.UtcNow;
                                                 } else
                                                 {
-                                                    Console.WriteLine("no mapped triangles corresponding to orderbook");
+                                                    exchange.redundantTriangleCounter++;
                                                 }
                                             }
                                         } else
                                         {
-                                            Console.WriteLine("there was no corresponding official orderbook to merge to");
+                                            Console.WriteLine("no mapped triangles corresponding to orderbook");
                                         }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Console.WriteLine($"Error merging orderbook for market {orderbook.symbol} on {exchange.exchangeName}. Websocket payload was {payload}");
-                                        Console.WriteLine(ex.Message);
                                     }
                                 } else
                                 {
-                                    //Console.WriteLine($"orderbook is null, websocket payload was {payload}");
+                                    Console.WriteLine("there was no corresponding official orderbook to merge to");
                                 }
                             }
                             catch (Exception ex)
                             {
+                                Console.WriteLine($"Error merging orderbook for market {orderbook.symbol} on {exchange.exchangeName}. Websocket payload was {payload}");
                                 Console.WriteLine(ex.Message);
-                                throw ex;
                             }
+                        } else
+                        {
+                            //Console.WriteLine($"orderbook is null, websocket payload was {payload}");
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"exception: {ex.Message}");
+                        throw ex;
+                    }
+                        
+                   
                 }
             }
         }
