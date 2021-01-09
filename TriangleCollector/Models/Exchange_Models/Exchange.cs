@@ -171,12 +171,15 @@ namespace TriangleCollector.Models.Exchange_Models
             {
                 foreach (var responseItem in symbols)
                 {
-                    var market = new Orderbook();
-                    market.Symbol = responseItem.GetProperty("symbol").ToString();
-                    market.BaseCurrency = responseItem.GetProperty("baseAsset").ToString();
-                    market.QuoteCurrency = responseItem.GetProperty("quoteAsset").ToString();
-                    market.Exchange = this;
-                    output.Add(market);
+                    if(responseItem.GetProperty("status").ToString() == "TRADING") //only include markets that are actively traded (as opposed to delisted or inactive)
+                    {
+                        var market = new Orderbook();
+                        market.Symbol = responseItem.GetProperty("symbol").ToString();
+                        market.BaseCurrency = responseItem.GetProperty("baseAsset").ToString();
+                        market.QuoteCurrency = responseItem.GetProperty("quoteAsset").ToString();
+                        market.Exchange = this;
+                        output.Add(market);
+                    }
                 }
             }
             else if (ExchangeName == "bittrex") //https://bittrex.github.io/api/v3

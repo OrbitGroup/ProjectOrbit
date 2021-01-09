@@ -93,7 +93,7 @@ namespace TriangleCollector.Services
                             await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")), WebSocketMessageType.Text, true, cts);
                             //await Task.Delay(500);
                         }
-                        //_logger.LogDebug($"{exchange.ExchangeName}: subscribed to {market.Symbol}");
+                        _logger.LogDebug($"{exchange.ExchangeName}: subscribed to {market.Symbol}");
                         ID++;
                         CurrentClientPairCount++;
                     }
@@ -137,7 +137,7 @@ namespace TriangleCollector.Services
         public async Task HuobiSnapshot(Orderbook market)
         {
             var httpClient = new HttpClient();
-            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={market.Symbol.ToLower()}&type=step1").Result).Result.RootElement;
+            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement;
             var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
             foreach (var bid in bids)
             {

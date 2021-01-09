@@ -34,7 +34,7 @@ namespace TriangleCollector.Services
         {
             var cts = new CancellationToken();
             await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"pong\": {pong}}}")), WebSocketMessageType.Text, true, cts);
-            Console.WriteLine($"sent back pong {pong} to {Exchange.ExchangeName}");
+            //Console.WriteLine($"sent back pong {pong} to {Exchange.ExchangeName}");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -117,18 +117,18 @@ namespace TriangleCollector.Services
                                             }
                                         } else
                                         {
-                                            Console.WriteLine("no mapped triangles corresponding to orderbook");
+                                            _logger.LogError("no mapped triangles corresponding to orderbook");
                                         }
                                     }
                                 } else
                                 {
-                                    Console.WriteLine("there was no corresponding official orderbook to merge to");
+                                    _logger.LogError("there was no corresponding official orderbook to merge to");
                                 }
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine($"Error merging orderbook for market {orderbook.Symbol} on {Exchange.ExchangeName}. Websocket payload was {payload}");
-                                Console.WriteLine(ex.Message);
+                                _logger.LogError($"Error merging orderbook for market {orderbook.Symbol} on {Exchange.ExchangeName}. Websocket payload was {payload}");
+                                _logger.LogError(ex.Message);
                             }
                         } else if (orderbook.Pong == true)
                         {
@@ -141,7 +141,8 @@ namespace TriangleCollector.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"exception: {ex.Message}");
+                        _logger.LogError($"exception related to {payload}");
+                        _logger.LogError($"exception: {ex.Message}");
                         throw ex;
                     }
                 }

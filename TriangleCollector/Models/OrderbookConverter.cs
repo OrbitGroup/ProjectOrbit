@@ -163,7 +163,13 @@ namespace TriangleCollector.Models
                 {
                     reader.Read();
                     var channel = reader.GetString().Split(".");
-                    ob.Symbol = channel[1].ToUpper(); //the second period-delimited item is the symbol
+                    if(channel.Length > 1)
+                    {
+                        ob.Symbol = channel[1].ToUpper(); //the second period-delimited item is the symbol
+                    } else
+                    {
+                        Console.WriteLine($"channel only has one element: {channel[0]}");
+                    }
                 }
                 while (reader.Read())
                 {
