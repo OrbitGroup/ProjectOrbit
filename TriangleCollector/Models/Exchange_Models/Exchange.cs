@@ -17,9 +17,9 @@ namespace TriangleCollector.Models.Exchange_Models
 {
     public class Exchange
     {
-        public string exchangeName { get; set; }
+        public string ExchangeName { get; set; }
 
-        public HashSet<Orderbook> tradedMarkets = new HashSet<Orderbook>(); //all markets traded on the exchange
+        public HashSet<Orderbook> TradedMarkets = new HashSet<Orderbook>(); //all markets traded on the exchange
 
         public ConcurrentDictionary<string, Orderbook> OfficialOrderbooks = new ConcurrentDictionary<string, Orderbook>(); //official orderbooks...tradedMarkets is likely to be merged into this
 
@@ -27,15 +27,15 @@ namespace TriangleCollector.Models.Exchange_Models
         
         public ConcurrentDictionary<string, Triangle> Triangles = new ConcurrentDictionary<string, Triangle>(); //rename this member to describe what it's for
 
-        public HashSet<Orderbook> triarbEligibleMarkets = new HashSet<Orderbook>(); //all markets that interact with a triarb opportunity
+        public HashSet<Orderbook> TriarbEligibleMarkets = new HashSet<Orderbook>(); //all markets that interact with a triarb opportunity
 
-        public ConcurrentDictionary<string, List<Triangle>> triarbMarketMapping = new ConcurrentDictionary<string, List<Triangle>>(); //maps market IDs to triangles
+        public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping = new ConcurrentDictionary<string, List<Triangle>>(); //maps market IDs to triangles
 
-        public double impactedTriangleCounter = 0;
+        public double ImpactedTriangleCounter = 0;
 
-        public double redundantTriangleCounter = 0;
+        public double RedundantTriangleCounter = 0;
 
-        public double allOrderBookCounter = 0;
+        public double AllOrderBookCounter = 0;
 
         public double InsideLayerCounter = 0; 
 
@@ -45,7 +45,7 @@ namespace TriangleCollector.Models.Exchange_Models
 
         public double NegativePriceChangeCounter = 0;
 
-        public int uniqueTriangleCount = 0;
+        public int UniqueTriangleCount = 0;
 
         public ConcurrentDictionary<string, int> ProfitableSymbolMapping = new ConcurrentDictionary<string, int>();
 
@@ -53,52 +53,50 @@ namespace TriangleCollector.Models.Exchange_Models
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles = new ConcurrentQueue<Triangle>();
 
-        public string tickerRESTAPI { get; set; } //the URL of rest API call for the exchange
-
         private static ILoggerFactory _factory = new NullLoggerFactory();
 
         public Exchange(string name)
         {
-            exchangeName = name;
-            tradedMarkets = parseMarkets(TriangleCollector.restAPIs.tickers[exchangeName]); //pull the REST API response from the restAPI object which stores the restAPI responses for each exchange, indexed by exchange name.
-            mapOpportunities();
-            Console.WriteLine($"there are {tradedMarkets.Count} markets traded on {exchangeName}. Of these markets, {triarbEligibleMarkets.Count} markets interact to form {uniqueTriangleCount} triangular arbitrage opportunities");
+            ExchangeName = name;
+            TradedMarkets = ParseMarkets(TriangleCollector.RestAPIs.Tickers[ExchangeName]); //pull the REST API response from the restAPI object which stores the restAPI responses for each exchange, indexed by exchange name.
+            MapOpportunities();
+            Console.WriteLine($"there are {TradedMarkets.Count} markets traded on {ExchangeName}. Of these markets, {TriarbEligibleMarkets.Count} markets interact to form {UniqueTriangleCount} triangular arbitrage opportunities");
         }
 
-        public void mapOpportunities() //this will be its own class
+        public void MapOpportunities() //this will be its own class
         {
-            foreach (var firstMarket in tradedMarkets)
+            foreach (var firstMarket in TradedMarkets)
             {
-                if (firstMarket.quoteCurrency == "BTC" || firstMarket.baseCurrency == "BTC")
+                if (firstMarket.QuoteCurrency == "BTC" || firstMarket.BaseCurrency == "BTC")
                 {
-                    if (firstMarket.quoteCurrency == "BTC")
+                    if (firstMarket.QuoteCurrency == "BTC")
                     {
                         var firstDirection = "Buy";
-                        foreach (var secondMarket in tradedMarkets)
+                        foreach (var secondMarket in TradedMarkets)
                         {
-                            if (secondMarket.baseCurrency == firstMarket.baseCurrency || secondMarket.quoteCurrency == firstMarket.baseCurrency && secondMarket.symbol != firstMarket.symbol)
+                            if (secondMarket.BaseCurrency == firstMarket.BaseCurrency || secondMarket.QuoteCurrency == firstMarket.BaseCurrency && secondMarket.Symbol != firstMarket.Symbol)
                             {
-                                if (secondMarket.baseCurrency == firstMarket.baseCurrency)
+                                if (secondMarket.BaseCurrency == firstMarket.BaseCurrency)
                                 {
                                     var secondDirection = "Sell";
-                                    foreach (var thirdMarket in tradedMarkets)
+                                    foreach (var thirdMarket in TradedMarkets)
                                     {
-                                        if (thirdMarket.quoteCurrency == "BTC" && thirdMarket.baseCurrency == secondMarket.quoteCurrency)
+                                        if (thirdMarket.QuoteCurrency == "BTC" && thirdMarket.BaseCurrency == secondMarket.QuoteCurrency)
                                         {
                                             var thirdDirection = "Sell";
-                                            mapHelper(firstDirection, secondDirection, thirdDirection, firstMarket, secondMarket, thirdMarket);
+                                            MapHelper(firstDirection, secondDirection, thirdDirection, firstMarket, secondMarket, thirdMarket);
                                         }
                                     }
                                 }
                                 else
                                 {
                                     var secondDirection = "Buy";
-                                    foreach (var thirdMarket in tradedMarkets)
+                                    foreach (var thirdMarket in TradedMarkets)
                                     {
-                                        if (thirdMarket.quoteCurrency == "BTC" && thirdMarket.baseCurrency == secondMarket.baseCurrency)
+                                        if (thirdMarket.QuoteCurrency == "BTC" && thirdMarket.BaseCurrency == secondMarket.BaseCurrency)
                                         {
                                             var thirdDirection = "Sell";
-                                            mapHelper(firstDirection, secondDirection, thirdDirection, firstMarket, secondMarket, thirdMarket);
+                                            MapHelper(firstDirection, secondDirection, thirdDirection, firstMarket, secondMarket, thirdMarket);
                                         }
                                     }
                                 }
@@ -108,17 +106,17 @@ namespace TriangleCollector.Models.Exchange_Models
                     else
                     {
                         var firstDirection = "Sell";
-                        foreach (var secondMarket in tradedMarkets)
+                        foreach (var secondMarket in TradedMarkets)
                         {
-                            if (secondMarket.quoteCurrency == firstMarket.quoteCurrency && secondMarket.symbol != firstMarket.symbol)
+                            if (secondMarket.QuoteCurrency == firstMarket.QuoteCurrency && secondMarket.Symbol != firstMarket.Symbol)
                             {
                                 var secondDirection = "Buy";
-                                foreach (var thirdMarket in tradedMarkets)
+                                foreach (var thirdMarket in TradedMarkets)
                                 {
-                                    if (thirdMarket.quoteCurrency == "BTC" && thirdMarket.baseCurrency == secondMarket.baseCurrency)
+                                    if (thirdMarket.QuoteCurrency == "BTC" && thirdMarket.BaseCurrency == secondMarket.BaseCurrency)
                                     {
                                         var thirdDirection = "Sell";
-                                        mapHelper(firstDirection, secondDirection, thirdDirection, firstMarket, secondMarket, thirdMarket);
+                                        MapHelper(firstDirection, secondDirection, thirdDirection, firstMarket, secondMarket, thirdMarket);
                                     }
                                 }
                             }
@@ -128,21 +126,21 @@ namespace TriangleCollector.Models.Exchange_Models
             }
         }
 
-        public void mapHelper(string firstDirection, string secondDirection, string thirdDirection, Orderbook firstMarket, Orderbook secondMarket, Orderbook thirdMarket)
+        public void MapHelper(string firstDirection, string secondDirection, string thirdDirection, Orderbook firstMarket, Orderbook secondMarket, Orderbook thirdMarket)
         {
             var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
-            var newTriangle = new Triangle(firstMarket.symbol, secondMarket.symbol, thirdMarket.symbol, direction, _factory.CreateLogger<Triangle>(), this);
+            var newTriangle = new Triangle(firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol, direction, _factory.CreateLogger<Triangle>(), this);
             //Console.WriteLine($"{exchangeName}: {firstDirection} {firstMarket.symbol}, {secondDirection} {secondMarket.symbol}, {thirdDirection} {thirdMarket.symbol}");
-            uniqueTriangleCount++;
-            triarbEligibleMarkets.Add(firstMarket);
-            triarbEligibleMarkets.Add(secondMarket);
-            triarbEligibleMarkets.Add(thirdMarket);
-            OfficialOrderbooks.AddOrUpdate(firstMarket.symbol, firstMarket, (key, oldValue) => oldValue = firstMarket);
-            OfficialOrderbooks.AddOrUpdate(secondMarket.symbol, secondMarket, (key, oldValue) => oldValue = secondMarket);
-            OfficialOrderbooks.AddOrUpdate(thirdMarket.symbol, thirdMarket, (key, oldValue) => oldValue = thirdMarket);
-            foreach (var trade in new List<string> { firstMarket.symbol, secondMarket.symbol, thirdMarket.symbol })
+            UniqueTriangleCount++;
+            TriarbEligibleMarkets.Add(firstMarket);
+            TriarbEligibleMarkets.Add(secondMarket);
+            TriarbEligibleMarkets.Add(thirdMarket);
+            OfficialOrderbooks.AddOrUpdate(firstMarket.Symbol, firstMarket, (key, oldValue) => oldValue = firstMarket);
+            OfficialOrderbooks.AddOrUpdate(secondMarket.Symbol, secondMarket, (key, oldValue) => oldValue = secondMarket);
+            OfficialOrderbooks.AddOrUpdate(thirdMarket.Symbol, thirdMarket, (key, oldValue) => oldValue = thirdMarket);
+            foreach (var trade in new List<string> { firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol })
             {
-                triarbMarketMapping.AddOrUpdate(trade, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                TriarbMarketMapping.AddOrUpdate(trade, new List<Triangle>() { newTriangle }, (key, triangleList) =>
                 {
                     if (key == trade)
                     {
@@ -154,56 +152,56 @@ namespace TriangleCollector.Models.Exchange_Models
         }
     
 
-         public HashSet<Orderbook> parseMarkets(JsonElement.ArrayEnumerator symbols) // each exchange uses different JSON properties to describe the attributes of a market.
+         public HashSet<Orderbook> ParseMarkets(JsonElement.ArrayEnumerator symbols) // each exchange uses different JSON properties to describe the attributes of a market.
          {
             var output = new HashSet<Orderbook>();
-            if (exchangeName == "hitbtc") //https://api.hitbtc.com/#symbols
+            if (ExchangeName == "hitbtc") //https://api.hitbtc.com/#symbols
             {
                 foreach (var responseItem in symbols)
                 {
                     var market = new Orderbook();
-                    market.symbol = responseItem.GetProperty("id").ToString();
-                    market.baseCurrency = responseItem.GetProperty("baseCurrency").ToString();
-                    market.quoteCurrency = responseItem.GetProperty("quoteCurrency").ToString();
-                    market.exchange = this;
+                    market.Symbol = responseItem.GetProperty("id").ToString();
+                    market.BaseCurrency = responseItem.GetProperty("baseCurrency").ToString();
+                    market.QuoteCurrency = responseItem.GetProperty("quoteCurrency").ToString();
+                    market.Exchange = this;
                     output.Add(market);
                 }
             }
-            else if (exchangeName == "binance") //https://binance-docs.github.io/apidocs/spot/en/#exchange-information
+            else if (ExchangeName == "binance") //https://binance-docs.github.io/apidocs/spot/en/#exchange-information
             {
                 foreach (var responseItem in symbols)
                 {
                     var market = new Orderbook();
-                    market.symbol = responseItem.GetProperty("symbol").ToString();
-                    market.baseCurrency = responseItem.GetProperty("baseAsset").ToString();
-                    market.quoteCurrency = responseItem.GetProperty("quoteAsset").ToString();
-                    market.exchange = this;
+                    market.Symbol = responseItem.GetProperty("symbol").ToString();
+                    market.BaseCurrency = responseItem.GetProperty("baseAsset").ToString();
+                    market.QuoteCurrency = responseItem.GetProperty("quoteAsset").ToString();
+                    market.Exchange = this;
                     output.Add(market);
                 }
             }
-            else if (exchangeName == "bittrex") //https://bittrex.github.io/api/v3
+            else if (ExchangeName == "bittrex") //https://bittrex.github.io/api/v3
             {
                 foreach (var responseItem in symbols)
                 {
                     var market = new Orderbook();
-                    market.symbol = responseItem.GetProperty("symbol").ToString();
-                    market.baseCurrency = responseItem.GetProperty("baseCurrencySymbol").ToString();
-                    market.quoteCurrency = responseItem.GetProperty("quoteCurrencySymbol").ToString();
-                    market.exchange = this;
+                    market.Symbol = responseItem.GetProperty("symbol").ToString();
+                    market.BaseCurrency = responseItem.GetProperty("baseCurrencySymbol").ToString();
+                    market.QuoteCurrency = responseItem.GetProperty("quoteCurrencySymbol").ToString();
+                    market.Exchange = this;
                     output.Add(market);
                 }
             }
-            else if (exchangeName == "huobi") //https://huobiapi.github.io/docs/spot/v1/en/#get-all-supported-trading-symbol
+            else if (ExchangeName == "huobi") //https://huobiapi.github.io/docs/spot/v1/en/#get-all-supported-trading-symbol
             {
                 foreach (var responseItem in symbols)
                 {
                     if(responseItem.GetProperty("state").ToString() =="online") //huobi includes delisted/disabled markets in their response, only consider active/onlien markets.
                     {
                         var market = new Orderbook();
-                        market.symbol = responseItem.GetProperty("symbol").ToString().ToUpper();
-                        market.baseCurrency = responseItem.GetProperty("base-currency").ToString().ToUpper();
-                        market.quoteCurrency = responseItem.GetProperty("quote-currency").ToString().ToUpper();
-                        market.exchange = this;
+                        market.Symbol = responseItem.GetProperty("symbol").ToString().ToUpper();
+                        market.BaseCurrency = responseItem.GetProperty("base-currency").ToString().ToUpper();
+                        market.QuoteCurrency = responseItem.GetProperty("quote-currency").ToString().ToUpper();
+                        market.Exchange = this;
                         output.Add(market);
                     }
                 }

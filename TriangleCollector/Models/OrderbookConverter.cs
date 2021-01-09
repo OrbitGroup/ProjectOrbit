@@ -68,11 +68,11 @@ namespace TriangleCollector.Models
                         {
                             if (currentProperty == "symbol")
                             {
-                                ob.symbol = reader.GetString();
+                                ob.Symbol = reader.GetString();
                             }
                             else if (currentProperty == "timestamp")
                             {
-                                ob.timestamp = reader.GetDateTime();
+                                ob.Timestamp = reader.GetDateTime();
                             }
                         }
                     }
@@ -91,19 +91,19 @@ namespace TriangleCollector.Models
                     {
                         if (currentProperty == "sequence") 
                         {
-                            ob.sequence = reader.GetInt64();
+                            ob.Sequence = reader.GetInt64();
                         }
                     }
                     else if (reader.TokenType == JsonTokenType.EndArray)
                     {
                         if (ask)
                         {
-                            ob.officialAsks = orders;
+                            ob.OfficialAsks = orders;
                             orders = new ConcurrentDictionary<decimal, decimal>();
                         }
                         else
                         {
-                            ob.officialBids = orders;
+                            ob.OfficialBids = orders;
                             orders = new ConcurrentDictionary<decimal, decimal>();
                         }
                     }
@@ -122,13 +122,13 @@ namespace TriangleCollector.Models
                     }
                     else if (reader.TokenType == JsonTokenType.Number && currentProperty == "u")
                     {
-                        ob.sequence = reader.GetInt64();
+                        ob.Sequence = reader.GetInt64();
                     }
                     else if (reader.TokenType == JsonTokenType.String)
                     {
                         if (currentProperty == "s")
                         {
-                            ob.symbol = reader.GetString();
+                            ob.Symbol = reader.GetString();
                         }
                     }
                     else if (reader.TokenType == JsonTokenType.StartArray)
@@ -145,17 +145,17 @@ namespace TriangleCollector.Models
                             var size = Convert.ToDecimal(reader.GetString());
                             if (currentProperty == "a")
                             {
-                                ob.officialAsks.TryAdd(price, size);
+                                ob.OfficialAsks.TryAdd(price, size);
                             }
                             else if (currentProperty == "b")
                             {
-                                ob.officialBids.TryAdd(price, size);
+                                ob.OfficialBids.TryAdd(price, size);
                             }
                             reader.Read();
                         }
                     } 
                 }
-                
+                ob.Timestamp = DateTime.UtcNow;
                 return ob;
             } else if (firstLine == "id" || firstLine == "ch") //huobi global
             {
@@ -163,7 +163,7 @@ namespace TriangleCollector.Models
                 {
                     reader.Read();
                     var channel = reader.GetString().Split(".");
-                    ob.symbol = channel[1].ToUpper(); //the second period-delimited item is the symbol
+                    ob.Symbol = channel[1].ToUpper(); //the second period-delimited item is the symbol
                 }
                 while (reader.Read())
                 {
@@ -182,7 +182,7 @@ namespace TriangleCollector.Models
                             }
                             else if (currentProperty == "seqNum")
                             {
-                                ob.sequence = reader.GetInt64();
+                                ob.Sequence = reader.GetInt64();
                             }
                             else if (reader.TokenType == JsonTokenType.StartArray)
                             {
@@ -198,12 +198,12 @@ namespace TriangleCollector.Models
                                     var size = reader.GetDecimal();
                                     if (currentProperty == "asks")
                                     {
-                                        ob.officialAsks.TryAdd(price, size);
+                                        ob.OfficialAsks.TryAdd(price, size);
                                         //Console.WriteLine($"converted ask {price} price, {size} size");
                                     }
                                     else if (currentProperty == "bids")
                                     {
-                                        ob.officialBids.TryAdd(price, size);
+                                        ob.OfficialBids.TryAdd(price, size);
                                         //Console.WriteLine($"converted bid {price} price, {size} size");
                                     }
                                     reader.Read();
@@ -214,6 +214,7 @@ namespace TriangleCollector.Models
                     }
                 }
                 //Console.WriteLine($"{ob.symbol}, {ob.sequence}, {ob.officialAsks.Count()}, {ob.officialBids.Count()}");
+                ob.Timestamp = DateTime.UtcNow;
                 return ob;
             } else if (firstLine == "ping")
             {
@@ -221,8 +222,8 @@ namespace TriangleCollector.Models
                 {
                     if(reader.TokenType == JsonTokenType.Number)
                     {
-                        ob.pong = true;
-                        ob.pongValue = reader.GetInt64();
+                        ob.Pong = true;
+                        ob.PongValue = reader.GetInt64();
                     }
                 }
                 return ob;

@@ -19,7 +19,7 @@ namespace TriangleCollector.Services
 
         private readonly ILogger<QueueMonitor> _logger;
 
-        private int calculatorCount = 1;
+        private int CalculatorCount = 1;
 
         private int MaxTriangleCalculatorQueueLength = 1000;
 
@@ -27,13 +27,13 @@ namespace TriangleCollector.Services
 
         private int NumberOfSecondsUntilStale = 60;
 
-        private Exchange exchange { get; set; }
+        private Exchange Exchange { get; set; }
 
         public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger, Exchange exch)
         {
             _factory = factory;
             _logger = logger;
-            exchange = exch;
+            Exchange = exch;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -49,11 +49,11 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (exchange.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && calculatorCount < MaxTriangleCalculators)
+                if (Exchange.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && CalculatorCount < MaxTriangleCalculators)
                 {
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
-                    calculatorCount++;
-                    var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), calculatorCount, exchange);
+                    CalculatorCount++;
+                    var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), CalculatorCount, Exchange);
                     await newCalc.StartAsync(stoppingToken);
                 }
                 await Task.Delay(5000);

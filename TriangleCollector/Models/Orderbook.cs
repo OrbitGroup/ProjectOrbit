@@ -14,31 +14,31 @@ namespace TriangleCollector.Models
     [JsonConverter(typeof(OrderbookConverter))]
     public class Orderbook
     {
-        public string symbol { get; set; }
+        public string Symbol { get; set; }
 
-        public string baseCurrency { get; set; } //the base currency expresses the currency in which the quantity of the order is expressed. I.E. when you are buying/selling ETHBTC you are buying selling a qty of ETH.
-        public string quoteCurrency { get; set; } //quote currency expresses the currency in which the price of this market is quoted. I.E. 'ETHBTC's price is quoted in BTC.
-        public Exchange exchange { get; set; } //which exchange the market belongs to
+        public string BaseCurrency { get; set; } //the base currency expresses the currency in which the quantity of the order is expressed. I.E. when you are buying/selling ETHBTC you are buying selling a qty of ETH.
+        public string QuoteCurrency { get; set; } //quote currency expresses the currency in which the price of this market is quoted. I.E. 'ETHBTC's price is quoted in BTC.
+        public Exchange Exchange { get; set; } //which exchange the market belongs to
 
-        public long sequence { get; set; }
+        public long Sequence { get; set; }
 
-        public ConcurrentDictionary<decimal, decimal> officialAsks { get; set; } = new ConcurrentDictionary<decimal, decimal>();
+        public ConcurrentDictionary<decimal, decimal> OfficialAsks { get; set; } = new ConcurrentDictionary<decimal, decimal>();
         public SortedDictionary<decimal, decimal> SortedAsks { get; set; } = new SortedDictionary<decimal, decimal>();
 
-        public ConcurrentDictionary<decimal, decimal> officialBids { get; set; } = new ConcurrentDictionary<decimal, decimal>();
+        public ConcurrentDictionary<decimal, decimal> OfficialBids { get; set; } = new ConcurrentDictionary<decimal, decimal>();
         public SortedDictionary<decimal, decimal> SortedBids { get; set; } = new SortedDictionary<decimal, decimal>();
 
-        public DateTime timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
 
         public decimal LowestAsk { get; set; }
 
-        public bool pong { get; set; } //flagged when an exchange server requires that we send a 'pong' message to remain connected
+        public bool Pong { get; set; } //flagged when an exchange server requires that we send a 'pong' message to remain connected
 
-        public long pongValue { get; set; } //contains the required pong value, if required
+        public long PongValue { get; set; } //contains the required pong value, if required
 
         public decimal HighestBid { get; set; }
 
-        public readonly object orderbookLock = new object();
+        public readonly object OrderbookLock = new object();
 
         class DescendingComparer<T> : IComparer<T> where T : IComparable<T>
         {
@@ -50,10 +50,10 @@ namespace TriangleCollector.Models
 
         public Orderbook DeepCopy()
         {
-            Orderbook DeepCopy = (Orderbook)this.MemberwiseClone();
-            DeepCopy.officialAsks = new ConcurrentDictionary<decimal, decimal>(officialAsks);
-            DeepCopy.officialBids = new ConcurrentDictionary<decimal, decimal>(officialBids);            
-            return (DeepCopy);
+            Orderbook deepCopy = (Orderbook)this.MemberwiseClone();
+            deepCopy.OfficialAsks = new ConcurrentDictionary<decimal, decimal>(OfficialAsks);
+            deepCopy.OfficialBids = new ConcurrentDictionary<decimal, decimal>(OfficialBids);            
+            return (deepCopy);
         }
 
         /// <summary>
@@ -62,24 +62,24 @@ namespace TriangleCollector.Models
         /// <param name="update">An orderbook update</param>
         public bool Merge(Orderbook update)
         {
-            if (this.sequence < update.sequence)
+            if (this.Sequence < update.Sequence)
             {
-                this.sequence = update.sequence;
-                this.timestamp = update.timestamp;
-                exchange.allOrderBookCounter++;
+                this.Sequence = update.Sequence;
+                this.Timestamp = update.Timestamp;
+                Exchange.AllOrderBookCounter++;
 
                 decimal previousLowestAsk = 0;
                 decimal previousHighestBid = 0;
-                if(officialAsks.Count() != 0 && officialBids.Count() != 0)
+                if(OfficialAsks.Count() != 0 && OfficialBids.Count() != 0)
                 {
-                    previousLowestAsk = officialAsks.Keys.Min();
-                    previousHighestBid = officialBids.Keys.Max();
+                    previousLowestAsk = OfficialAsks.Keys.Min();
+                    previousHighestBid = OfficialBids.Keys.Max();
                 }
                 
 
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
-                update.officialAsks.AsParallel().ForAll(UpdateAskLayer);
-                update.officialBids.AsParallel().ForAll(UpdateBidLayer);
+                update.OfficialAsks.AsParallel().ForAll(UpdateAskLayer);
+                update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
 
                 if (SignificantChange(update, previousHighestBid, previousLowestAsk))
                 {
@@ -94,33 +94,33 @@ namespace TriangleCollector.Models
 
         public bool SignificantChange(Orderbook updatedOrderbook, decimal previousHighestBid, decimal previousLowestAsk)
         {
-            if (exchange.ProfitableSymbolMapping.TryGetValue(symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
+            if (Exchange.ProfitableSymbolMapping.TryGetValue(Symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
             {
                 CreateSorted();
-                if ((updatedOrderbook.officialAsks.Count > 0 && updatedOrderbook.officialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (updatedOrderbook.officialBids.Count > 0 && updatedOrderbook.officialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
+                if ((updatedOrderbook.OfficialAsks.Count > 0 && updatedOrderbook.OfficialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (updatedOrderbook.OfficialBids.Count > 0 && updatedOrderbook.OfficialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
                 {
-                    exchange.InsideLayerCounter++;
+                    Exchange.InsideLayerCounter++;
                     return true;
                 } else
                 {
-                    exchange.OutsideLayerCounter++;
+                    Exchange.OutsideLayerCounter++;
                     return false;
                 }
             } 
             else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
             {
-                if (officialAsks.Count < 1 || officialBids.Count < 1)
+                if (OfficialAsks.Count < 1 || OfficialBids.Count < 1)
                 {
                     return false;
                 }
 
-                if (officialAsks.Keys.Min() < previousLowestAsk || officialBids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
+                if (OfficialAsks.Keys.Min() < previousLowestAsk || OfficialBids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
-                    exchange.PositivePriceChangeCounter++;
+                    Exchange.PositivePriceChangeCounter++;
                     return true;
                 } else //price got worse or did not change
                 {
-                    exchange.NegativePriceChangeCounter++;
+                    Exchange.NegativePriceChangeCounter++;
                     return false;
                 }
             }
@@ -129,16 +129,16 @@ namespace TriangleCollector.Models
         public void CreateSorted()
         {
             //var previousHighestBid = HighestBid;
-            if (officialBids.Count > 0 && (SortedBids.Count == 0 || !SortedBids.TryGetValue(HighestBid, out _)))
+            if (OfficialBids.Count > 0 && (SortedBids.Count == 0 || !SortedBids.TryGetValue(HighestBid, out _)))
             {
-                SortedBids = new SortedDictionary<decimal, decimal>(officialBids, new DescendingComparer<decimal>());
+                SortedBids = new SortedDictionary<decimal, decimal>(OfficialBids, new DescendingComparer<decimal>());
                 HighestBid = SortedBids.First().Key;
             }
 
             //var previousLowestAsk = LowestAsk;
-            if (officialAsks.Count > 0 && (SortedAsks.Count == 0 || !SortedAsks.TryGetValue(LowestAsk, out _)))
+            if (OfficialAsks.Count > 0 && (SortedAsks.Count == 0 || !SortedAsks.TryGetValue(LowestAsk, out _)))
             {
-                SortedAsks = new SortedDictionary<decimal, decimal>(officialAsks);
+                SortedAsks = new SortedDictionary<decimal, decimal>(OfficialAsks);
                 LowestAsk = SortedAsks.First().Key;
             }
         }
@@ -147,11 +147,11 @@ namespace TriangleCollector.Models
         {
             if (layer.Value > 0)
             {
-                officialAsks.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
+                OfficialAsks.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
             }
             else
             {
-                officialAsks.TryRemove(layer.Key, out var _);
+                OfficialAsks.TryRemove(layer.Key, out var _);
             }
         }
 
@@ -159,11 +159,11 @@ namespace TriangleCollector.Models
         {
             if (layer.Value > 0)
             {
-                officialBids.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
+                OfficialBids.AddOrUpdate(layer.Key, layer.Value, (key, oldValue) => oldValue = layer.Value);
             }
             else
             {
-                officialBids.TryRemove(layer.Key, out var _);
+                OfficialBids.TryRemove(layer.Key, out var _);
             }
         }
     }

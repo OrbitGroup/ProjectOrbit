@@ -22,12 +22,10 @@ namespace TriangleCollector.Services
 
         private readonly ILoggerFactory _factory;
 
-        private int loopCounter = 1;
+        private int LoopTimer = 5; //the interval (in seconds) for each printout of the activity monitor
 
-        private int loopTimer = 5;
-
-        private Dictionary<string, int> lastOBCounter = new Dictionary<string, int>();
-        private Dictionary<string, int> lasttriarbCounter = new Dictionary<string, int>();
+        private Dictionary<string, int> LastOBCounter = new Dictionary<string, int>();
+        private Dictionary<string, int> LastTriarbCounter = new Dictionary<string, int>();
 
         public ActivityMonitor(ILoggerFactory factory, ILogger<ActivityMonitor> logger)
         {
@@ -46,35 +44,31 @@ namespace TriangleCollector.Services
         }
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            foreach(var exchange in TriangleCollector.exchanges)
+            foreach(var exchange in TriangleCollector.Exchanges)
             {
-                lastOBCounter.Add(exchange.exchangeName, 0);
-                lasttriarbCounter.Add(exchange.exchangeName, 0);
+                LastOBCounter.Add(exchange.ExchangeName, 0);
+                LastTriarbCounter.Add(exchange.ExchangeName, 0);
             }
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogDebug("*********************************************************************************************************************************************");
-                foreach (var exchange in TriangleCollector.exchanges)
+                foreach (var exchange in TriangleCollector.Exchanges)
                 {
-                    var lastOBcount = lastOBCounter[exchange.exchangeName];
-                    var lasttriarbCount = lasttriarbCounter[exchange.exchangeName];
+                    var lastOBcount = LastOBCounter[exchange.ExchangeName];
+                    var lastTriarbCount = LastTriarbCounter[exchange.ExchangeName];
                     
-                    _logger.LogDebug($"{exchange.exchangeName} --- Data Points Received: {exchange.allOrderBookCounter}. Data Receipts/Second (last 5s): {(exchange.allOrderBookCounter - lastOBcount) / loopTimer}.");
-                    _logger.LogDebug($"{exchange.exchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last 5s): {(exchange.RecalculatedTriangles.Count() - lasttriarbCount) / loopTimer}");
+                    _logger.LogDebug($"{exchange.ExchangeName} --- Data Points Received: {exchange.AllOrderBookCounter}. Data Receipts/Second (last {LoopTimer}s): {(exchange.AllOrderBookCounter - lastOBcount) / LoopTimer}.");
+                    _logger.LogDebug($"{exchange.ExchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last {LoopTimer}s): {(exchange.RecalculatedTriangles.Count() - lastTriarbCount) / LoopTimer}");
+                    _logger.LogDebug($"{exchange.ExchangeName} --- Queue Size: {exchange.TrianglesToRecalculate.Count()}.");
                     
 
-                    lastOBCounter[exchange.exchangeName] = Convert.ToInt32(exchange.allOrderBookCounter);
-                    lasttriarbCounter[exchange.exchangeName] = exchange.RecalculatedTriangles.Count();
-                    /*Triarb Opportunities Calculated: { exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(Session): { exchange.RecalculatedTriangles.Count() / loopCounter / loopTimer}
-                    Triarb Queue: { exchange.TrianglesToRecalculate.Count()}
-                    ");*/
+                    LastOBCounter[exchange.ExchangeName] = Convert.ToInt32(exchange.AllOrderBookCounter);
+                    LastTriarbCounter[exchange.ExchangeName] = exchange.RecalculatedTriangles.Count();
                 }
                 _logger.LogDebug("*********************************************************************************************************************************************");
-                await Task.Delay(loopTimer * 1000);
-                loopCounter++;
+                await Task.Delay(LoopTimer * 1000);
             }
-                
         }
     }
 }

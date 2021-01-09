@@ -56,7 +56,6 @@ namespace TriangleCollector.Services
                     {
                         var reader = new StreamReader(ms, Encoding.UTF8);
                         var payload = await reader.ReadToEndAsync();
-                        //Console.WriteLine($"payload is {payload}");
                         var rootelement = JsonDocument.Parse(payload).RootElement;
                         if(rootelement.GetProperty("event").GetString() == "trade")
                         {
@@ -65,9 +64,6 @@ namespace TriangleCollector.Services
                         {
                             continue;
                         }
-                        
-                        /*var price = rootelement.GetProperty("price");
-                        Console.WriteLine(price.ToString()); */
                     }
                 }
             }

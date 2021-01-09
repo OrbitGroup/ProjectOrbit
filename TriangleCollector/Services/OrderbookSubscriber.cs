@@ -45,9 +45,9 @@ namespace TriangleCollector.Services
 
         public void BackgroundProcessing(CancellationToken stoppingToken)
         {
-            Parallel.ForEach(TriangleCollector.exchanges, async (exchange) =>
+            Parallel.ForEach(TriangleCollector.Exchanges, async (exchange) =>
             {
-                string exchangeName = exchange.exchangeName;
+                string exchangeName = exchange.ExchangeName;
                 //_logger.LogDebug($"{exchange.exchangeName}: Subscribing to {exchange.triarbEligibleMarkets.Count()} markets.");
 
                 var client = await ExchangeAPI.GetExchangeClientAsync(exchangeName);
@@ -64,7 +64,7 @@ namespace TriangleCollector.Services
                 await monitor.StartAsync(stoppingToken);
 
 
-                foreach (var market in exchange.triarbEligibleMarkets)
+                foreach (var market in exchange.TriarbEligibleMarkets)
                 {
                     try
                     {
@@ -79,26 +79,27 @@ namespace TriangleCollector.Services
                         var cts = new CancellationToken();
                         if (exchangeName == "hitbtc") //hitbtc provdes both a snapshot of the orderbook and subsequent updates.
                         {
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.symbol}\" }} }}")), WebSocketMessageType.Text, true, cts);
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")), WebSocketMessageType.Text, true, cts);
                         }
                         else if (exchangeName == "binance") //binance's websocket doesn't provide a snapshot of the orderbook; you must create your own snapshot first by requesting a rest API response for every market. The websocket then provides subsequent updates.
                         {
-                            await binanceSnapshot(market); //get snapshot via REST api
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")), WebSocketMessageType.Text, true, cts);
+                            await BinanceSnapshot(market); //get snapshot via REST api
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")), WebSocketMessageType.Text, true, cts);
                             await Task.Delay(500); //wait 500 ms for the connection to be established
                         }
                         else if (exchangeName == "huobi")
                         {
-                            await huobiSnapshot(market); //same logic/rationale as binance
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")), WebSocketMessageType.Text, true, cts);
+                            await HuobiSnapshot(market); //same logic/rationale as binance
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")), WebSocketMessageType.Text, true, cts);
                             //await Task.Delay(500);
                         }
-                        //_logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
+                        //_logger.LogDebug($"{exchange.ExchangeName}: subscribed to {market.Symbol}");
                         ID++;
                         CurrentClientPairCount++;
                     }
                     catch (Exception ex)
                     {
+                        _logger.LogError($"issue with subscribing to {market.Symbol} on {exchange.ExchangeName}");
                         _logger.LogError(ex.Message);
                         throw ex;
                     }
@@ -108,10 +109,10 @@ namespace TriangleCollector.Services
         }
 
         //TODO: merge the logic for snapshots into one method, and/or keep this in a seperate class.
-        public async Task binanceSnapshot(Orderbook market)
+        public async Task BinanceSnapshot(Orderbook market)
         {
             var httpClient = new HttpClient();
-            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={market.symbol}&limit=1000").Result).Result.RootElement;
+            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={market.Symbol}&limit=1000").Result).Result.RootElement;
             var bids = snapshot.GetProperty("bids").EnumerateArray();
             foreach (var bid in bids)
             {
@@ -120,7 +121,7 @@ namespace TriangleCollector.Services
                 string size = bid[1].GetString();
                 decimal sizeDecimal = Convert.ToDecimal(size);
 
-                market.officialBids.TryAdd(priceDecimal, sizeDecimal);
+                market.OfficialBids.TryAdd(priceDecimal, sizeDecimal);
             }
             var asks = snapshot.GetProperty("asks").EnumerateArray();
             foreach (var ask in asks)
@@ -130,26 +131,26 @@ namespace TriangleCollector.Services
                 string size = ask[1].GetString();
                 decimal sizeDecimal = Convert.ToDecimal(size);
 
-                market.officialAsks.TryAdd(priceDecimal, sizeDecimal);
+                market.OfficialAsks.TryAdd(priceDecimal, sizeDecimal);
             }
         }
-        public async Task huobiSnapshot(Orderbook market)
+        public async Task HuobiSnapshot(Orderbook market)
         {
             var httpClient = new HttpClient();
-            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={market.symbol.ToLower()}&type=step1").Result).Result.RootElement;
+            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={market.Symbol.ToLower()}&type=step1").Result).Result.RootElement;
             var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
             foreach (var bid in bids)
             {
                 decimal price = bid[0].GetDecimal();
                 decimal size = bid[1].GetDecimal();
-                market.officialBids.TryAdd(price, size);
+                market.OfficialBids.TryAdd(price, size);
             }
             var asks = snapshot.GetProperty("tick").GetProperty("asks").EnumerateArray();
             foreach (var ask in asks)
             {
                 decimal price = ask[0].GetDecimal();
                 decimal size = ask[1].GetDecimal();
-                market.officialAsks.TryAdd(price, size);
+                market.OfficialAsks.TryAdd(price, size);
             }
         }
     }

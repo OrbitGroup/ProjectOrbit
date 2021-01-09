@@ -29,9 +29,9 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<String> exchangeList = new List<string>() { "hitbtc" }; //list of exchanges to initialize. Hitbtc and binance are fully supported currently
-        public static List<Exchange> exchanges = new List<Exchange>(); //contains all exchange objects
-        public static ExchangeAPI restAPIs = new ExchangeAPI(); //contains the unique API URLs for each exchange
+        public static List<String> ExchangeList = new List<string>() { "huobi" }; //list of exchanges to initialize. Valid names are 'hitbtc', 'huobi', and 'binance'
+        public static List<Exchange> Exchanges = new List<Exchange>(); //contains all exchange objects
+        public static ExchangeAPI RestAPIs = new ExchangeAPI(); //contains the unique API URLs for each exchange
 
         public static void Main(string[] args)
         {
@@ -60,10 +60,10 @@ namespace TriangleCollector
        
         public static void initializeExchanges()
         {
-            foreach(string exchangeName in exchangeList)
+            foreach(string exchangeName in ExchangeList)
             {
                 var exchange = new Exchange(exchangeName);
-                exchanges.Add(exchange);
+                Exchanges.Add(exchange);
             }
         }
     }

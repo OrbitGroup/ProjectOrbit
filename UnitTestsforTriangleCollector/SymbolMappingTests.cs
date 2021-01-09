@@ -24,89 +24,89 @@ namespace TriangleCollector.UnitTests
 
             HashSet<Orderbook> expectedTriangleEligiblePairs = new HashSet<Orderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
             var ethbtc = new Orderbook();
-            ethbtc.symbol = "ETHBTC";
-            ethbtc.quoteCurrency = "BTC";
-            ethbtc.baseCurrency= "ETH";
+            ethbtc.Symbol = "ETHBTC";
+            ethbtc.QuoteCurrency = "BTC";
+            ethbtc.BaseCurrency= "ETH";
             expectedTriangleEligiblePairs.Add(ethbtc);
 
             var eoseth = new Orderbook();
-            eoseth.symbol = "EOSETH";
-            eoseth.quoteCurrency = "ETH";
-            eoseth.baseCurrency = "EOS";
+            eoseth.Symbol = "EOSETH";
+            eoseth.QuoteCurrency = "ETH";
+            eoseth.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eoseth);
 
             var eosbtc = new Orderbook();
-            eosbtc.symbol = "EOSBTC";
-            eosbtc.quoteCurrency = "BTC";
-            eosbtc.baseCurrency = "EOS";
+            eosbtc.Symbol = "EOSBTC";
+            eosbtc.QuoteCurrency = "BTC";
+            eosbtc.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosbtc);
 
             var eosusd = new Orderbook();
-            eosusd.symbol = "EOSUSD";
-            eosusd.quoteCurrency = "USD";
-            eosusd.baseCurrency = "EOS";
+            eosusd.Symbol = "EOSUSD";
+            eosusd.QuoteCurrency = "USD";
+            eosusd.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosusd);
 
             var btcusd = new Orderbook();
-            btcusd.symbol = "BTCUSD";
-            btcusd.quoteCurrency = "USD";
-            btcusd.baseCurrency = "BTC";
+            btcusd.Symbol = "BTCUSD";
+            btcusd.QuoteCurrency = "USD";
+            btcusd.BaseCurrency = "BTC";
             expectedTriangleEligiblePairs.Add(btcusd);
 
             //Act: run the sample API response through the function
 
             var testExchange = new Exchange("hitbtc");
-            testExchange.triarbEligibleMarkets.Clear();
-            testExchange.tradedMarkets = expectedTriangleEligiblePairs;
-            testExchange.mapOpportunities();
+            testExchange.TriarbEligibleMarkets.Clear();
+            testExchange.TradedMarkets = expectedTriangleEligiblePairs;
+            testExchange.MapOpportunities();
 
             //Assert: confirm that the results of the test symbols match the expected outcome
 
-            Assert.IsTrue(expectedTriangleEligiblePairs.SetEquals(testExchange.triarbEligibleMarkets));
+            Assert.IsTrue(expectedTriangleEligiblePairs.SetEquals(testExchange.TriarbEligibleMarkets));
         }
         
         [TestMethod]
         public void NEWTestSymbolTriangleMapping() //test that all of the triangle eligible symbols are matched properly to all of their respective triangles
         {
-
+            var testExchange = new Exchange("hitbtc");
             //Arrange: list all of the possible triangles and map them to their symbols
             List<Triangle> triangles = new List<Triangle>()
             {
-                new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>()),
-                new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>()),
-                new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>())
+                new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>(), testExchange),
+                new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>(), testExchange),
+                new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>(), testExchange)
 
             };
 
             HashSet<Orderbook> expectedTriangleEligiblePairs = new HashSet<Orderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
             var ethbtc = new Orderbook();
-            ethbtc.symbol = "ETHBTC";
-            ethbtc.quoteCurrency = "BTC";
-            ethbtc.baseCurrency = "ETH";
+            ethbtc.Symbol = "ETHBTC";
+            ethbtc.QuoteCurrency = "BTC";
+            ethbtc.BaseCurrency = "ETH";
             expectedTriangleEligiblePairs.Add(ethbtc);
 
             var eoseth = new Orderbook();
-            eoseth.symbol = "EOSETH";
-            eoseth.quoteCurrency = "ETH";
-            eoseth.baseCurrency = "EOS";
+            eoseth.Symbol = "EOSETH";
+            eoseth.QuoteCurrency = "ETH";
+            eoseth.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eoseth);
 
             var eosbtc = new Orderbook();
-            eosbtc.symbol = "EOSBTC";
-            eosbtc.quoteCurrency = "BTC";
-            eosbtc.baseCurrency = "EOS";
+            eosbtc.Symbol = "EOSBTC";
+            eosbtc.QuoteCurrency = "BTC";
+            eosbtc.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosbtc);
 
             var eosusd = new Orderbook();
-            eosusd.symbol = "EOSUSD";
-            eosusd.quoteCurrency = "USD";
-            eosusd.baseCurrency = "EOS";
+            eosusd.Symbol = "EOSUSD";
+            eosusd.QuoteCurrency = "USD";
+            eosusd.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosusd);
 
             var btcusd = new Orderbook();
-            btcusd.symbol = "BTCUSD";
-            btcusd.quoteCurrency = "USD";
-            btcusd.baseCurrency = "BTC";
+            btcusd.Symbol = "BTCUSD";
+            btcusd.QuoteCurrency = "USD";
+            btcusd.BaseCurrency = "BTC";
             expectedTriangleEligiblePairs.Add(btcusd);
 
 
@@ -119,21 +119,21 @@ namespace TriangleCollector.UnitTests
             expectedSymbolTriangleMapping.GetOrAdd("EOSUSD", new List<Triangle>() { triangles[2] });
 
             //Act: Run the sample API response through the function
-            var testExchange = new Exchange("hitbtc");
-            testExchange.triarbEligibleMarkets.Clear();
-            testExchange.triarbMarketMapping.Clear();
-            testExchange.tradedMarkets = expectedTriangleEligiblePairs;
-            testExchange.mapOpportunities();
+            
+            testExchange.TriarbEligibleMarkets.Clear();
+            testExchange.TriarbMarketMapping.Clear();
+            testExchange.TradedMarkets = expectedTriangleEligiblePairs;
+            testExchange.MapOpportunities();
 
             //Assert: confirm that the result of the test matches the expected outcome
 
             //First, test that the correct number of symbols are being mapped.
-            Assert.IsTrue(expectedSymbolTriangleMapping.Count == testExchange.triarbMarketMapping.Count, $"the wrong number of symbols were mapped. Expected: {expectedSymbolTriangleMapping.Count}. Actual: {testExchange.triarbMarketMapping.Count}");
+            Assert.IsTrue(expectedSymbolTriangleMapping.Count == testExchange.TriarbMarketMapping.Count, $"the wrong number of symbols were mapped. Expected: {expectedSymbolTriangleMapping.Count}. Actual: {testExchange.TriarbMarketMapping.Count}");
 
             //Next, for each symbol mapped, test that the correct number of triangles is matched to the symbol.
             foreach (var testItem in expectedSymbolTriangleMapping)
             {
-                if (testExchange.triarbMarketMapping.TryGetValue(testItem.Key, out List<Triangle> value))
+                if (testExchange.TriarbMarketMapping.TryGetValue(testItem.Key, out List<Triangle> value))
                 {
                     Assert.IsTrue(testItem.Value.Count == value.Count, $"the wrong number of triangles were mapped to a symbol. For {testItem.Key}, expected was {testItem.Value.Count}, but the actual count was {value.Count}");
 

@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using TriangleCollector.Models;
+using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.UnitTests
 {
@@ -16,15 +17,15 @@ namespace TriangleCollector.UnitTests
         private static ILoggerFactory _factory = new NullLoggerFactory();
 
         //unprofitable triangles
-        public Triangle EthEosBtc = new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>());
+        public Triangle EthEosBtc = new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>(), new Exchange("hitbtc"));
         public decimal EthEosBtcUnprofitableProfit = 0.9924677859176047787362868849m - 1;
         public decimal EthEosBtcUnprofitableVolume = 0.005536389908m;
 
-        public Triangle EosEthBtc = new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>());
+        public Triangle EosEthBtc = new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>(), new Exchange("hitbtc"));
         public decimal EosEthBtcUnprofitableProfit = 0.9994362518556066475976682718m - 1;
         public decimal EosEthBtcUnprofitableVolume = 0.005520685968m;
 
-        public Triangle UsdEosBtc = new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>());
+        public Triangle UsdEosBtc = new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>(), new Exchange("hitbtc"));
         public decimal UsdEosBtcUnprofitableProfit = 0.9994800007008076808521821399m - 1;
         public decimal UsdEosBtcUnprofitableVolume = 0.01019975m;
 
@@ -71,37 +72,37 @@ namespace TriangleCollector.UnitTests
         public void TestProfitAndVolumeNoLayersBuyBuySell() // without any input, this tests the ProfitPercent output of an unprofitable triangle.
         {
             Orderbook EthBtc = new Orderbook();
-            EthBtc.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialBids.TryAdd(0.034139m, 4.2344m);
-            EthBtc.officialBids.TryAdd(0.034110m, 2.9281m);
-            EthBtc.officialBids.TryAdd(0.034070m, 6.0711m);
+            EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
+            EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
+            EthBtc.OfficialBids.TryAdd(0.034070m, 6.0711m);
 
-            EthBtc.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialAsks.TryAdd(0.034172m, 3.6m);
-            EthBtc.officialAsks.TryAdd(0.034200m, 0.3235m);
-            EthBtc.officialAsks.TryAdd(0.035210m, 1.1731m);
+            EthBtc.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialAsks.TryAdd(0.034172m, 3.6m);
+            EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
+            EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
             Orderbook EosEth = new Orderbook();
-            EosEth.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialBids.TryAdd(0.0080856m, 20m);
-            EosEth.officialBids.TryAdd(0.0080810m, 543.14m);
-            EosEth.officialBids.TryAdd(0.0080500m, 144.83m);
+            EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
+            EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
+            EosEth.OfficialBids.TryAdd(0.0080500m, 144.83m);
 
-            EosEth.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialAsks.TryAdd(0.0081086m, 20m);
-            EosEth.officialAsks.TryAdd(0.0081500m, 362.18m);
-            EosEth.officialAsks.TryAdd(0.0081575m, 144.86m);
+            EosEth.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialAsks.TryAdd(0.0081086m, 20m);
+            EosEth.OfficialAsks.TryAdd(0.0081500m, 362.18m);
+            EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
                 
             Orderbook EosBtcUnprofitable = new Orderbook();
-            EosBtcUnprofitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027619m, 104.95m);
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027750m, 123.82m);
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027900m, 160.66m);
+            EosBtcUnprofitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027619m, 104.95m);
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027750m, 123.82m);
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027900m, 160.66m);
 
-            EosBtcUnprofitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027500m, 506.75m);
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027300m, 120.44m);
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027100m, 725.15m);              
+            EosBtcUnprofitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027500m, 506.75m);
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027300m, 120.44m);
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027100m, 725.15m);              
 
             EthEosBtc.FirstSymbolOrderbook = EthBtc;
             EthEosBtc.SecondSymbolOrderbook = EosEth;
@@ -116,27 +117,27 @@ namespace TriangleCollector.UnitTests
         public void TestProfitAndVolumeNoLayersSellBuySell()
         {
             Orderbook BtcUsdBids = new Orderbook();
-            BtcUsdBids.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            BtcUsdBids.officialBids.TryAdd(10372.24m, 0.75m);
-            BtcUsdBids.officialBids.TryAdd(10370.04m, 0.12m);
-            BtcUsdBids.officialBids.TryAdd(10367.85m, 0.24m);
+            BtcUsdBids.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            BtcUsdBids.OfficialBids.TryAdd(10372.24m, 0.75m);
+            BtcUsdBids.OfficialBids.TryAdd(10370.04m, 0.12m);
+            BtcUsdBids.OfficialBids.TryAdd(10367.85m, 0.24m);
 
             Orderbook EosUsdAsks = new Orderbook();
-            EosUsdAsks.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosUsdAsks.officialAsks.TryAdd(2.85385m, 37.09m);
-            EosUsdAsks.officialAsks.TryAdd(2.86429m, 600m);
-            EosUsdAsks.officialAsks.TryAdd(2.86940m, 363.86m);
+            EosUsdAsks.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosUsdAsks.OfficialAsks.TryAdd(2.85385m, 37.09m);
+            EosUsdAsks.OfficialAsks.TryAdd(2.86429m, 600m);
+            EosUsdAsks.OfficialAsks.TryAdd(2.86940m, 363.86m);
 
             Orderbook EosBtcUnprofitable = new Orderbook();
-            EosBtcUnprofitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027619m, 104.95m);
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027750m, 123.82m);
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027900m, 160.66m);
+            EosBtcUnprofitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027619m, 104.95m);
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027750m, 123.82m);
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027900m, 160.66m);
 
-            EosBtcUnprofitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027500m, 506.75m);
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027300m, 120.44m);
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027100m, 725.15m);
+            EosBtcUnprofitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027500m, 506.75m);
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027300m, 120.44m);
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027100m, 725.15m);
             
             UsdEosBtc.FirstSymbolOrderbook = BtcUsdBids;
             UsdEosBtc.SecondSymbolOrderbook = EosUsdAsks;
@@ -151,37 +152,37 @@ namespace TriangleCollector.UnitTests
         public void TestVolumeAndProfitNoLayersBuySellSell()
         {
             Orderbook EosBtcUnprofitable = new Orderbook();
-            EosBtcUnprofitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027619m, 104.95m);
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027750m, 123.82m);
-            EosBtcUnprofitable.officialAsks.TryAdd(0.00027900m, 160.66m);
+            EosBtcUnprofitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027619m, 104.95m);
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027750m, 123.82m);
+            EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027900m, 160.66m);
 
-            EosBtcUnprofitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027500m, 506.75m);
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027300m, 120.44m);
-            EosBtcUnprofitable.officialBids.TryAdd(0.00027100m, 725.15m);
+            EosBtcUnprofitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027500m, 506.75m);
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027300m, 120.44m);
+            EosBtcUnprofitable.OfficialBids.TryAdd(0.00027100m, 725.15m);
 
             Orderbook EthBtc = new Orderbook();
-            EthBtc.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialBids.TryAdd(0.034139m, 4.2344m);
-            EthBtc.officialBids.TryAdd(0.034110m, 2.9281m);
-            EthBtc.officialBids.TryAdd(0.034070m, 6.0711m);
+            EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
+            EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
+            EthBtc.OfficialBids.TryAdd(0.034070m, 6.0711m);
 
-            EthBtc.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialAsks.TryAdd(0.034172m, 3.6m);
-            EthBtc.officialAsks.TryAdd(0.034200m, 0.3235m);
-            EthBtc.officialAsks.TryAdd(0.035210m, 1.1731m);
+            EthBtc.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialAsks.TryAdd(0.034172m, 3.6m);
+            EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
+            EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
             Orderbook EosEth = new Orderbook();
-            EosEth.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialBids.TryAdd(0.0080856m, 20m);
-            EosEth.officialBids.TryAdd(0.0080810m, 543.14m);
-            EosEth.officialBids.TryAdd(0.0080500m, 144.83m);
+            EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
+            EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
+            EosEth.OfficialBids.TryAdd(0.0080500m, 144.83m);
 
-            EosEth.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialAsks.TryAdd(0.0081086m, 20m);
-            EosEth.officialAsks.TryAdd(0.0081500m, 362.18m);
-            EosEth.officialAsks.TryAdd(0.0081575m, 144.86m);
+            EosEth.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialAsks.TryAdd(0.0081086m, 20m);
+            EosEth.OfficialAsks.TryAdd(0.0081500m, 362.18m);
+            EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
 
             EosEthBtc.FirstSymbolOrderbook = EosBtcUnprofitable;
             EosEthBtc.SecondSymbolOrderbook = EosEth;
@@ -196,38 +197,38 @@ namespace TriangleCollector.UnitTests
         public void TestLayersBuyBuySellBottleneckTwo() 
         {
             Orderbook EthBtc = new Orderbook();
-            EthBtc.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialBids.TryAdd(0.034139m, 4.2344m);
-            EthBtc.officialBids.TryAdd(0.034110m, 2.9281m);
-            EthBtc.officialBids.TryAdd(0.034070m, 6.0711m);
+            EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
+            EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
+            EthBtc.OfficialBids.TryAdd(0.034070m, 6.0711m);
 
-            EthBtc.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialAsks.TryAdd(0.034172m, 3.6m);
-            EthBtc.officialAsks.TryAdd(0.034200m, 0.3235m);
-            EthBtc.officialAsks.TryAdd(0.035210m, 1.1731m);
+            EthBtc.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialAsks.TryAdd(0.034172m, 3.6m);
+            EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
+            EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
             Orderbook EosEth = new Orderbook();
-            EosEth.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialBids.TryAdd(0.0080856m, 20m);
-            EosEth.officialBids.TryAdd(0.0080810m, 543.14m);
-            EosEth.officialBids.TryAdd(0.0080500m, 144.83m);
+            EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
+            EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
+            EosEth.OfficialBids.TryAdd(0.0080500m, 144.83m);
 
-            EosEth.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialAsks.TryAdd(0.0081086m, 20m);
-            EosEth.officialAsks.TryAdd(0.0081500m, 362.18m);
-            EosEth.officialAsks.TryAdd(0.0081575m, 144.86m);
+            EosEth.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialAsks.TryAdd(0.0081086m, 20m);
+            EosEth.OfficialAsks.TryAdd(0.0081500m, 362.18m);
+            EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
             Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
-            EosBtcProfitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialAsks.TryAdd(0.00027000m, 104.95m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027100m, 123.82m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027200m, 160.66m);
+            EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027200m, 160.66m);
 
-            EosBtcProfitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialBids.TryAdd(0.00028050m, 506.75m);
-            EosBtcProfitable.officialBids.TryAdd(0.00028000m, 120.44m);
-            EosBtcProfitable.officialBids.TryAdd(0.00027900m, 725.15m);
+            EosBtcProfitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028050m, 506.75m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028000m, 120.44m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00027900m, 725.15m);
 
             EthEosBtc.FirstSymbolOrderbook = EthBtc;
             EthEosBtc.SecondSymbolOrderbook = EosEth;
@@ -244,38 +245,38 @@ namespace TriangleCollector.UnitTests
         {
             //BUYBUYSELL BOTTLENECK = TRADE 1 (USE PROFITABLE TEST ORDERBOOK FOR THIRD TRADE):
             Orderbook EthBtcBuyBuySellBottleneckOne = new Orderbook();
-            EthBtcBuyBuySellBottleneckOne.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EthBtcBuyBuySellBottleneckOne.officialBids.TryAdd(0.034139m, 4.2344m);
-            EthBtcBuyBuySellBottleneckOne.officialBids.TryAdd(0.034110m, 2.9281m);
-            EthBtcBuyBuySellBottleneckOne.officialBids.TryAdd(0.034070m, 6.0711m);
+            EthBtcBuyBuySellBottleneckOne.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EthBtcBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.034139m, 4.2344m);
+            EthBtcBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.034110m, 2.9281m);
+            EthBtcBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.034070m, 6.0711m);
 
-            EthBtcBuyBuySellBottleneckOne.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EthBtcBuyBuySellBottleneckOne.officialAsks.TryAdd(0.034172m, 0.036m);
-            EthBtcBuyBuySellBottleneckOne.officialAsks.TryAdd(0.034200m, 0.3235m);
-            EthBtcBuyBuySellBottleneckOne.officialAsks.TryAdd(0.035210m, 1.1731m);
+            EthBtcBuyBuySellBottleneckOne.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EthBtcBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.034172m, 0.036m);
+            EthBtcBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.034200m, 0.3235m);
+            EthBtcBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
             Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
-            EosBtcProfitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialAsks.TryAdd(0.00027000m, 104.95m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027100m, 123.82m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027200m, 160.66m);
+            EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027200m, 160.66m);
 
-            EosBtcProfitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialBids.TryAdd(0.00028050m, 506.75m);
-            EosBtcProfitable.officialBids.TryAdd(0.00028000m, 120.44m);
-            EosBtcProfitable.officialBids.TryAdd(0.00027900m, 725.15m);
+            EosBtcProfitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028050m, 506.75m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028000m, 120.44m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00027900m, 725.15m);
 
             Orderbook EosEthBuyBuySellBottleneckOne = new Orderbook();
-            EosEthBuyBuySellBottleneckOne.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosEthBuyBuySellBottleneckOne.officialBids.TryAdd(0.0080856m, 20m);
-            EosEthBuyBuySellBottleneckOne.officialBids.TryAdd(0.0080810m, 543.14m);
-            EosEthBuyBuySellBottleneckOne.officialBids.TryAdd(0.0080500m, 144.83m);
+            EosEthBuyBuySellBottleneckOne.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080856m, 20m);
+            EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080810m, 543.14m);
+            EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080500m, 144.83m);
 
-            EosEthBuyBuySellBottleneckOne.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosEthBuyBuySellBottleneckOne.officialAsks.TryAdd(0.0081086m, 2000000m);
-            EosEthBuyBuySellBottleneckOne.officialAsks.TryAdd(0.0081500m, 3620000.18m);
-            EosEthBuyBuySellBottleneckOne.officialAsks.TryAdd(0.0081575m, 1440000.86m);
+            EosEthBuyBuySellBottleneckOne.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosEthBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.0081086m, 2000000m);
+            EosEthBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.0081500m, 3620000.18m);
+            EosEthBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.0081575m, 1440000.86m);
 
             EthEosBtc.FirstSymbolOrderbook = EthBtcBuyBuySellBottleneckOne;
             EthEosBtc.SecondSymbolOrderbook = EosEthBuyBuySellBottleneckOne;
@@ -292,38 +293,38 @@ namespace TriangleCollector.UnitTests
         {
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
             Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
-            EosBtcProfitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialAsks.TryAdd(0.00027000m, 104.95m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027100m, 123.82m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027200m, 160.66m);
+            EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027200m, 160.66m);
 
-            EosBtcProfitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialBids.TryAdd(0.00028050m, 506.75m);
-            EosBtcProfitable.officialBids.TryAdd(0.00028000m, 120.44m);
-            EosBtcProfitable.officialBids.TryAdd(0.00027900m, 725.15m);
+            EosBtcProfitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028050m, 506.75m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028000m, 120.44m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00027900m, 725.15m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 3 (USE OTHER PROFITABLE TEST ORDERBOOK FOR SECOND AND THIRD TRADE):
             Orderbook EthBtcBuyBuySellBottleneckThree = new Orderbook();
-            EthBtcBuyBuySellBottleneckThree.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EthBtcBuyBuySellBottleneckThree.officialBids.TryAdd(0.034139m, 4.2344m);
-            EthBtcBuyBuySellBottleneckThree.officialBids.TryAdd(0.034110m, 2.9281m);
-            EthBtcBuyBuySellBottleneckThree.officialBids.TryAdd(0.034070m, 6.0711m);
+            EthBtcBuyBuySellBottleneckThree.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EthBtcBuyBuySellBottleneckThree.OfficialBids.TryAdd(0.034139m, 4.2344m);
+            EthBtcBuyBuySellBottleneckThree.OfficialBids.TryAdd(0.034110m, 2.9281m);
+            EthBtcBuyBuySellBottleneckThree.OfficialBids.TryAdd(0.034070m, 6.0711m);
 
-            EthBtcBuyBuySellBottleneckThree.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EthBtcBuyBuySellBottleneckThree.officialAsks.TryAdd(0.034172m, 36m);
-            EthBtcBuyBuySellBottleneckThree.officialAsks.TryAdd(0.034200m, 32.35m);
-            EthBtcBuyBuySellBottleneckThree.officialAsks.TryAdd(0.035210m, 17.31m);
+            EthBtcBuyBuySellBottleneckThree.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EthBtcBuyBuySellBottleneckThree.OfficialAsks.TryAdd(0.034172m, 36m);
+            EthBtcBuyBuySellBottleneckThree.OfficialAsks.TryAdd(0.034200m, 32.35m);
+            EthBtcBuyBuySellBottleneckThree.OfficialAsks.TryAdd(0.035210m, 17.31m);
 
             Orderbook EosEthBuyBuySellBottleneckOne = new Orderbook();
-            EosEthBuyBuySellBottleneckOne.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosEthBuyBuySellBottleneckOne.officialBids.TryAdd(0.0080856m, 20m);
-            EosEthBuyBuySellBottleneckOne.officialBids.TryAdd(0.0080810m, 543.14m);
-            EosEthBuyBuySellBottleneckOne.officialBids.TryAdd(0.0080500m, 144.83m);
+            EosEthBuyBuySellBottleneckOne.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080856m, 20m);
+            EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080810m, 543.14m);
+            EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080500m, 144.83m);
 
-            EosEthBuyBuySellBottleneckOne.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosEthBuyBuySellBottleneckOne.officialAsks.TryAdd(0.0081086m, 2000000m);
-            EosEthBuyBuySellBottleneckOne.officialAsks.TryAdd(0.0081500m, 3620000.18m);
-            EosEthBuyBuySellBottleneckOne.officialAsks.TryAdd(0.0081575m, 1440000.86m);
+            EosEthBuyBuySellBottleneckOne.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosEthBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.0081086m, 2000000m);
+            EosEthBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.0081500m, 3620000.18m);
+            EosEthBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.0081575m, 1440000.86m);
 
             EthEosBtc.FirstSymbolOrderbook = EthBtcBuyBuySellBottleneckThree;
             EthEosBtc.SecondSymbolOrderbook = EosEthBuyBuySellBottleneckOne;
@@ -339,38 +340,38 @@ namespace TriangleCollector.UnitTests
         public void TestLayersBuySellSellBottleneckTwo() //this will also test a bottleneck of one, so it accomplishes two tests in one.
         {
             Orderbook EthBtc = new Orderbook();
-            EthBtc.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialBids.TryAdd(0.034139m, 4.2344m);
-            EthBtc.officialBids.TryAdd(0.034110m, 2.9281m);
-            EthBtc.officialBids.TryAdd(0.034070m, 6.0711m);
+            EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
+            EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
+            EthBtc.OfficialBids.TryAdd(0.034070m, 6.0711m);
 
-            EthBtc.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialAsks.TryAdd(0.034172m, 3.6m);
-            EthBtc.officialAsks.TryAdd(0.034200m, 0.3235m);
-            EthBtc.officialAsks.TryAdd(0.035210m, 1.1731m);
+            EthBtc.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialAsks.TryAdd(0.034172m, 3.6m);
+            EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
+            EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
             Orderbook EosEth = new Orderbook();
-            EosEth.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialBids.TryAdd(0.0080856m, 20m);
-            EosEth.officialBids.TryAdd(0.0080810m, 543.14m);
-            EosEth.officialBids.TryAdd(0.0080500m, 144.83m);
+            EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
+            EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
+            EosEth.OfficialBids.TryAdd(0.0080500m, 144.83m);
 
-            EosEth.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialAsks.TryAdd(0.0081086m, 20m);
-            EosEth.officialAsks.TryAdd(0.0081500m, 362.18m);
-            EosEth.officialAsks.TryAdd(0.0081575m, 144.86m);
+            EosEth.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialAsks.TryAdd(0.0081086m, 20m);
+            EosEth.OfficialAsks.TryAdd(0.0081500m, 362.18m);
+            EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
             Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
-            EosBtcProfitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialAsks.TryAdd(0.00027000m, 104.95m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027100m, 123.82m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027200m, 160.66m);
+            EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027200m, 160.66m);
 
-            EosBtcProfitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialBids.TryAdd(0.00028050m, 506.75m);
-            EosBtcProfitable.officialBids.TryAdd(0.00028000m, 120.44m);
-            EosBtcProfitable.officialBids.TryAdd(0.00027900m, 725.15m);
+            EosBtcProfitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028050m, 506.75m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028000m, 120.44m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00027900m, 725.15m);
 
             EosEthBtc.FirstSymbolOrderbook = EosBtcProfitable;
             EosEthBtc.SecondSymbolOrderbook = EosEth;
@@ -385,38 +386,38 @@ namespace TriangleCollector.UnitTests
         public void TestLayersBuySellSellBottleneckThree()
         {
             Orderbook EthBtc = new Orderbook();
-            EthBtc.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialBids.TryAdd(0.034139m, 0.01m);
-            EthBtc.officialBids.TryAdd(0.034110m, 0.05m);
-            EthBtc.officialBids.TryAdd(0.034070m, 0.1m);
+            EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialBids.TryAdd(0.034139m, 0.01m);
+            EthBtc.OfficialBids.TryAdd(0.034110m, 0.05m);
+            EthBtc.OfficialBids.TryAdd(0.034070m, 0.1m);
 
-            EthBtc.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EthBtc.officialAsks.TryAdd(0.034172m, 3.6m);
-            EthBtc.officialAsks.TryAdd(0.034200m, 0.3235m);
-            EthBtc.officialAsks.TryAdd(0.035210m, 1.1731m);
+            EthBtc.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EthBtc.OfficialAsks.TryAdd(0.034172m, 3.6m);
+            EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
+            EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
             Orderbook EosEth = new Orderbook();
-            EosEth.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialBids.TryAdd(0.0080856m, 20m);
-            EosEth.officialBids.TryAdd(0.0080810m, 543.14m);
-            EosEth.officialBids.TryAdd(0.0080500m, 144.83m);
+            EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
+            EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
+            EosEth.OfficialBids.TryAdd(0.0080500m, 144.83m);
 
-            EosEth.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosEth.officialAsks.TryAdd(0.0081086m, 20m);
-            EosEth.officialAsks.TryAdd(0.0081500m, 362.18m);
-            EosEth.officialAsks.TryAdd(0.0081575m, 144.86m);
+            EosEth.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosEth.OfficialAsks.TryAdd(0.0081086m, 20m);
+            EosEth.OfficialAsks.TryAdd(0.0081500m, 362.18m);
+            EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 3 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
             Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
-            EosBtcProfitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialAsks.TryAdd(0.00027000m, 104.95m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027100m, 123.82m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027200m, 160.66m);
+            EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027200m, 160.66m);
 
-            EosBtcProfitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialBids.TryAdd(0.00028050m, 506.75m);
-            EosBtcProfitable.officialBids.TryAdd(0.00028000m, 120.44m);
-            EosBtcProfitable.officialBids.TryAdd(0.00027900m, 725.15m);
+            EosBtcProfitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028050m, 506.75m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028000m, 120.44m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00027900m, 725.15m);
 
             EosEthBtc.FirstSymbolOrderbook = EosBtcProfitable;
             EosEthBtc.SecondSymbolOrderbook = EosEth;
@@ -431,27 +432,27 @@ namespace TriangleCollector.UnitTests
         public void TestLayersSellBuySellBottlenecks()
         {
             Orderbook BtcUsdSortedBids = new Orderbook();
-            BtcUsdSortedBids.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            BtcUsdSortedBids.officialBids.TryAdd(10372.24m, 0.01m);
-            BtcUsdSortedBids.officialBids.TryAdd(10370.04m, 1m);
-            BtcUsdSortedBids.officialBids.TryAdd(10367.85m, 2m);
+            BtcUsdSortedBids.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            BtcUsdSortedBids.OfficialBids.TryAdd(10372.24m, 0.01m);
+            BtcUsdSortedBids.OfficialBids.TryAdd(10370.04m, 1m);
+            BtcUsdSortedBids.OfficialBids.TryAdd(10367.85m, 2m);
 
             Orderbook EosUsdSortedAsks = new Orderbook();
-            EosUsdSortedAsks.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosUsdSortedAsks.officialAsks.TryAdd(2.85385m, 37.09m);
-            EosUsdSortedAsks.officialAsks.TryAdd(2.86429m, 600m);
-            EosUsdSortedAsks.officialAsks.TryAdd(2.86940m, 363.86m);
+            EosUsdSortedAsks.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosUsdSortedAsks.OfficialAsks.TryAdd(2.85385m, 37.09m);
+            EosUsdSortedAsks.OfficialAsks.TryAdd(2.86429m, 600m);
+            EosUsdSortedAsks.OfficialAsks.TryAdd(2.86940m, 363.86m);
 
             Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
-            EosBtcProfitable.officialAsks = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialAsks.TryAdd(0.00027000m, 104.95m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027100m, 123.82m);
-            EosBtcProfitable.officialAsks.TryAdd(0.00027200m, 160.66m);
+            EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
+            EosBtcProfitable.OfficialAsks.TryAdd(0.00027200m, 160.66m);
 
-            EosBtcProfitable.officialBids = new ConcurrentDictionary<decimal, decimal>();
-            EosBtcProfitable.officialBids.TryAdd(0.00028050m, 506.75m);
-            EosBtcProfitable.officialBids.TryAdd(0.00028000m, 120.44m);
-            EosBtcProfitable.officialBids.TryAdd(0.00027300m, 725.15m);
+            EosBtcProfitable.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028050m, 506.75m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00028000m, 120.44m);
+            EosBtcProfitable.OfficialBids.TryAdd(0.00027300m, 725.15m);
 
             UsdEosBtc.FirstSymbolOrderbook = BtcUsdSortedBids;
             UsdEosBtc.SecondSymbolOrderbook = EosUsdSortedAsks;
