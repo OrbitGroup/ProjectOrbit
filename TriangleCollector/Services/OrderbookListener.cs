@@ -30,6 +30,12 @@ namespace TriangleCollector.Services
             this.client = client;
             exchange = exch;
         }
+        public async Task sendPong(long pong) //sends a 'pong' message back to the server if required to maintain connection
+        {
+            var cts = new CancellationToken();
+            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"pong\": {pong}}}")), WebSocketMessageType.Text, true, cts);
+            Console.WriteLine($"sent back pong {pong} to {exchange.exchangeName}");
+        }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -64,22 +70,21 @@ namespace TriangleCollector.Services
                     {
                         var reader = new StreamReader(ms, Encoding.UTF8);
                         payload = await reader.ReadToEndAsync();
-                    } else if (result.MessageType == WebSocketMessageType.Binary) //huobi global sends all data in a compressed GZIP format. This is a work in process.
+                    } else if (result.MessageType == WebSocketMessageType.Binary) //huobi global sends all data in a compressed GZIP format
                     {
-                        byte[] array = ms.ToArray();
-
+                        var byteArray = ms.ToArray();
                         using var decompressedStream = new MemoryStream();
-                        using var compressedStream = new MemoryStream(array);
-                        using var reader = new GZipStream(compressedStream, CompressionMode.Decompress);
-                        reader.BaseStream.CopyTo(decompressedStream);
+                        using var compressedStream = new MemoryStream(byteArray);
+                        using var deflateStream = new GZipStream(compressedStream, CompressionMode.Decompress);
+                        deflateStream.CopyTo(decompressedStream);
+                        decompressedStream.Position = 0;
 
-                        using var stringReader = new StreamReader(decompressedStream);
-                        payload = await stringReader.ReadToEndAsync();
+                        using var streamReader = new StreamReader(decompressedStream);
+                        payload = streamReader.ReadToEnd();                        
                     }
                     try
                     {
-                        //Console.WriteLine(payload);
-
+                        //Console.WriteLine($"payload is {payload}");
                         var orderbook = JsonSerializer.Deserialize<Orderbook>(payload); //takes a string and returns an orderbook
 
                         if (orderbook.symbol != null)
@@ -125,9 +130,13 @@ namespace TriangleCollector.Services
                                 Console.WriteLine($"Error merging orderbook for market {orderbook.symbol} on {exchange.exchangeName}. Websocket payload was {payload}");
                                 Console.WriteLine(ex.Message);
                             }
+                        } else if (orderbook.pong == true)
+                        {
+                            await sendPong(orderbook.pongValue);
+                            orderbook.pong = false; //set the flag back to false
                         } else
                         {
-                            //Console.WriteLine($"orderbook is null, websocket payload was {payload}");
+                            //Console.WriteLine($"no orderbook symbol - payload was {payload}");
                         }
                     }
                     catch (Exception ex)
@@ -135,8 +144,6 @@ namespace TriangleCollector.Services
                         Console.WriteLine($"exception: {ex.Message}");
                         throw ex;
                     }
-                        
-                   
                 }
             }
         }

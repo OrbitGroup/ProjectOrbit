@@ -138,7 +138,6 @@ namespace TriangleCollector.Models
                         {
                             reader.Read();
                         }
-                        var layers = new List<decimal>();
                         while (reader.TokenType != JsonTokenType.EndArray && reader.TokenType != JsonTokenType.StartArray)
                         {
                             var price = Convert.ToDecimal(reader.GetString());
@@ -158,7 +157,77 @@ namespace TriangleCollector.Models
                 }
                 
                 return ob;
+            } else if (firstLine == "id" || firstLine == "ch") //huobi global
+            {
+                if(firstLine == "ch")
+                {
+                    reader.Read();
+                    var channel = reader.GetString().Split(".");
+                    ob.symbol = channel[1].ToUpper(); //the second period-delimited item is the symbol
+                }
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.PropertyName)
+                    {
+                        currentProperty = reader.GetString();
+                    }
+                    else if (reader.TokenType == JsonTokenType.StartObject)
+                    {
+                        reader.Read();
+                        while(reader.TokenType != JsonTokenType.EndObject && reader.TokenType != JsonTokenType.StartObject)
+                        {
+                            if (reader.TokenType == JsonTokenType.PropertyName)
+                            {
+                                currentProperty = reader.GetString();
+                            }
+                            else if (currentProperty == "seqNum")
+                            {
+                                ob.sequence = reader.GetInt64();
+                            }
+                            else if (reader.TokenType == JsonTokenType.StartArray)
+                            {
+                                reader.Read();
+                                if (reader.TokenType == JsonTokenType.StartArray)
+                                {
+                                    reader.Read();
+                                }
+                                while (reader.TokenType != JsonTokenType.EndArray && reader.TokenType != JsonTokenType.StartArray)
+                                {
+                                    var price = reader.GetDecimal();
+                                    reader.Read();
+                                    var size = reader.GetDecimal();
+                                    if (currentProperty == "asks")
+                                    {
+                                        ob.officialAsks.TryAdd(price, size);
+                                        //Console.WriteLine($"converted ask {price} price, {size} size");
+                                    }
+                                    else if (currentProperty == "bids")
+                                    {
+                                        ob.officialBids.TryAdd(price, size);
+                                        //Console.WriteLine($"converted bid {price} price, {size} size");
+                                    }
+                                    reader.Read();
+                                }
+                            }
+                            reader.Read();
+                        }
+                    }
+                }
+                //Console.WriteLine($"{ob.symbol}, {ob.sequence}, {ob.officialAsks.Count()}, {ob.officialBids.Count()}");
+                return ob;
+            } else if (firstLine == "ping")
+            {
+                while(reader.Read())
+                {
+                    if(reader.TokenType == JsonTokenType.Number)
+                    {
+                        ob.pong = true;
+                        ob.pongValue = reader.GetInt64();
+                    }
+                }
+                return ob;
             }
+
             return ob;  
 
 

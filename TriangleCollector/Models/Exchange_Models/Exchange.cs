@@ -197,12 +197,15 @@ namespace TriangleCollector.Models.Exchange_Models
             {
                 foreach (var responseItem in symbols)
                 {
-                    var market = new Orderbook();
-                    market.symbol = responseItem.GetProperty("symbol").ToString().ToUpper();
-                    market.baseCurrency = responseItem.GetProperty("base-currency").ToString().ToUpper();
-                    market.quoteCurrency = responseItem.GetProperty("quote-currency").ToString().ToUpper();
-                    market.exchange = this;
-                    output.Add(market);
+                    if(responseItem.GetProperty("state").ToString() =="online") //huobi includes delisted/disabled markets in their response, only consider active/onlien markets.
+                    {
+                        var market = new Orderbook();
+                        market.symbol = responseItem.GetProperty("symbol").ToString().ToUpper();
+                        market.baseCurrency = responseItem.GetProperty("base-currency").ToString().ToUpper();
+                        market.quoteCurrency = responseItem.GetProperty("quote-currency").ToString().ToUpper();
+                        market.exchange = this;
+                        output.Add(market);
+                    }
                 }
             }
             return (output);

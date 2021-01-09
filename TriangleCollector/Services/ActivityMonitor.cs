@@ -54,12 +54,15 @@ namespace TriangleCollector.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                Console.WriteLine("*********************************************************************************************************************************************");
                 foreach (var exchange in TriangleCollector.exchanges)
                 {
                     var lastOBcount = lastOBCounter[exchange.exchangeName];
                     var lasttriarbCount = lasttriarbCounter[exchange.exchangeName];
+                    
                     Console.WriteLine($"{exchange.exchangeName} --- Data Points Received: {exchange.allOrderBookCounter}. Data Receipts/Second (last 5s): {(exchange.allOrderBookCounter - lastOBcount) / loopTimer}.");
                     Console.WriteLine($"{exchange.exchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last 5s): {(exchange.RecalculatedTriangles.Count() - lasttriarbCount) / loopTimer}");
+                    
 
                     lastOBCounter[exchange.exchangeName] = Convert.ToInt32(exchange.allOrderBookCounter);
                     lasttriarbCounter[exchange.exchangeName] = exchange.RecalculatedTriangles.Count();
@@ -67,6 +70,7 @@ namespace TriangleCollector.Services
                     Triarb Queue: { exchange.TrianglesToRecalculate.Count()}
                     ");*/
                 }
+                Console.WriteLine("*********************************************************************************************************************************************");
                 await Task.Delay(loopTimer * 1000);
                 loopCounter++;
             }

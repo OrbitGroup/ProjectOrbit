@@ -89,9 +89,11 @@ namespace TriangleCollector.Services
                         }
                         else if (exchangeName == "huobi")
                         {
-                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.symbol.ToLower()}.depth.step0\",\n  \"id\": \"id1\"\n }}")), WebSocketMessageType.Text, true, cts);
+                            await huobiSnapshot(market); //same logic/rationale as binance
+                            await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")), WebSocketMessageType.Text, true, cts);
+                            //await Task.Delay(500);
                         }
-                        //_logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
+                        _logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
                         ID++;
                         CurrentClientPairCount++;
                     }
@@ -104,6 +106,8 @@ namespace TriangleCollector.Services
                 _logger.LogDebug($"Subscribing complete for {exchangeName}.");
             }
         }
+
+        //TODO: merge the logic for snapshots into one method, and/or keep this in a seperate class.
         public async Task binanceSnapshot(Orderbook market)
         {
             var httpClient = new HttpClient();
@@ -127,6 +131,25 @@ namespace TriangleCollector.Services
                 decimal sizeDecimal = Convert.ToDecimal(size);
 
                 market.officialAsks.TryAdd(priceDecimal, sizeDecimal);
+            }
+        }
+        public async Task huobiSnapshot(Orderbook market)
+        {
+            var httpClient = new HttpClient();
+            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={market.symbol.ToLower()}&type=step1").Result).Result.RootElement;
+            var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
+            foreach (var bid in bids)
+            {
+                decimal price = bid[0].GetDecimal();
+                decimal size = bid[1].GetDecimal();
+                market.officialBids.TryAdd(price, size);
+            }
+            var asks = snapshot.GetProperty("tick").GetProperty("asks").EnumerateArray();
+            foreach (var ask in asks)
+            {
+                decimal price = ask[0].GetDecimal();
+                decimal size = ask[1].GetDecimal();
+                market.officialAsks.TryAdd(price, size);
             }
         }
     }

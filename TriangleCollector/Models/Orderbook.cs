@@ -32,6 +32,10 @@ namespace TriangleCollector.Models
 
         public decimal LowestAsk { get; set; }
 
+        public bool pong { get; set; } //flagged when an exchange server requires that we send a 'pong' message to remain connected
+
+        public long pongValue { get; set; } //contains the required pong value, if required
+
         public decimal HighestBid { get; set; }
 
         public readonly object orderbookLock = new object();
