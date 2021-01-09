@@ -35,6 +35,7 @@ namespace TriangleCollector.Models
                 }
                 catch (WebSocketException ex)
                 {
+                    _logger.LogError($"WebSocket Client disconnected: {_client.CloseStatusDescription}");
                     _logger.LogError(ex.Message);
                     _logger.LogError(ex.InnerException.Message);
                 }

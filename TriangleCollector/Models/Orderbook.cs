@@ -92,12 +92,12 @@ namespace TriangleCollector.Models
             return false;
         }
 
-        public bool SignificantChange(Orderbook update, decimal previousHighestBid, decimal previousLowestAsk)
+        public bool SignificantChange(Orderbook updatedOrderbook, decimal previousHighestBid, decimal previousLowestAsk)
         {
             if (exchange.ProfitableSymbolMapping.TryGetValue(symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
             {
                 CreateSorted();
-                if ((update.officialAsks.Count > 0 && update.officialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (update.officialBids.Count > 0 && update.officialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
+                if ((updatedOrderbook.officialAsks.Count > 0 && updatedOrderbook.officialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (updatedOrderbook.officialBids.Count > 0 && updatedOrderbook.officialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
                 {
                     exchange.InsideLayerCounter++;
                     return true;
@@ -109,6 +109,11 @@ namespace TriangleCollector.Models
             } 
             else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
             {
+                if (officialAsks.Count < 1 || officialBids.Count < 1)
+                {
+                    return false;
+                }
+
                 if (officialAsks.Keys.Min() < previousLowestAsk || officialBids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
                     exchange.PositivePriceChangeCounter++;

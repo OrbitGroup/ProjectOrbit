@@ -29,7 +29,7 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<String> exchangeList = new List<String>() { "huobi" }; //list of exchanges to initialize. Hitbtc and binance are fully supported currently
+        public static List<String> exchangeList = new List<string>() { "hitbtc" }; //list of exchanges to initialize. Hitbtc and binance are fully supported currently
         public static List<Exchange> exchanges = new List<Exchange>(); //contains all exchange objects
         public static ExchangeAPI restAPIs = new ExchangeAPI(); //contains the unique API URLs for each exchange
 

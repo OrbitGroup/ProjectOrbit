@@ -54,14 +54,14 @@ namespace TriangleCollector.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                Console.WriteLine("*********************************************************************************************************************************************");
+                _logger.LogDebug("*********************************************************************************************************************************************");
                 foreach (var exchange in TriangleCollector.exchanges)
                 {
                     var lastOBcount = lastOBCounter[exchange.exchangeName];
                     var lasttriarbCount = lasttriarbCounter[exchange.exchangeName];
                     
-                    Console.WriteLine($"{exchange.exchangeName} --- Data Points Received: {exchange.allOrderBookCounter}. Data Receipts/Second (last 5s): {(exchange.allOrderBookCounter - lastOBcount) / loopTimer}.");
-                    Console.WriteLine($"{exchange.exchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last 5s): {(exchange.RecalculatedTriangles.Count() - lasttriarbCount) / loopTimer}");
+                    _logger.LogDebug($"{exchange.exchangeName} --- Data Points Received: {exchange.allOrderBookCounter}. Data Receipts/Second (last 5s): {(exchange.allOrderBookCounter - lastOBcount) / loopTimer}.");
+                    _logger.LogDebug($"{exchange.exchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last 5s): {(exchange.RecalculatedTriangles.Count() - lasttriarbCount) / loopTimer}");
                     
 
                     lastOBCounter[exchange.exchangeName] = Convert.ToInt32(exchange.allOrderBookCounter);
@@ -70,7 +70,7 @@ namespace TriangleCollector.Services
                     Triarb Queue: { exchange.TrianglesToRecalculate.Count()}
                     ");*/
                 }
-                Console.WriteLine("*********************************************************************************************************************************************");
+                _logger.LogDebug("*********************************************************************************************************************************************");
                 await Task.Delay(loopTimer * 1000);
                 loopCounter++;
             }

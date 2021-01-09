@@ -39,16 +39,16 @@ namespace TriangleCollector.Services
             stoppingToken.Register(() => _logger.LogDebug("Stopping Orderbook Subscriber..."));
             await Task.Run(async () =>
             {
-                await BackgroundProcessing(stoppingToken);
+                BackgroundProcessing(stoppingToken);
             }, stoppingToken);
         }
 
-        public async Task BackgroundProcessing(CancellationToken stoppingToken)
+        public void BackgroundProcessing(CancellationToken stoppingToken)
         {
-            foreach (Exchange exchange in TriangleCollector.exchanges)
+            Parallel.ForEach(TriangleCollector.exchanges, async (exchange) =>
             {
                 string exchangeName = exchange.exchangeName;
-                _logger.LogDebug($"{exchange.exchangeName}: Subscribing to {exchange.triarbEligibleMarkets.Count()} markets.");
+                //_logger.LogDebug($"{exchange.exchangeName}: Subscribing to {exchange.triarbEligibleMarkets.Count()} markets.");
 
                 var client = await ExchangeAPI.GetExchangeClientAsync(exchangeName);
                 var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
@@ -60,7 +60,7 @@ namespace TriangleCollector.Services
 
                 //also a QueueMonitor for each exchange
 
-                var monitor = new QueueMonitor(_factory,_factory.CreateLogger<QueueMonitor>(), exchange);
+                var monitor = new QueueMonitor(_factory, _factory.CreateLogger<QueueMonitor>(), exchange);
                 await monitor.StartAsync(stoppingToken);
 
 
@@ -93,7 +93,7 @@ namespace TriangleCollector.Services
                             await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")), WebSocketMessageType.Text, true, cts);
                             //await Task.Delay(500);
                         }
-                        _logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
+                        //_logger.LogDebug($"{exchange.exchangeName}: subscribed to {market.symbol}");
                         ID++;
                         CurrentClientPairCount++;
                     }
@@ -104,7 +104,7 @@ namespace TriangleCollector.Services
                     }
                 }
                 _logger.LogDebug($"Subscribing complete for {exchangeName}.");
-            }
+            });
         }
 
         //TODO: merge the logic for snapshots into one method, and/or keep this in a seperate class.
