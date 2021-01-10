@@ -7,7 +7,6 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using TriangleCollector.Models;
-using TriangleCollector.Models.Exchange_Models;
 
 namespace TriangleCollector.UnitTests
 {

@@ -3,11 +3,10 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models;
-using TriangleCollector.Models.Exchange_Models;
+using TriangleCollector.Models.Interfaces;
 
 namespace TriangleCollector.Services
 {
@@ -17,16 +16,16 @@ namespace TriangleCollector.Services
 
         private int CalculatorId;
 
-        private Exchange Exchange { get; set; }
+        private IExchange Exchange { get; set; }
 
-        public TriangleCalculator(ILogger<TriangleCalculator> logger, Exchange exch)
+        public TriangleCalculator(ILogger<TriangleCalculator> logger, IExchange exch)
         {
             _logger = logger;
             CalculatorId = 1;
             Exchange = exch;
         }
 
-        public TriangleCalculator(ILogger<TriangleCalculator> logger, int calculatorCount, Exchange exch)
+        public TriangleCalculator(ILogger<TriangleCalculator> logger, int calculatorCount, IExchange exch)
         {
             _logger = logger;
             CalculatorId = calculatorCount;
@@ -49,15 +48,15 @@ namespace TriangleCollector.Services
             _logger.LogDebug("Stopped Triangle Calculator.");
         }
 
-        private async Task BackgroundProcessing(CancellationToken stoppingToken)
+        private Task BackgroundProcessing(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (Exchange.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
                 {
-                    var firstOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out Orderbook firstSymbolOrderbook);
-                    var secondOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out Orderbook secondSymbolOrderbook);
-                    var thirdOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out Orderbook thirdSymbolOrderbook);
+                    var firstOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out IOrderbook firstSymbolOrderbook);
+                    var secondOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out IOrderbook secondSymbolOrderbook);
+                    var thirdOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out IOrderbook thirdSymbolOrderbook);
 
                     if (firstOrderbookSet && secondOrderbookSet && thirdOrderbookSet)
                     {
@@ -69,10 +68,10 @@ namespace TriangleCollector.Services
                         var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.Timestamp, secondSymbolOrderbook.Timestamp, thirdSymbolOrderbook.Timestamp }.Max();
                         var age = (DateTime.UtcNow - newestTimestamp).TotalMilliseconds;
 
-                        if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
-                        {
-                            Console.WriteLine($"Triarb Opportunity on {Exchange.ExchangeName} | Markets: {firstSymbolOrderbook.Symbol}, {secondSymbolOrderbook.Symbol}, {thirdSymbolOrderbook.Symbol} | Profitability: {Math.Round(triangle.ProfitPercent,4)}% | Liquidity: {Math.Round(triangle.MaxVolume, 4)} BTC | Profit: {Math.Round(triangle.Profit,4)} BTC, or ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice,2)} | Delay: {age}ms");
-                        }
+                        //if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
+                        //{
+                        //    Console.WriteLine($"Triarb Opportunity on {Exchange.ExchangeName} | Markets: {firstSymbolOrderbook.Symbol}, {secondSymbolOrderbook.Symbol}, {thirdSymbolOrderbook.Symbol} | Profitability: {Math.Round(triangle.ProfitPercent, 4)}% | Liquidity: {Math.Round(triangle.MaxVolume, 4)} BTC | Profit: {Math.Round(triangle.Profit, 4)} BTC, or ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice, 2)} | Delay: {age}ms");
+                        //}
 
                         Exchange.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
                         
@@ -81,6 +80,7 @@ namespace TriangleCollector.Services
                     }
                 }
             }
+            return Task.CompletedTask;
         }
     }
 }

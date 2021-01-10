@@ -1,25 +1,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Net.WebSockets;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using TriangleCollector.Models;
 using TriangleCollector.Services;
-using TriangleCollector.Models.Exchange_Models;
+using TriangleCollector.Models.Exchanges.Binance;
+using TriangleCollector.Models.Interfaces;
+using TriangleCollector.Models.Exchanges.Hitbtc;
 
 namespace TriangleCollector
 {
@@ -29,14 +19,20 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<String> ExchangeList = new List<string>() { "huobi" }; //list of exchanges to initialize. Valid names are 'hitbtc', 'huobi', and 'binance'
-        public static List<Exchange> Exchanges = new List<Exchange>(); //contains all exchange objects
-        public static ExchangeAPI RestAPIs = new ExchangeAPI(); //contains the unique API URLs for each exchange
+        public static List<Type> ExchangesToInitialize = new List<Type>() { typeof(BinanceExchange), typeof(HitbtcExchange) }; //list of exchanges to initialize. Valid names are 'hitbtc', 'huobi', and 'binance'
+        public static List<IExchange> Exchanges = new List<IExchange>(); //contains all exchange objects
 
         public static void Main(string[] args)
         {
-            initializeExchanges(); //exchange objects are initialized synchronously and their constructors map out every possible triangular arbitrage trade. 
-            CreateHostBuilder(args).Build().Run(); //the orderbooksubscriber service then references those mapped markets 
+            try
+            {
+                InitializeExchanges(); //exchange objects are initialized synchronously and their constructors map out every possible triangular arbitrage trade. 
+                CreateHostBuilder(args).Build().Run(); //the orderbooksubscriber service then references those mapped markets 
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("TriangleCollector Stopped");
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -58,11 +54,11 @@ namespace TriangleCollector
             });
 
        
-        public static void initializeExchanges()
+        public static void InitializeExchanges()
         {
-            foreach(string exchangeName in ExchangeList)
+            foreach(var exchangeName in ExchangesToInitialize)
             {
-                var exchange = new Exchange(exchangeName);
+                IExchange exchange = (IExchange)Activator.CreateInstance(exchangeName, exchangeName.ToString());
                 Exchanges.Add(exchange);
             }
         }
