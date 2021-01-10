@@ -22,7 +22,7 @@ namespace TriangleCollector.Services
 
         private readonly ILoggerFactory _factory;
 
-        private readonly int MaxPairsPerClient = 40;
+        private readonly int MaxPairsPerClient = 20;
 
         private int CurrentClientPairCount = 0;
 
@@ -93,7 +93,7 @@ namespace TriangleCollector.Services
                             await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")), WebSocketMessageType.Text, true, cts);
                             //await Task.Delay(500);
                         }
-                        _logger.LogDebug($"{exchange.ExchangeName}: subscribed to {market.Symbol}");
+                        //_logger.LogDebug($"{exchange.ExchangeName}: subscribed to {market.Symbol}");
                         ID++;
                         CurrentClientPairCount++;
                     }

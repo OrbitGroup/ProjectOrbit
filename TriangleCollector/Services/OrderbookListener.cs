@@ -127,6 +127,8 @@ namespace TriangleCollector.Services
                             }
                             catch (Exception ex)
                             {
+                                
+                                _logger.LogError($"orderbook is {orderbook.Symbol}. Official Asks {orderbook.OfficialAsks.Count()} official bids {orderbook.OfficialBids.Count()}");
                                 _logger.LogError($"Error merging orderbook for market {orderbook.Symbol} on {Exchange.ExchangeName}. Websocket payload was {payload}");
                                 _logger.LogError(ex.Message);
                             }
@@ -141,8 +143,17 @@ namespace TriangleCollector.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"exception related to {payload}");
-                        _logger.LogError($"exception: {ex.Message}");
+                        if(payload == string.Empty && result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _logger.LogError("socket connection closed");
+                            _logger.LogError($"reason for closure is {result.CloseStatusDescription}");
+                            
+                        } else
+                        {
+                            _logger.LogError($"exception related to {payload}");
+                            _logger.LogError($"exception: {ex.Message}");
+                        }
+                        
                         throw ex;
                     }
                 }

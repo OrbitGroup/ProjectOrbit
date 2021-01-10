@@ -153,9 +153,9 @@ namespace TriangleCollector.Models
         {
             MaxVolume = 0;
             Profit = 0;
-            FirstSymbolLayers = 1;
-            SecondSymbolLayers = 1;
-            ThirdSymbolLayers = 1;
+            FirstSymbolLayers = 0;
+            SecondSymbolLayers = 0;
+            ThirdSymbolLayers = 0;
 
             while (NoEmptyOrderbooks)
             {

@@ -78,6 +78,8 @@ namespace TriangleCollector.Models
                 
 
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
+
+                
                 update.OfficialAsks.AsParallel().ForAll(UpdateAskLayer);
                 update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
 
@@ -85,27 +87,34 @@ namespace TriangleCollector.Models
                 {
                     return true;
                 }
-
                 return false;
             }
             
             return false;
         }
 
-        public bool SignificantChange(Orderbook updatedOrderbook, decimal previousHighestBid, decimal previousLowestAsk)
+        public bool SignificantChange(Orderbook updatedOrderbook, decimal previousHighestBid, decimal previousLowestAsk) //TO DO: add flagging system to simply flag triangles as profitable and therefore signficant
         {
-            if (Exchange.ProfitableSymbolMapping.TryGetValue(Symbol, out var layers)) //This symbol has had a profitable triangle this session with a max of N layers affected
+            if (Exchange.ProfitableSymbolMapping.TryGetValue(Symbol, out var layers))
             {
                 CreateSorted();
-                if ((updatedOrderbook.OfficialAsks.Count > 0 && updatedOrderbook.OfficialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (updatedOrderbook.OfficialBids.Count > 0 && updatedOrderbook.OfficialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
+                if(SortedAsks.Count() > layers && SortedBids.Count() > layers) //avoid out of range exception due to 'layers' variable.
                 {
-                    Exchange.InsideLayerCounter++;
-                    return true;
+                    if ((updatedOrderbook.OfficialAsks.Count > 0 && updatedOrderbook.OfficialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (updatedOrderbook.OfficialBids.Count > 0 && updatedOrderbook.OfficialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
+                    {
+                        Exchange.InsideLayerCounter++;
+                        return true;
+                    }
+                    else
+                    {
+                        Exchange.OutsideLayerCounter++;
+                        return false;
+                    }
                 } else
                 {
-                    Exchange.OutsideLayerCounter++;
                     return false;
                 }
+                
             } 
             else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
             {
