@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using TriangleCollector.Models.Interfaces;
 
 namespace TriangleCollector.Models
 {
@@ -21,6 +20,8 @@ namespace TriangleCollector.Models
         }
 
         public WebSocketState State => _client.State;
+
+        public IExchange Exchange { get; set; }
 
         public async Task<WebSocketReceiveResult> ReceiveAsync(MemoryStream ms, ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {

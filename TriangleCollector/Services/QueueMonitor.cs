@@ -1,13 +1,8 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.WebSockets;
-using TriangleCollector.Models.Exchange_Models;
+using TriangleCollector.Models.Interfaces;
 
 namespace TriangleCollector.Services
 {
@@ -27,9 +22,9 @@ namespace TriangleCollector.Services
 
         private int NumberOfSecondsUntilStale = 60;
 
-        private Exchange Exchange { get; set; }
+        private IExchange Exchange { get; set; }
 
-        public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger, Exchange exch)
+        public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger, IExchange exch)
         {
             _factory = factory;
             _logger = logger;

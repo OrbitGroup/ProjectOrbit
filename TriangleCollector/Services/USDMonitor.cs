@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
-using TriangleCollector.Models.Exchange_Models;
-using TriangleCollector.Models;
 using System.Net.WebSockets;
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-
-
+using TriangleCollector.Models;
+using TriangleCollector.Models.Exchanges.Bitstamp;
 
 namespace TriangleCollector.Services
 {
@@ -20,14 +16,11 @@ namespace TriangleCollector.Services
     {
         private readonly ILogger<USDMonitor> _logger;
 
-        private readonly ILoggerFactory _factory;
-
         public static decimal BTCUSDPrice = 0;
 
-        public USDMonitor(ILoggerFactory factory, ILogger<USDMonitor> logger)
+        public USDMonitor(ILogger<USDMonitor> logger)
         {
             _logger = logger;
-            _factory = factory;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -41,11 +34,11 @@ namespace TriangleCollector.Services
         }
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            var client = await ExchangeAPI.GetExchangeClientAsync("bitstamp");
+            var client = await new BitstampClient().GetExchangeClient();
             var cts = new CancellationToken();
             await client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{ \"event\": \"bts:subscribe\", \"data\": {{\"channel\": \"live_trades_btcusd\"}} }}")), WebSocketMessageType.Text, true, cts);
 
-            while(client.State == WebSocketState.Open)
+            while (client.State == WebSocketState.Open)
             {
                 var buffer = WebSocket.CreateClientBuffer(1024 * 64, 1024);
                 WebSocketReceiveResult result = null;

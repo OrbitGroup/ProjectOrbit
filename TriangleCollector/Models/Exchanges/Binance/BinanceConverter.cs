@@ -1,16 +1,14 @@
-﻿using Microsoft.VisualBasic.CompilerServices;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
-namespace TriangleCollector.Models
+namespace TriangleCollector.Models.Exchanges.Binance
 {
-    public class OrderbookConverter : JsonConverter<Orderbook>
+    public class BinanceConverter : JsonConverter<BinanceOrderbook>
     {
 
         public override bool CanConvert(Type typeToConvert)
@@ -26,22 +24,22 @@ namespace TriangleCollector.Models
         /// <param name="typeToConvert"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        public override Orderbook Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override BinanceOrderbook Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var ob = new Orderbook();
+            var ob = new BinanceOrderbook();
             var orders = new ConcurrentDictionary<decimal, decimal>();
             bool ask = true;
             decimal lastPrice = 0;
 
             var firstLine = string.Empty; //the first line will determine which exchange the JSON response is from
-            if(reader.Read() && reader.TokenType != JsonTokenType.StartObject)
+            if (reader.Read() && reader.TokenType != JsonTokenType.StartObject)
             {
                 firstLine = reader.GetString();
                 //Console.WriteLine($"first line is {firstLine}");
             }
             string currentProperty = string.Empty;
-            
-            if(firstLine == "jsonrpc") //hitbtc
+
+            if (firstLine == "jsonrpc") //hitbtc
             {
                 while (reader.Read())
                 {
@@ -89,7 +87,7 @@ namespace TriangleCollector.Models
                     }
                     else if (reader.TokenType == JsonTokenType.Number)
                     {
-                        if (currentProperty == "sequence") 
+                        if (currentProperty == "sequence")
                         {
                             ob.Sequence = reader.GetInt64();
                         }
@@ -112,7 +110,8 @@ namespace TriangleCollector.Models
                 return ob;
 
 
-            } else if (firstLine == "e" || firstLine == "result") //binance
+            }
+            else if (firstLine == "e" || firstLine == "result") //binance
             {
                 while (reader.Read())
                 {
@@ -153,20 +152,22 @@ namespace TriangleCollector.Models
                             }
                             reader.Read();
                         }
-                    } 
+                    }
                 }
                 ob.Timestamp = DateTime.UtcNow;
                 return ob;
-            } else if (firstLine == "id" || firstLine == "ch") //huobi global
+            }
+            else if (firstLine == "id" || firstLine == "ch") //huobi global
             {
-                if(firstLine == "ch")
+                if (firstLine == "ch")
                 {
                     reader.Read();
                     var channel = reader.GetString().Split(".");
-                    if(channel.Length > 1)
+                    if (channel.Length > 1)
                     {
                         ob.Symbol = channel[1].ToUpper(); //the second period-delimited item is the symbol
-                    } else
+                    }
+                    else
                     {
                         Console.WriteLine($"channel only has one element: {channel[0]}");
                     }
@@ -180,7 +181,7 @@ namespace TriangleCollector.Models
                     else if (reader.TokenType == JsonTokenType.StartObject)
                     {
                         reader.Read();
-                        while(reader.TokenType != JsonTokenType.EndObject && reader.TokenType != JsonTokenType.StartObject)
+                        while (reader.TokenType != JsonTokenType.EndObject && reader.TokenType != JsonTokenType.StartObject)
                         {
                             if (reader.TokenType == JsonTokenType.PropertyName)
                             {
@@ -222,11 +223,12 @@ namespace TriangleCollector.Models
                 //Console.WriteLine($"{ob.symbol}, {ob.sequence}, {ob.officialAsks.Count()}, {ob.officialBids.Count()}");
                 ob.Timestamp = DateTime.UtcNow;
                 return ob;
-            } else if (firstLine == "ping")
+            }
+            else if (firstLine == "ping")
             {
-                while(reader.Read())
+                while (reader.Read())
                 {
-                    if(reader.TokenType == JsonTokenType.Number)
+                    if (reader.TokenType == JsonTokenType.Number)
                     {
                         ob.Pong = true;
                         ob.PongValue = reader.GetInt64();
@@ -235,11 +237,11 @@ namespace TriangleCollector.Models
                 return ob;
             }
 
-            return ob;  
+            return ob;
 
 
 
-            
+
         }
 
         /// <summary>
@@ -248,7 +250,7 @@ namespace TriangleCollector.Models
         /// <param name="writer"></param>
         /// <param name="value"></param>
         /// <param name="options"></param>
-        public override void Write(Utf8JsonWriter writer, Orderbook value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, BinanceOrderbook value, JsonSerializerOptions options)
         {
             throw new NotImplementedException();
         }

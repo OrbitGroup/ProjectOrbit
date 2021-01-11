@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models;
-using TriangleCollector.Models.Exchange_Models;
+using TriangleCollector.Models.Interfaces;
 
 namespace TriangleCollector.Services
 {
@@ -22,13 +22,15 @@ namespace TriangleCollector.Services
 
         private IClientWebSocket Client;
 
-        private Exchange Exchange { get; set; }
+        private IExchange Exchange { get; set; }
 
-        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, Exchange exch)
+        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, IExchange exch)
         {
             _logger = logger;
-            this.Client = client;
+            Client = client;
             Exchange = exch;
+            Exchange.Clients.Add(Client);
+            Client.Exchange = Exchange;
         }
         public async Task SendPong(long pong) //sends a 'pong' message back to the server if required to maintain connection
         {
@@ -84,14 +86,21 @@ namespace TriangleCollector.Services
                     }
                     try
                     {
-                        //Console.WriteLine($"payload is {payload}");
-                        var orderbook = JsonSerializer.Deserialize<Orderbook>(payload); //takes a string and returns an orderbook
+                        //_logger.LogInformation($"payload is {payload}");
+                        if (payload == "")
+                        {
+                            _logger.LogWarning("Blank payload");
+                            continue;
+                        }
+                        var orderbookType = Client.Exchange.OrderbookType;
+                        IOrderbook orderbook = (IOrderbook)JsonSerializer.Deserialize(payload, orderbookType);
+                        //IOrderbook orderbook = JsonSerializer.Deserialize<typeof(orderbookType)>(payload); //takes a string and returns an orderbook
 
                         if (orderbook.Symbol != null)
                         {
                             try
                             {
-                                Exchange.OfficialOrderbooks.TryGetValue(orderbook.Symbol, out Orderbook OfficialOrderbook);
+                                Exchange.OfficialOrderbooks.TryGetValue(orderbook.Symbol, out IOrderbook OfficialOrderbook);
                                 if (OfficialOrderbook != null)
                                 {
                                     bool shouldRecalculate = false;

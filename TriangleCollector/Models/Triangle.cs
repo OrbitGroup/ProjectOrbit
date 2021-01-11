@@ -1,15 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Threading;
-using System.Threading.Tasks;
-using TriangleCollector.Services;
-using TriangleCollector.Models.Exchange_Models;
+using TriangleCollector.Models.Interfaces;
 
 namespace TriangleCollector.Models
 {
@@ -17,30 +12,28 @@ namespace TriangleCollector.Models
     {
         public DateTime LastQueued = new DateTime(); //records the last time that this triangle was added to TrianglesToRecalculate
 
-        public Exchange Exchange { get; set; }
+        public IExchange Exchange { get; set; }
 
         public string FirstSymbol { get; set; }
         public int FirstSymbolLayers { get; set; }
 
-        public Orderbook FirstSymbolOrderbook { get; set; }
+        public IOrderbook FirstSymbolOrderbook { get; set; }
 
         public string SecondSymbol { get; set; }
         public int SecondSymbolLayers { get; set; }
 
-        public Orderbook SecondSymbolOrderbook { get; set; }
+        public IOrderbook SecondSymbolOrderbook { get; set; }
 
         public string ThirdSymbol { get; set; }
         public int ThirdSymbolLayers { get; set; }
 
-        public Orderbook ThirdSymbolOrderbook { get; set; }
+        public IOrderbook ThirdSymbolOrderbook { get; set; }
 
         public decimal ProfitPercent { get; set; }
 
         public decimal Profit { get; set; }
 
         public decimal MaxVolume { get; set; }
-
-        
 
         public Directions Direction;
 
@@ -60,13 +53,13 @@ namespace TriangleCollector.Models
 
         private ILogger<Triangle> _logger;
 
-        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, ILogger<Triangle> logger, Exchange exch)
+        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, IExchange exch)
         {
             this.FirstSymbol = FirstSymbol;
             this.SecondSymbol = SecondSymbol;
             this.ThirdSymbol = ThirdSymbol;
             this.Direction = Direction;
-            _logger = logger;
+            _logger = new LoggerFactory().CreateLogger<Triangle>();
             Exchange = exch;
         }
 
@@ -109,7 +102,7 @@ namespace TriangleCollector.Models
             }
         }
 
-        public bool SetMaxVolumeAndProfitability(Orderbook firstSymbolOrderbook, Orderbook secondSymbolOrderbook, Orderbook thirdSymbolOrderbook)
+        public bool SetMaxVolumeAndProfitability(IOrderbook firstSymbolOrderbook, IOrderbook secondSymbolOrderbook, IOrderbook thirdSymbolOrderbook)
         {
             try 
             {
