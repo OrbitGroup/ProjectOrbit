@@ -20,7 +20,7 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<Type> ExchangesToInitialize = new List<Type>() { typeof(HuobiExchange)}; //list of exchanges to initialize. Valid names are 'hitbtc', 'huobi', and 'binance'
+        public static List<Type> ExchangesToInitialize = new List<Type>() { typeof(BinanceExchange)}; //list of exchanges to initialize. Valid names are 'hitbtc', 'huobi', and 'binance'
         public static List<IExchange> Exchanges = new List<IExchange>(); //contains all exchange objects
 
         public static void Main(string[] args)
