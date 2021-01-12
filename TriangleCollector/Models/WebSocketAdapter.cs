@@ -12,6 +12,7 @@ namespace TriangleCollector.Models
     {
         private readonly ILogger<WebSocketAdapter> _logger;
         private readonly ClientWebSocket _client;
+        public DateTime TimeStarted { get; set; }
 
         public WebSocketAdapter(ILogger<WebSocketAdapter> logger, ClientWebSocket client)
         {

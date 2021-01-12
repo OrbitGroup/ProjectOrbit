@@ -52,8 +52,9 @@ namespace TriangleCollector.Models.Exchanges.Binance
             var factory = new LoggerFactory();
             var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
 
-            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
+            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 1);
             await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
+            adapter.TimeStarted = DateTime.UtcNow;
             Client = adapter;
             return adapter;
         }

@@ -14,5 +14,6 @@ namespace TriangleCollector.Models
         public Task<WebSocketReceiveResult> ReceiveAsync(MemoryStream ms, ArraySegment<byte> buffer, CancellationToken cancellationToken);
 
         public Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType type, bool endOfMessage, CancellationToken cancellationToken);
+        public DateTime TimeStarted { get; set; }
     }
 }

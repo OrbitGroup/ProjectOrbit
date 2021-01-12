@@ -50,6 +50,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
             await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
+            adapter.TimeStarted = DateTime.UtcNow;
             Client = adapter;
             return adapter;
         }

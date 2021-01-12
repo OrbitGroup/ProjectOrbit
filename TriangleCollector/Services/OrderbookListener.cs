@@ -67,6 +67,7 @@ namespace TriangleCollector.Services
                 {
                     string payload = string.Empty;
                     result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
+                    //_logger.LogInformation($"socket message type is {result.MessageType.ToString()}");
 
                     if(result.MessageType == WebSocketMessageType.Text) //hitbtc, binance
                     {
@@ -168,5 +169,16 @@ namespace TriangleCollector.Services
                 }
             }
         }
+/*        private async Task BinancePongSender()
+        {
+            var cts = new CancellationToken();
+            while (true)
+            {
+
+                await Client.SendAsync(new ArraySegment<byte>(Encoding.), WebSocketMessageType.Binary, true, cts);
+                await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{ \"method\":\"pong frame\" }}")), WebSocketMessageType.Text, true, cts);
+                await Task.Delay(60000); //send a pong once per minute
+            }
+        }*/
     }
 }

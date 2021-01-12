@@ -51,11 +51,18 @@ namespace TriangleCollector.Services
                 {
                     var lastOBcount = LastOBCounter[exchange.ExchangeName];
                     var lastTriarbCount = LastTriarbCounter[exchange.ExchangeName];
+
+                    double oldestClientAge = 0;
+                    if(exchange.Clients.Count > 0)
+                    {
+                        var oldestClient = exchange.Clients.OrderByDescending(c => c.TimeStarted);
+                        oldestClientAge = Math.Round((DateTime.UtcNow - oldestClient.Last().TimeStarted).TotalMinutes,2);
+                    }
                     
                     _logger.LogDebug($"{exchange.ExchangeName} --- Data Points Received: {exchange.AllOrderBookCounter}. Data Receipts/Second (last {LoopTimer}s): {(exchange.AllOrderBookCounter - lastOBcount) / LoopTimer}.");
                     _logger.LogDebug($"{exchange.ExchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last {LoopTimer}s): {(exchange.RecalculatedTriangles.Count() - lastTriarbCount) / LoopTimer}");
                     _logger.LogDebug($"{exchange.ExchangeName} --- Queue Size: {exchange.TrianglesToRecalculate.Count()}.");
-                    _logger.LogDebug($"{exchange.ExchangeName} --- Active Clients: {exchange.Clients.Where(c => c.State == WebSocketState.Open).Count()} - Aborted Clients: {exchange.Clients.Where(c => c.State != WebSocketState.Open).Count()}");
+                    _logger.LogDebug($"{exchange.ExchangeName} --- Active Clients: {exchange.Clients.Where(c => c.State == WebSocketState.Open).Count()} - Aborted Clients: {exchange.Clients.Where(c => c.State != WebSocketState.Open).Count()} - Oldest Client: {oldestClientAge} minutes");
 
                     LastOBCounter[exchange.ExchangeName] = Convert.ToInt32(exchange.AllOrderBookCounter);
                     LastTriarbCounter[exchange.ExchangeName] = exchange.RecalculatedTriangles.Count();
