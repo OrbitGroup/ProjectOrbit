@@ -29,6 +29,8 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public HashSet<IOrderbook> TriarbEligibleMarkets { get; } = new HashSet<IOrderbook>();
 
+        public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
+
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 
         public double ImpactedTriangleCounter { get; set; } = 0;

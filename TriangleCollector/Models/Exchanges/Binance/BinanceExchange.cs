@@ -28,6 +28,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public ConcurrentDictionary<string, Triangle> Triangles { get; } = new ConcurrentDictionary<string, Triangle>();
 
         public HashSet<IOrderbook> TriarbEligibleMarkets { get; } = new HashSet<IOrderbook>();
+        public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 

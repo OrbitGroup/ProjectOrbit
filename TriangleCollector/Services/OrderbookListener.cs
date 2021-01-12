@@ -24,6 +24,8 @@ namespace TriangleCollector.Services
 
         private IExchange Exchange { get; set; }
 
+        public List<IOrderbook> Markets { get; set; }
+
         public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, IExchange exch)
         {
             _logger = logger;
@@ -32,7 +34,7 @@ namespace TriangleCollector.Services
             Exchange.Clients.Add(Client);
             Client.Exchange = Exchange;
         }
-        public async Task SendPong(long pong) //sends a 'pong' message back to the server if required to maintain connection
+        public async Task SendPong(long pong) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
         {
             var cts = new CancellationToken();
             await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"pong\": {pong}}}")), WebSocketMessageType.Text, true, cts);
@@ -52,7 +54,6 @@ namespace TriangleCollector.Services
 
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            var stopwatch = new Stopwatch();
             while (Client.State == WebSocketState.Open && !stoppingToken.IsCancellationRequested)
             {
                 if (Client.State == WebSocketState.CloseReceived)
@@ -168,17 +169,8 @@ namespace TriangleCollector.Services
                     }
                 }
             }
+            _logger.LogWarning($"client aborted on {Exchange} with {Markets.Count} subscribed markets. Queuing lost markets for re-subscription");
+            Markets.ForEach(Exchange.SubscriptionQueue.Enqueue); //if the client is closed, queue the markets up for re-subscription
         }
-/*        private async Task BinancePongSender()
-        {
-            var cts = new CancellationToken();
-            while (true)
-            {
-
-                await Client.SendAsync(new ArraySegment<byte>(Encoding.), WebSocketMessageType.Binary, true, cts);
-                await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{ \"method\":\"pong frame\" }}")), WebSocketMessageType.Text, true, cts);
-                await Task.Delay(60000); //send a pong once per minute
-            }
-        }*/
     }
 }

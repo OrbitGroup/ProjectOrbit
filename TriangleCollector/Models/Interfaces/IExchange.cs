@@ -27,6 +27,8 @@ namespace TriangleCollector.Models.Interfaces
 
         public HashSet<IOrderbook> TriarbEligibleMarkets { get; }
 
+        public Queue<IOrderbook> SubscriptionQueue { get; set; } 
+
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; }
 
         public double ImpactedTriangleCounter { get; set; }
