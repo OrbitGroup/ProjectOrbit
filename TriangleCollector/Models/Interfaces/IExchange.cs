@@ -51,10 +51,6 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; }
 
-        public void MapOpportunities();
-
-        public void MapHelper(string firstDirection, string secondDirection, string thirdDirection, IOrderbook firstMarket, IOrderbook secondMarket, IOrderbook thirdMarket);
-
         public HashSet<IOrderbook> ParseMarkets(JsonElement.ArrayEnumerator symbols); // each exchange uses different JSON properties to describe the attributes of a market.
 
     }

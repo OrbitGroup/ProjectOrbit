@@ -7,17 +7,17 @@ using System.Threading.Tasks;
 using TriangleCollector.Models.Interfaces;
 using TriangleCollector.Services;
 
-namespace TriangleCollector.Models.Exchanges.Binance
+namespace TriangleCollector.Models.Exchanges.Huobi
 {
-    public class BinanceExchange : IExchange
+    public class HuobiExchange : IExchange
     {
         public string ExchangeName { get; }
 
-        public IExchangeClient ExchangeClient { get; } = new BinanceClient();
+        public IExchangeClient ExchangeClient { get; } = new HuobiClient();
 
         public List<IClientWebSocket> Clients { get; } = new List<IClientWebSocket>();
 
-        public Type OrderbookType { get; } = typeof(BinanceOrderbook);
+        public Type OrderbookType { get; } = typeof(HuobiOrderbook);
 
         public HashSet<IOrderbook> TradedMarkets { get; } = new HashSet<IOrderbook>();
 
@@ -53,7 +53,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
 
-        public BinanceExchange(string name)
+        public HuobiExchange(string name)
         {
             ExchangeName = name;
             ExchangeClient.GetTickers();
@@ -68,17 +68,16 @@ namespace TriangleCollector.Models.Exchanges.Binance
             var output = new HashSet<IOrderbook>();
             foreach (var responseItem in symbols)
             {
-                if (responseItem.GetProperty("status").ToString() == "TRADING") //only include markets that are actively traded (as opposed to delisted or inactive)
+                if (responseItem.GetProperty("state").ToString() == "online") //huobi includes delisted/disabled markets in their response, only consider active/onlien markets.
                 {
-                    var market = new BinanceOrderbook();
-                    market.Symbol = responseItem.GetProperty("symbol").ToString();
-                    market.BaseCurrency = responseItem.GetProperty("baseAsset").ToString();
-                    market.QuoteCurrency = responseItem.GetProperty("quoteAsset").ToString();
+                    var market = new HuobiOrderbook();
+                    market.Symbol = responseItem.GetProperty("symbol").ToString().ToUpper();
+                    market.BaseCurrency = responseItem.GetProperty("base-currency").ToString().ToUpper();
+                    market.QuoteCurrency = responseItem.GetProperty("quote-currency").ToString().ToUpper();
                     market.Exchange = this;
                     output.Add(market);
                 }
             }
-
             //else if (ExchangeName == "bittrex") //https://bittrex.github.io/api/v3
             //{
             //    foreach (var responseItem in symbols)
@@ -91,7 +90,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
             //        output.Add(market);
             //    }
             //}
-
             return (output);
         }
     }

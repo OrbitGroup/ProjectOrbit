@@ -84,25 +84,5 @@ namespace TriangleCollector.Services
                 _logger.LogDebug($"Subscribing complete for {exchangeName}.");
             });
         }
-
-        public async Task HuobiSnapshot(IOrderbook market)
-        {
-            var httpClient = new HttpClient();
-            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement;
-            var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
-            foreach (var bid in bids)
-            {
-                decimal price = bid[0].GetDecimal();
-                decimal size = bid[1].GetDecimal();
-                market.OfficialBids.TryAdd(price, size);
-            }
-            var asks = snapshot.GetProperty("tick").GetProperty("asks").EnumerateArray();
-            foreach (var ask in asks)
-            {
-                decimal price = ask[0].GetDecimal();
-                decimal size = ask[1].GetDecimal();
-                market.OfficialAsks.TryAdd(price, size);
-            }
-        }
     }
 }

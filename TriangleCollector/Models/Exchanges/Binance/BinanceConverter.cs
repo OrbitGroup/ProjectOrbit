@@ -39,79 +39,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
             }
             string currentProperty = string.Empty;
 
-            if (firstLine == "jsonrpc") //hitbtc
-            {
-                while (reader.Read())
-                {
-                    if (reader.TokenType == JsonTokenType.PropertyName)
-                    {
-                        currentProperty = reader.GetString();
-                    }
-                    else if (reader.TokenType == JsonTokenType.True || reader.TokenType == JsonTokenType.False)
-                    {
-                        var value = reader.GetBoolean();
-                    }
-                    else if (reader.TokenType == JsonTokenType.String)
-                    {
-                        if (currentProperty == "price")
-                        {
-                            lastPrice = decimal.Parse(reader.GetString());
-                        }
-                        else if (currentProperty == "size")
-                        {
-                            var size = decimal.Parse(reader.GetString());
-                            orders.TryAdd(lastPrice, size);
-                        }
-                        else
-                        {
-                            if (currentProperty == "symbol")
-                            {
-                                ob.Symbol = reader.GetString();
-                            }
-                            else if (currentProperty == "timestamp")
-                            {
-                                ob.Timestamp = reader.GetDateTime();
-                            }
-                        }
-                    }
-                    else if (reader.TokenType == JsonTokenType.StartArray)
-                    {
-                        if (currentProperty == "ask")
-                        {
-                            ask = true;
-                        }
-                        else
-                        {
-                            ask = false;
-                        }
-                    }
-                    else if (reader.TokenType == JsonTokenType.Number)
-                    {
-                        if (currentProperty == "sequence")
-                        {
-                            ob.Sequence = reader.GetInt64();
-                        }
-                    }
-                    else if (reader.TokenType == JsonTokenType.EndArray)
-                    {
-                        if (ask)
-                        {
-                            ob.OfficialAsks = orders;
-                            orders = new ConcurrentDictionary<decimal, decimal>();
-                        }
-                        else
-                        {
-                            ob.OfficialBids = orders;
-                            orders = new ConcurrentDictionary<decimal, decimal>();
-                        }
-                    }
-                }
-                //Console.WriteLine($"{ob.symbol}, {ob.sequence}, {ob.officialAsks.Count()}, {ob.officialBids.Count()}");
-                return ob;
-
-
-            }
-            else if (firstLine == "e" || firstLine == "result") //binance
+            
+            if (firstLine == "e" || firstLine == "result") //binance
             {
                 while (reader.Read())
                 {
@@ -154,73 +83,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
                         }
                     }
                 }
-                ob.Timestamp = DateTime.UtcNow;
-                return ob;
-            }
-            else if (firstLine == "id" || firstLine == "ch") //huobi global
-            {
-                if (firstLine == "ch")
-                {
-                    reader.Read();
-                    var channel = reader.GetString().Split(".");
-                    if (channel.Length > 1)
-                    {
-                        ob.Symbol = channel[1].ToUpper(); //the second period-delimited item is the symbol
-                    }
-                    else
-                    {
-                        Console.WriteLine($"channel only has one element: {channel[0]}");
-                    }
-                }
-                while (reader.Read())
-                {
-                    if (reader.TokenType == JsonTokenType.PropertyName)
-                    {
-                        currentProperty = reader.GetString();
-                    }
-                    else if (reader.TokenType == JsonTokenType.StartObject)
-                    {
-                        reader.Read();
-                        while (reader.TokenType != JsonTokenType.EndObject && reader.TokenType != JsonTokenType.StartObject)
-                        {
-                            if (reader.TokenType == JsonTokenType.PropertyName)
-                            {
-                                currentProperty = reader.GetString();
-                            }
-                            else if (currentProperty == "seqNum")
-                            {
-                                ob.Sequence = reader.GetInt64();
-                            }
-                            else if (reader.TokenType == JsonTokenType.StartArray)
-                            {
-                                reader.Read();
-                                if (reader.TokenType == JsonTokenType.StartArray)
-                                {
-                                    reader.Read();
-                                }
-                                while (reader.TokenType != JsonTokenType.EndArray && reader.TokenType != JsonTokenType.StartArray)
-                                {
-                                    var price = reader.GetDecimal();
-                                    reader.Read();
-                                    var size = reader.GetDecimal();
-                                    if (currentProperty == "asks")
-                                    {
-                                        ob.OfficialAsks.TryAdd(price, size);
-                                        //Console.WriteLine($"converted ask {price} price, {size} size");
-                                    }
-                                    else if (currentProperty == "bids")
-                                    {
-                                        ob.OfficialBids.TryAdd(price, size);
-                                        //Console.WriteLine($"converted bid {price} price, {size} size");
-                                    }
-                                    reader.Read();
-                                }
-                            }
-                            reader.Read();
-                        }
-                    }
-                }
-                //Console.WriteLine($"{ob.symbol}, {ob.sequence}, {ob.officialAsks.Count()}, {ob.officialBids.Count()}");
                 ob.Timestamp = DateTime.UtcNow;
                 return ob;
             }

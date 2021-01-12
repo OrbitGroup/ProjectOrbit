@@ -10,6 +10,7 @@ using TriangleCollector.Services;
 using TriangleCollector.Models.Exchanges.Binance;
 using TriangleCollector.Models.Interfaces;
 using TriangleCollector.Models.Exchanges.Hitbtc;
+using TriangleCollector.Models.Exchanges.Huobi;
 
 namespace TriangleCollector
 {
@@ -19,7 +20,7 @@ namespace TriangleCollector
 
         public static ConcurrentQueue<TimeSpan> OrderbookUpdateDeltas = new ConcurrentQueue<TimeSpan>(); //I don't think this is needed?
 
-        public static List<Type> ExchangesToInitialize = new List<Type>() { typeof(BinanceExchange), typeof(HitbtcExchange) }; //list of exchanges to initialize. Valid names are 'hitbtc', 'huobi', and 'binance'
+        public static List<Type> ExchangesToInitialize = new List<Type>() { typeof(HuobiExchange)}; //list of exchanges to initialize. Valid names are 'hitbtc', 'huobi', and 'binance'
         public static List<IExchange> Exchanges = new List<IExchange>(); //contains all exchange objects
 
         public static void Main(string[] args)
@@ -47,7 +48,7 @@ namespace TriangleCollector
             {
                 //services.AddHostedService<QueueMonitor>(); one is started for each exchange
                 services.AddHostedService<USDMonitor>();
-                services.AddHostedService<OrderbookSubscriber>(); //this is the only service that starts standalone
+                services.AddHostedService<OrderbookSubscriber>();
                 services.AddHostedService<ActivityMonitor>();
                 //services.AddHostedService<TriangleCalculator>(); started for each exchange
                 //services.AddHostedService<TrianglePublisher>();
