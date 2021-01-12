@@ -19,7 +19,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public Type OrderbookType { get; } = typeof(HitbtcOrderbook);
 
-        public HashSet<IOrderbook> TradedMarkets { get; } = new HashSet<IOrderbook>();
+        public HashSet<IOrderbook> TradedMarkets { get; set; } = new HashSet<IOrderbook>();
 
         public ConcurrentDictionary<string, IOrderbook> OfficialOrderbooks { get; } = new ConcurrentDictionary<string, IOrderbook>();
 

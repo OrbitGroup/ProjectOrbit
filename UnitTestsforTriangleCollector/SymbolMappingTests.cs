@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using TriangleCollector.Services;
 using System.Collections.Concurrent;
 using TriangleCollector.Models;
-using TriangleCollector.Models.Exchange_Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TriangleCollector.UnitTests.Models;
+using TriangleCollector.Models.Interfaces;
+using TriangleCollector.Models.Exchanges.Hitbtc;
 
 namespace TriangleCollector.UnitTests
 {
@@ -22,32 +23,32 @@ namespace TriangleCollector.UnitTests
         {
             //Arrange: Expected outcomes are declared. 
 
-            HashSet<Orderbook> expectedTriangleEligiblePairs = new HashSet<Orderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
-            var ethbtc = new Orderbook();
+            HashSet<IOrderbook> expectedTriangleEligiblePairs = new HashSet<IOrderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
+            var ethbtc = new HitbtcOrderbook();
             ethbtc.Symbol = "ETHBTC";
             ethbtc.QuoteCurrency = "BTC";
             ethbtc.BaseCurrency= "ETH";
             expectedTriangleEligiblePairs.Add(ethbtc);
 
-            var eoseth = new Orderbook();
+            var eoseth = new HitbtcOrderbook();
             eoseth.Symbol = "EOSETH";
             eoseth.QuoteCurrency = "ETH";
             eoseth.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eoseth);
 
-            var eosbtc = new Orderbook();
+            var eosbtc = new HitbtcOrderbook();
             eosbtc.Symbol = "EOSBTC";
             eosbtc.QuoteCurrency = "BTC";
             eosbtc.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosbtc);
 
-            var eosusd = new Orderbook();
+            var eosusd = new HitbtcOrderbook();
             eosusd.Symbol = "EOSUSD";
             eosusd.QuoteCurrency = "USD";
             eosusd.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosusd);
 
-            var btcusd = new Orderbook();
+            var btcusd = new HitbtcOrderbook();
             btcusd.Symbol = "BTCUSD";
             btcusd.QuoteCurrency = "USD";
             btcusd.BaseCurrency = "BTC";
@@ -55,10 +56,10 @@ namespace TriangleCollector.UnitTests
 
             //Act: run the sample API response through the function
 
-            var testExchange = new Exchange("hitbtc");
+            var testExchange = (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString());
             testExchange.TriarbEligibleMarkets.Clear();
             testExchange.TradedMarkets = expectedTriangleEligiblePairs;
-            testExchange.MapOpportunities();
+            MarketMapper.MapOpportunities(testExchange);
 
             //Assert: confirm that the results of the test symbols match the expected outcome
 
@@ -68,42 +69,42 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void NEWTestSymbolTriangleMapping() //test that all of the triangle eligible symbols are matched properly to all of their respective triangles
         {
-            var testExchange = new Exchange("hitbtc");
+            var testExchange = (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString());
             //Arrange: list all of the possible triangles and map them to their symbols
             List<Triangle> triangles = new List<Triangle>()
             {
-                new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>(), testExchange),
-                new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>(), testExchange),
-                new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>(), testExchange)
+                new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, testExchange),
+                new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, testExchange),
+                new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, testExchange)
 
             };
 
-            HashSet<Orderbook> expectedTriangleEligiblePairs = new HashSet<Orderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
-            var ethbtc = new Orderbook();
+            HashSet<IOrderbook> expectedTriangleEligiblePairs = new HashSet<IOrderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
+            var ethbtc = new HitbtcOrderbook();
             ethbtc.Symbol = "ETHBTC";
             ethbtc.QuoteCurrency = "BTC";
             ethbtc.BaseCurrency = "ETH";
             expectedTriangleEligiblePairs.Add(ethbtc);
 
-            var eoseth = new Orderbook();
+            var eoseth = new HitbtcOrderbook();
             eoseth.Symbol = "EOSETH";
             eoseth.QuoteCurrency = "ETH";
             eoseth.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eoseth);
 
-            var eosbtc = new Orderbook();
+            var eosbtc = new HitbtcOrderbook();
             eosbtc.Symbol = "EOSBTC";
             eosbtc.QuoteCurrency = "BTC";
             eosbtc.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosbtc);
 
-            var eosusd = new Orderbook();
+            var eosusd = new HitbtcOrderbook();
             eosusd.Symbol = "EOSUSD";
             eosusd.QuoteCurrency = "USD";
             eosusd.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosusd);
 
-            var btcusd = new Orderbook();
+            var btcusd = new HitbtcOrderbook();
             btcusd.Symbol = "BTCUSD";
             btcusd.QuoteCurrency = "USD";
             btcusd.BaseCurrency = "BTC";
@@ -123,7 +124,7 @@ namespace TriangleCollector.UnitTests
             testExchange.TriarbEligibleMarkets.Clear();
             testExchange.TriarbMarketMapping.Clear();
             testExchange.TradedMarkets = expectedTriangleEligiblePairs;
-            testExchange.MapOpportunities();
+            MarketMapper.MapOpportunities(testExchange);
 
             //Assert: confirm that the result of the test matches the expected outcome
 

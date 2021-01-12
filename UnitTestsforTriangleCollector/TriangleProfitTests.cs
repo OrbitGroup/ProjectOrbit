@@ -7,6 +7,8 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using TriangleCollector.Models;
+using TriangleCollector.Models.Interfaces;
+using TriangleCollector.Models.Exchanges.Hitbtc;
 
 namespace TriangleCollector.UnitTests
 {
@@ -16,15 +18,15 @@ namespace TriangleCollector.UnitTests
         private static ILoggerFactory _factory = new NullLoggerFactory();
 
         //unprofitable triangles
-        public Triangle EthEosBtc = new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, _factory.CreateLogger<Triangle>(), new Exchange("hitbtc"));
+        public Triangle EthEosBtc = new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
         public decimal EthEosBtcUnprofitableProfit = 0.9924677859176047787362868849m - 1;
         public decimal EthEosBtcUnprofitableVolume = 0.005536389908m;
 
-        public Triangle EosEthBtc = new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, _factory.CreateLogger<Triangle>(), new Exchange("hitbtc"));
+        public Triangle EosEthBtc = new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
         public decimal EosEthBtcUnprofitableProfit = 0.9994362518556066475976682718m - 1;
         public decimal EosEthBtcUnprofitableVolume = 0.005520685968m;
 
-        public Triangle UsdEosBtc = new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, _factory.CreateLogger<Triangle>(), new Exchange("hitbtc"));
+        public Triangle UsdEosBtc = new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
         public decimal UsdEosBtcUnprofitableProfit = 0.9994800007008076808521821399m - 1;
         public decimal UsdEosBtcUnprofitableVolume = 0.01019975m;
 
@@ -70,7 +72,7 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestProfitAndVolumeNoLayersBuyBuySell() // without any input, this tests the ProfitPercent output of an unprofitable triangle.
         {
-            Orderbook EthBtc = new Orderbook();
+            IOrderbook EthBtc = new HitbtcOrderbook();
             EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
             EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
@@ -81,7 +83,7 @@ namespace TriangleCollector.UnitTests
             EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
             EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
-            Orderbook EosEth = new Orderbook();
+            IOrderbook EosEth = new HitbtcOrderbook();
             EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
             EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
@@ -92,7 +94,7 @@ namespace TriangleCollector.UnitTests
             EosEth.OfficialAsks.TryAdd(0.0081500m, 362.18m);
             EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
                 
-            Orderbook EosBtcUnprofitable = new Orderbook();
+            IOrderbook EosBtcUnprofitable = new HitbtcOrderbook();
             EosBtcUnprofitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027619m, 104.95m);
             EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027750m, 123.82m);
@@ -115,19 +117,19 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestProfitAndVolumeNoLayersSellBuySell()
         {
-            Orderbook BtcUsdBids = new Orderbook();
+            IOrderbook BtcUsdBids = new HitbtcOrderbook();
             BtcUsdBids.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             BtcUsdBids.OfficialBids.TryAdd(10372.24m, 0.75m);
             BtcUsdBids.OfficialBids.TryAdd(10370.04m, 0.12m);
             BtcUsdBids.OfficialBids.TryAdd(10367.85m, 0.24m);
 
-            Orderbook EosUsdAsks = new Orderbook();
+            IOrderbook EosUsdAsks = new HitbtcOrderbook();
             EosUsdAsks.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosUsdAsks.OfficialAsks.TryAdd(2.85385m, 37.09m);
             EosUsdAsks.OfficialAsks.TryAdd(2.86429m, 600m);
             EosUsdAsks.OfficialAsks.TryAdd(2.86940m, 363.86m);
 
-            Orderbook EosBtcUnprofitable = new Orderbook();
+            IOrderbook EosBtcUnprofitable = new HitbtcOrderbook();
             EosBtcUnprofitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027619m, 104.95m);
             EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027750m, 123.82m);
@@ -150,7 +152,7 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestVolumeAndProfitNoLayersBuySellSell()
         {
-            Orderbook EosBtcUnprofitable = new Orderbook();
+            IOrderbook EosBtcUnprofitable = new HitbtcOrderbook();
             EosBtcUnprofitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027619m, 104.95m);
             EosBtcUnprofitable.OfficialAsks.TryAdd(0.00027750m, 123.82m);
@@ -161,7 +163,7 @@ namespace TriangleCollector.UnitTests
             EosBtcUnprofitable.OfficialBids.TryAdd(0.00027300m, 120.44m);
             EosBtcUnprofitable.OfficialBids.TryAdd(0.00027100m, 725.15m);
 
-            Orderbook EthBtc = new Orderbook();
+            IOrderbook EthBtc = new HitbtcOrderbook();
             EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
             EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
@@ -172,7 +174,7 @@ namespace TriangleCollector.UnitTests
             EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
             EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
-            Orderbook EosEth = new Orderbook();
+            IOrderbook EosEth = new HitbtcOrderbook();
             EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
             EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
@@ -195,7 +197,7 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestLayersBuyBuySellBottleneckTwo() 
         {
-            Orderbook EthBtc = new Orderbook();
+            IOrderbook EthBtc = new HitbtcOrderbook();
             EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
             EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
@@ -206,7 +208,7 @@ namespace TriangleCollector.UnitTests
             EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
             EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
-            Orderbook EosEth = new Orderbook();
+            IOrderbook EosEth = new HitbtcOrderbook();
             EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
             EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
@@ -218,7 +220,7 @@ namespace TriangleCollector.UnitTests
             EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
-            Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            IOrderbook EosBtcProfitable = new HitbtcOrderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
             EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
@@ -243,7 +245,7 @@ namespace TriangleCollector.UnitTests
         public void TestLayersBuyBuySellBottleneckOne() //only profitable triangles require inputs - volume is calculated as well
         {
             //BUYBUYSELL BOTTLENECK = TRADE 1 (USE PROFITABLE TEST ORDERBOOK FOR THIRD TRADE):
-            Orderbook EthBtcBuyBuySellBottleneckOne = new Orderbook();
+            IOrderbook EthBtcBuyBuySellBottleneckOne = new HitbtcOrderbook();
             EthBtcBuyBuySellBottleneckOne.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EthBtcBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.034139m, 4.2344m);
             EthBtcBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.034110m, 2.9281m);
@@ -255,7 +257,7 @@ namespace TriangleCollector.UnitTests
             EthBtcBuyBuySellBottleneckOne.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
-            Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            IOrderbook EosBtcProfitable = new HitbtcOrderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
             EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
@@ -266,7 +268,7 @@ namespace TriangleCollector.UnitTests
             EosBtcProfitable.OfficialBids.TryAdd(0.00028000m, 120.44m);
             EosBtcProfitable.OfficialBids.TryAdd(0.00027900m, 725.15m);
 
-            Orderbook EosEthBuyBuySellBottleneckOne = new Orderbook();
+            IOrderbook EosEthBuyBuySellBottleneckOne = new HitbtcOrderbook();
             EosEthBuyBuySellBottleneckOne.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080856m, 20m);
             EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080810m, 543.14m);
@@ -291,7 +293,7 @@ namespace TriangleCollector.UnitTests
         public void TestLayersBuyBuySellBottleneckThree() //only profitable triangles require inputs - volume is calculated as well
         {
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
-            Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            IOrderbook EosBtcProfitable = new HitbtcOrderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
             EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
@@ -303,7 +305,7 @@ namespace TriangleCollector.UnitTests
             EosBtcProfitable.OfficialBids.TryAdd(0.00027900m, 725.15m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 3 (USE OTHER PROFITABLE TEST ORDERBOOK FOR SECOND AND THIRD TRADE):
-            Orderbook EthBtcBuyBuySellBottleneckThree = new Orderbook();
+            IOrderbook EthBtcBuyBuySellBottleneckThree = new HitbtcOrderbook();
             EthBtcBuyBuySellBottleneckThree.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EthBtcBuyBuySellBottleneckThree.OfficialBids.TryAdd(0.034139m, 4.2344m);
             EthBtcBuyBuySellBottleneckThree.OfficialBids.TryAdd(0.034110m, 2.9281m);
@@ -314,7 +316,7 @@ namespace TriangleCollector.UnitTests
             EthBtcBuyBuySellBottleneckThree.OfficialAsks.TryAdd(0.034200m, 32.35m);
             EthBtcBuyBuySellBottleneckThree.OfficialAsks.TryAdd(0.035210m, 17.31m);
 
-            Orderbook EosEthBuyBuySellBottleneckOne = new Orderbook();
+            IOrderbook EosEthBuyBuySellBottleneckOne = new HitbtcOrderbook();
             EosEthBuyBuySellBottleneckOne.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080856m, 20m);
             EosEthBuyBuySellBottleneckOne.OfficialBids.TryAdd(0.0080810m, 543.14m);
@@ -338,7 +340,7 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestLayersBuySellSellBottleneckTwo() //this will also test a bottleneck of one, so it accomplishes two tests in one.
         {
-            Orderbook EthBtc = new Orderbook();
+            IOrderbook EthBtc = new HitbtcOrderbook();
             EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EthBtc.OfficialBids.TryAdd(0.034139m, 4.2344m);
             EthBtc.OfficialBids.TryAdd(0.034110m, 2.9281m);
@@ -349,7 +351,7 @@ namespace TriangleCollector.UnitTests
             EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
             EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
-            Orderbook EosEth = new Orderbook();
+            IOrderbook EosEth = new HitbtcOrderbook();
             EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
             EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
@@ -361,7 +363,7 @@ namespace TriangleCollector.UnitTests
             EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 2 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
-            Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            IOrderbook EosBtcProfitable = new HitbtcOrderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
             EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
@@ -384,7 +386,7 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestLayersBuySellSellBottleneckThree()
         {
-            Orderbook EthBtc = new Orderbook();
+            IOrderbook EthBtc = new HitbtcOrderbook();
             EthBtc.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EthBtc.OfficialBids.TryAdd(0.034139m, 0.01m);
             EthBtc.OfficialBids.TryAdd(0.034110m, 0.05m);
@@ -395,7 +397,7 @@ namespace TriangleCollector.UnitTests
             EthBtc.OfficialAsks.TryAdd(0.034200m, 0.3235m);
             EthBtc.OfficialAsks.TryAdd(0.035210m, 1.1731m);
 
-            Orderbook EosEth = new Orderbook();
+            IOrderbook EosEth = new HitbtcOrderbook();
             EosEth.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             EosEth.OfficialBids.TryAdd(0.0080856m, 20m);
             EosEth.OfficialBids.TryAdd(0.0080810m, 543.14m);
@@ -407,7 +409,7 @@ namespace TriangleCollector.UnitTests
             EosEth.OfficialAsks.TryAdd(0.0081575m, 144.86m);
 
             //BUYBUYSELL BOTTLENECK = TRADE 3 (USE REGULAR TEST ORDER BOOKS FOR FIRST TWO TRADES): 
-            Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            IOrderbook EosBtcProfitable = new HitbtcOrderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
             EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);
@@ -430,19 +432,19 @@ namespace TriangleCollector.UnitTests
         [TestMethod]
         public void TestLayersSellBuySellBottlenecks()
         {
-            Orderbook BtcUsdSortedBids = new Orderbook();
+            IOrderbook BtcUsdSortedBids = new HitbtcOrderbook();
             BtcUsdSortedBids.OfficialBids = new ConcurrentDictionary<decimal, decimal>();
             BtcUsdSortedBids.OfficialBids.TryAdd(10372.24m, 0.01m);
             BtcUsdSortedBids.OfficialBids.TryAdd(10370.04m, 1m);
             BtcUsdSortedBids.OfficialBids.TryAdd(10367.85m, 2m);
 
-            Orderbook EosUsdSortedAsks = new Orderbook();
+            IOrderbook EosUsdSortedAsks = new HitbtcOrderbook();
             EosUsdSortedAsks.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosUsdSortedAsks.OfficialAsks.TryAdd(2.85385m, 37.09m);
             EosUsdSortedAsks.OfficialAsks.TryAdd(2.86429m, 600m);
             EosUsdSortedAsks.OfficialAsks.TryAdd(2.86940m, 363.86m);
 
-            Orderbook EosBtcProfitable = new Orderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
+            IOrderbook EosBtcProfitable = new HitbtcOrderbook(); //since all of the unprofitable test values are very close to equilibrium, a 2% change in price here will make all triangles profitable
             EosBtcProfitable.OfficialAsks = new ConcurrentDictionary<decimal, decimal>();
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027000m, 104.95m);
             EosBtcProfitable.OfficialAsks.TryAdd(0.00027100m, 123.82m);

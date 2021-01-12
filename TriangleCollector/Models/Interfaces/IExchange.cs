@@ -17,7 +17,7 @@ namespace TriangleCollector.Models.Interfaces
 
         public Type OrderbookType { get; }
 
-        public HashSet<IOrderbook> TradedMarkets { get; }
+        public HashSet<IOrderbook> TradedMarkets { get; set; }
 
         public ConcurrentDictionary<string, IOrderbook> OfficialOrderbooks { get; }
 

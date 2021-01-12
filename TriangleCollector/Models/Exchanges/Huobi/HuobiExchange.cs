@@ -19,7 +19,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public Type OrderbookType { get; } = typeof(HuobiOrderbook);
 
-        public HashSet<IOrderbook> TradedMarkets { get; } = new HashSet<IOrderbook>();
+        public HashSet<IOrderbook> TradedMarkets { get; set;  } = new HashSet<IOrderbook>();
 
         public ConcurrentDictionary<string, IOrderbook> OfficialOrderbooks { get; } = new ConcurrentDictionary<string, IOrderbook>();
 
