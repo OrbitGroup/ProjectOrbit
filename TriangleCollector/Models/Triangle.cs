@@ -33,6 +33,8 @@ namespace TriangleCollector.Models
 
         public decimal MaxVolume { get; set; }
 
+        public long CreateSortedTime { get; set; }
+
         public Directions Direction;
 
         public enum Directions
@@ -78,21 +80,21 @@ namespace TriangleCollector.Models
         {
             get
             {
-                if (ThirdSymbolOrderbook.OfficialBids.Count == 0) //the third trade is always a bid
+                if (ThirdSymbolOrderbook.SortedBids.Count == 0) //the third trade is always a bid
                 {
                     return false;
                 }
                 if (Direction == Directions.SellBuySell)
                 {
-                    return !(FirstSymbolOrderbook.OfficialBids.Count == 0 || SecondSymbolOrderbook.OfficialAsks.Count == 0);
+                    return !(FirstSymbolOrderbook.SortedBids.Count == 0 || SecondSymbolOrderbook.SortedAsks.Count == 0);
                 }
                 else if (Direction == Directions.BuyBuySell)
                 {
-                    return !(FirstSymbolOrderbook.OfficialAsks.Count == 0 || SecondSymbolOrderbook.OfficialAsks.Count == 0);
+                    return !(FirstSymbolOrderbook.SortedAsks.Count == 0 || SecondSymbolOrderbook.SortedAsks.Count == 0);
                 } 
                 else if (Direction == Directions.BuySellSell)
                 {
-                    return !(FirstSymbolOrderbook.OfficialAsks.Count == 0 || SecondSymbolOrderbook.OfficialBids.Count == 0);
+                    return !(FirstSymbolOrderbook.SortedAsks.Count == 0 || SecondSymbolOrderbook.SortedBids.Count == 0);
                 } else
                 {
                     return false;
@@ -123,11 +125,15 @@ namespace TriangleCollector.Models
                 }
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
-                FirstSymbolOrderbook = firstSymbolOrderbook.DeepCopy();
-                SecondSymbolOrderbook = secondSymbolOrderbook.DeepCopy();
-                ThirdSymbolOrderbook = thirdSymbolOrderbook.DeepCopy();
+                firstSymbolOrderbook.CreateSorted();
+                secondSymbolOrderbook.CreateSorted();
+                thirdSymbolOrderbook.CreateSorted();
+                FirstSymbolOrderbook = firstSymbolOrderbook;
+                SecondSymbolOrderbook = secondSymbolOrderbook;
+                ThirdSymbolOrderbook = thirdSymbolOrderbook;
                 stopwatch.Stop();
-                //_logger.LogDebug($"time to DeepCopy: {stopwatch.ElapsedMilliseconds} milliseconds");
+                CreateSortedTime = stopwatch.ElapsedMilliseconds;
+                stopwatch.Reset();
             }
             finally
             {
@@ -200,60 +206,67 @@ namespace TriangleCollector.Models
 
         public void RemoveLiquidity(KeyValuePair<Bottlenecks, decimal> bottleneck)
         {
+            //use min/max functions once to define the lowest layers up front as opposed to calling the min/max methods repeatedly (often 7/8 times per layer) throughout the process.
+            var thirdSymbolHighestBidKey = ThirdSymbolOrderbook.SortedBids.Keys.Max();
+            var firstSymbolLowestAskKey = FirstSymbolOrderbook.SortedAsks.Keys.Min();
+            var secondSymbolLowestAskKey = SecondSymbolOrderbook.SortedAsks.Keys.Min();
+            var firstSymbolHighestBidKey = FirstSymbolOrderbook.SortedBids.Keys.Max();
+
             if (Direction == Directions.BuyBuySell)
             {
                 if (bottleneck.Key == Bottlenecks.FirstTrade)
                 {
                     FirstSymbolLayers++;
-                    FirstSymbolOrderbook.OfficialAsks.TryRemove(FirstSymbolOrderbook.OfficialAsks.Keys.Min(), out var _);
+                    FirstSymbolOrderbook.SortedAsks.Remove(firstSymbolLowestAskKey, out var _);
 
-                    SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] = SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] -  bottleneck.Value / FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()] / SecondSymbolOrderbook.OfficialAsks.Keys.Min(); //second trade is quoted in alt terms, so convert using first orderbook.
-                    ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] = ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //last trade must be quoted in BTC terms
+                    SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] = SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] -  bottleneck.Value / FirstSymbolOrderbook.SortedBids[firstSymbolHighestBidKey] / secondSymbolLowestAskKey; //second trade is quoted in alt terms, so convert using first orderbook.
+                    ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] = ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] - bottleneck.Value / thirdSymbolHighestBidKey; //last trade must be quoted in BTC terms
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
                 {
                     SecondSymbolLayers++;
-                    SecondSymbolOrderbook.OfficialAsks.TryRemove(SecondSymbolOrderbook.OfficialAsks.Keys.Min(), out var _);
+                    SecondSymbolOrderbook.SortedAsks.Remove(secondSymbolLowestAskKey, out var _);
 
-                    FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] = FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] - bottleneck.Value / FirstSymbolOrderbook.OfficialAsks.Keys.Min(); //first trade must be quoted in BTC terms
-                    ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] = ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //last trade must be quoted in BTC terms
+                    FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] = FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] - bottleneck.Value / firstSymbolLowestAskKey; //first trade must be quoted in BTC terms
+                    ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] = ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] - bottleneck.Value / thirdSymbolHighestBidKey; //last trade must be quoted in BTC terms
 
                 }
-                else
+                else //found mistake here
                 {
                     ThirdSymbolLayers++;
-                    ThirdSymbolOrderbook.OfficialBids.TryRemove(ThirdSymbolOrderbook.OfficialBids.Keys.Max(), out var _);
+                    ThirdSymbolOrderbook.SortedBids.Remove(thirdSymbolHighestBidKey, out var _);
 
-                    FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] = FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] - bottleneck.Value / FirstSymbolOrderbook.OfficialAsks.Keys.Min(); //first trade is quoted in btc terms
-                    SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] = SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Max()] - bottleneck.Value / FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()] / SecondSymbolOrderbook.OfficialAsks.Keys.Min(); //second trade is quoted in alt terms, so convert using first orderbook.
+                    FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] = FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] - bottleneck.Value / firstSymbolLowestAskKey; //first trade is quoted in btc terms
+                    SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] = SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] - bottleneck.Value / FirstSymbolOrderbook.SortedBids[firstSymbolHighestBidKey] / secondSymbolLowestAskKey; //second trade is quoted in alt terms, so convert using first orderbook.
                 }
             }
             else if (Direction == Directions.BuySellSell)
             {
+                var secondSymbolHighestBidKey = SecondSymbolOrderbook.SortedBids.Keys.Max(); //this only needs to be defined within this scope
                 if (bottleneck.Key == Bottlenecks.FirstTrade)
                 {
                     FirstSymbolLayers++;
-                    FirstSymbolOrderbook.OfficialAsks.TryRemove(FirstSymbolOrderbook.OfficialAsks.Keys.Min(), out var _);
+                    FirstSymbolOrderbook.SortedAsks.Remove(firstSymbolLowestAskKey, out var _);
 
-                    SecondSymbolOrderbook.OfficialBids[SecondSymbolOrderbook.OfficialBids.Keys.Max()] = SecondSymbolOrderbook.OfficialBids[SecondSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max() / SecondSymbolOrderbook.OfficialBids.Keys.Max(); //second trade is quoted in alt terms, so convert using first orderbook.
-                    ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] = ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //last trade must be quoted in BTC terms
+                    SecondSymbolOrderbook.SortedBids[secondSymbolHighestBidKey] = SecondSymbolOrderbook.SortedBids[secondSymbolHighestBidKey] - bottleneck.Value / thirdSymbolHighestBidKey / secondSymbolHighestBidKey; //second trade is quoted in alt terms, so convert using first orderbook.
+                    ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] = ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] - bottleneck.Value / thirdSymbolHighestBidKey; //last trade must be quoted in BTC terms
 
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
                 {
                     SecondSymbolLayers++;
-                    SecondSymbolOrderbook.OfficialBids.TryRemove(SecondSymbolOrderbook.OfficialBids.Keys.Max(), out var _);
+                    SecondSymbolOrderbook.SortedBids.Remove(secondSymbolHighestBidKey, out var _);
 
-                    FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] = FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] - bottleneck.Value / FirstSymbolOrderbook.OfficialAsks.Keys.Min(); //first trade must be quoted in BTC terms
-                    ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] = ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //last trade must be quoted in BTC terms
+                    FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] = FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] - bottleneck.Value / firstSymbolLowestAskKey; //first trade must be quoted in BTC terms
+                    ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] = ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] - bottleneck.Value / thirdSymbolHighestBidKey; //last trade must be quoted in BTC terms
                 }
                 else //bottleneck is third trade
                 {
                     ThirdSymbolLayers++;
-                    ThirdSymbolOrderbook.OfficialBids.TryRemove(ThirdSymbolOrderbook.OfficialBids.Keys.Max(), out var _);
+                    ThirdSymbolOrderbook.SortedBids.Remove(thirdSymbolHighestBidKey, out var _);
 
-                    FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] = FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()] - bottleneck.Value / FirstSymbolOrderbook.OfficialAsks.Keys.Min(); //first trade must be quoted in BTC terms
-                    SecondSymbolOrderbook.OfficialBids[SecondSymbolOrderbook.OfficialBids.Keys.Max()] = SecondSymbolOrderbook.OfficialBids[SecondSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialAsks.Keys.Min() / SecondSymbolOrderbook.OfficialBids.Keys.Max(); //second trade is quoted in alt terms, so convert using first orderbook.
+                    FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] = FirstSymbolOrderbook.SortedAsks[firstSymbolLowestAskKey] - bottleneck.Value / firstSymbolLowestAskKey; //first trade must be quoted in BTC terms
+                    SecondSymbolOrderbook.SortedBids[secondSymbolHighestBidKey] = SecondSymbolOrderbook.SortedBids[secondSymbolHighestBidKey] - bottleneck.Value / ThirdSymbolOrderbook.SortedAsks.Keys.Min() / secondSymbolHighestBidKey; //second trade is quoted in alt terms, so convert using first orderbook.
                 }
             }
             else // sell buy sell
@@ -261,26 +274,26 @@ namespace TriangleCollector.Models
                 if (bottleneck.Key == Bottlenecks.FirstTrade)
                 {
                     FirstSymbolLayers++;
-                    FirstSymbolOrderbook.OfficialBids.TryRemove(FirstSymbolOrderbook.OfficialBids.Keys.Max(), out var _); 
+                    FirstSymbolOrderbook.SortedBids.Remove(firstSymbolHighestBidKey, out var _); 
                     //second trade depth is expressed in altcoin terms. to convert to BTC, use the third orderbook bid price
-                    SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] = SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //second trade is quoted in alt terms, so convert using first orderbook.
-                    ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] = ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //last trade must be quoted in BTC terms
+                    SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] = SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] - bottleneck.Value / thirdSymbolHighestBidKey; //second trade is quoted in alt terms, so convert using first orderbook.
+                    ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] = ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] - bottleneck.Value / thirdSymbolHighestBidKey; //last trade must be quoted in BTC terms
                 }
                 else if (bottleneck.Key == Bottlenecks.SecondTrade)
                 {
                     SecondSymbolLayers++;
-                    SecondSymbolOrderbook.OfficialAsks.TryRemove(SecondSymbolOrderbook.OfficialAsks.Keys.Min(), out var _);
+                    SecondSymbolOrderbook.SortedAsks.Remove(secondSymbolLowestAskKey, out var _);
 
-                    FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()] = FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value; //first trade depth is already in BTC terms
-                    ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] = ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //last trade must be quoted in BTC terms
+                    FirstSymbolOrderbook.SortedBids[firstSymbolHighestBidKey] = FirstSymbolOrderbook.SortedBids[firstSymbolHighestBidKey] - bottleneck.Value; //first trade depth is already in BTC terms
+                    ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] = ThirdSymbolOrderbook.SortedBids[thirdSymbolHighestBidKey] - bottleneck.Value / thirdSymbolHighestBidKey; //last trade must be quoted in BTC terms
                 }
                 else //bottleneck is third trade
                 {
                     ThirdSymbolLayers++;
-                    ThirdSymbolOrderbook.OfficialBids.TryRemove(ThirdSymbolOrderbook.OfficialBids.Keys.Max(), out var _);
+                    ThirdSymbolOrderbook.SortedBids.Remove(thirdSymbolHighestBidKey, out var _);
 
-                    FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()] = FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()] - bottleneck.Value; //first trade depth is already in BTC terms
-                    SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] = SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] - bottleneck.Value / ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //second trade is quoted in alt terms, so convert using third orderbook.
+                    FirstSymbolOrderbook.SortedBids[firstSymbolHighestBidKey] = FirstSymbolOrderbook.SortedBids[firstSymbolHighestBidKey] - bottleneck.Value; //first trade depth is already in BTC terms
+                    SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] = SecondSymbolOrderbook.SortedAsks[secondSymbolLowestAskKey] - bottleneck.Value / thirdSymbolHighestBidKey; //second trade is quoted in alt terms, so convert using third orderbook.
                 }
             }
 
@@ -293,23 +306,23 @@ namespace TriangleCollector.Models
              //use the direction list to understand what trades to make at each step
             if (Direction == Directions.BuySellSell)
             {
-                var firstTrade = 1 / FirstSymbolOrderbook.OfficialAsks.Keys.Min();
-                var secondTrade = firstTrade * SecondSymbolOrderbook.OfficialBids.Keys.Max(); //sell
-                var thirdTrade = secondTrade * ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //sell
+                var firstTrade = 1 / FirstSymbolOrderbook.SortedAsks.Keys.Min();
+                var secondTrade = firstTrade * SecondSymbolOrderbook.SortedBids.Keys.Max(); //sell
+                var thirdTrade = secondTrade * ThirdSymbolOrderbook.SortedBids.Keys.Max(); //sell
                 return thirdTrade - 1;
             }
             else if (Direction == Directions.BuyBuySell)
             {
-                var firstTrade = 1 / FirstSymbolOrderbook.OfficialAsks.Keys.Min();
-                var secondTrade = firstTrade / SecondSymbolOrderbook.OfficialAsks.Keys.Min(); //buy
-                var thirdTrade = secondTrade * ThirdSymbolOrderbook.OfficialBids.Keys.Max(); //sell
+                var firstTrade = 1 / FirstSymbolOrderbook.SortedAsks.Keys.Min();
+                var secondTrade = firstTrade / SecondSymbolOrderbook.SortedAsks.Keys.Min(); //buy
+                var thirdTrade = secondTrade * ThirdSymbolOrderbook.SortedBids.Keys.Max(); //sell
                 return thirdTrade - 1;
             }
             else //Sell Buy Sell
             {
-                var firstTrade = 1 * FirstSymbolOrderbook.OfficialBids.Keys.Max();
-                var secondTrade = firstTrade / SecondSymbolOrderbook.OfficialAsks.Keys.Min();
-                var thirdTrade = secondTrade * ThirdSymbolOrderbook.OfficialBids.Keys.Max();
+                var firstTrade = 1 * FirstSymbolOrderbook.SortedBids.Keys.Max();
+                var secondTrade = firstTrade / SecondSymbolOrderbook.SortedAsks.Keys.Min();
+                var thirdTrade = secondTrade * ThirdSymbolOrderbook.SortedBids.Keys.Max();
                 return thirdTrade - 1;
             }
         }
@@ -322,10 +335,10 @@ namespace TriangleCollector.Models
                 // the second trade is in the other base's terms, so you must convert the base-terms volume into BTC using the first trade price (which is base-BTC) 
                 // Other than that, the logic is the same as the first trade since we are buying something again.
 
-                decimal firstBtcVolume = FirstSymbolOrderbook.OfficialAsks.Keys.Min() * FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()]; 
-                decimal secondBtcVolume = SecondSymbolOrderbook.OfficialAsks.Keys.Min() * SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] * FirstSymbolOrderbook.OfficialBids.Keys.Max();
+                decimal firstBtcVolume = FirstSymbolOrderbook.SortedAsks.Keys.Min() * FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.Keys.Min()]; 
+                decimal secondBtcVolume = SecondSymbolOrderbook.SortedAsks.Keys.Min() * SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.Keys.Min()] * FirstSymbolOrderbook.SortedBids.Keys.Max();
                 // the third direction must be Sell at this point (there is no other potential combination)
-                decimal thirdBtcVolume = ThirdSymbolOrderbook.OfficialBids.Keys.Max() * ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()];
+                decimal thirdBtcVolume = ThirdSymbolOrderbook.SortedBids.Keys.Max() * ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.Keys.Max()];
                 //calculate and identify the bottleneck
 
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
@@ -347,10 +360,10 @@ namespace TriangleCollector.Models
                 // second trade is a sell order, so the direction must be Buy Sell Sell
                 // the depth is expressed in altcoin terms which must be converted to BTC. Price is expressed in basecoin terms.
                 // the first order book contains the ALT-BTC price, which is therefore used to convert the volume to BTC terms
-                decimal firstBtcVolume = FirstSymbolOrderbook.OfficialAsks.Keys.Min() * FirstSymbolOrderbook.OfficialAsks[FirstSymbolOrderbook.OfficialAsks.Keys.Min()];
-                decimal secondBtcVolume = SecondSymbolOrderbook.OfficialBids.Keys.Max() * SecondSymbolOrderbook.OfficialBids[SecondSymbolOrderbook.OfficialBids.Keys.Max()] * ThirdSymbolOrderbook.OfficialBids.Keys.Max();
+                decimal firstBtcVolume = FirstSymbolOrderbook.SortedAsks.Keys.Min() * FirstSymbolOrderbook.SortedAsks[FirstSymbolOrderbook.SortedAsks.Keys.Min()];
+                decimal secondBtcVolume = SecondSymbolOrderbook.SortedBids.Keys.Max() * SecondSymbolOrderbook.SortedBids[SecondSymbolOrderbook.SortedBids.Keys.Max()] * ThirdSymbolOrderbook.SortedBids.Keys.Max();
                 // third trade is always in BTC price terms
-                decimal thirdBtcVolume = ThirdSymbolOrderbook.OfficialBids.Keys.Max() * ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()];
+                decimal thirdBtcVolume = ThirdSymbolOrderbook.SortedBids.Keys.Max() * ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.Keys.Max()];
                 //calculate and identify the bottleneck
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
                 {
@@ -369,11 +382,11 @@ namespace TriangleCollector.Models
             {
                 //first trade is a sell order. only one direction starts with a sell order: Sell Buy Sell
                 //the only scenario when the first trade is a sell order is USDT/TUSD based trades, in which depth is already expressed in BTC (price is expressed in USD)
-                decimal firstBtcVolume = FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()];
+                decimal firstBtcVolume = FirstSymbolOrderbook.SortedBids[FirstSymbolOrderbook.SortedBids.Keys.Max()];
                 // for the second trade, the depth is expressed in the altcoin terms (price is expressed in USD). Therefore it just needs to be converted to BTC via the third order book.                
-                decimal secondBtcVolume = SecondSymbolOrderbook.OfficialAsks[SecondSymbolOrderbook.OfficialAsks.Keys.Min()] * ThirdSymbolOrderbook.OfficialBids.Keys.Max();
+                decimal secondBtcVolume = SecondSymbolOrderbook.SortedAsks[SecondSymbolOrderbook.SortedAsks.Keys.Min()] * ThirdSymbolOrderbook.SortedBids.Keys.Max();
                 //the third trade is always in BTC price terms
-                decimal thirdBtcVolume = ThirdSymbolOrderbook.OfficialBids.Keys.Max() * ThirdSymbolOrderbook.OfficialBids[ThirdSymbolOrderbook.OfficialBids.Keys.Max()];
+                decimal thirdBtcVolume = ThirdSymbolOrderbook.SortedBids.Keys.Max() * ThirdSymbolOrderbook.SortedBids[ThirdSymbolOrderbook.SortedBids.Keys.Max()];
                 //calculate and identify the bottleneck
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
                 {

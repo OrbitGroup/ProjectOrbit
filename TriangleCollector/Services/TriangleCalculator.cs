@@ -53,19 +53,30 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
+                var sw = new Stopwatch();
                 if (Exchange.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
                 {
                     var firstOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out IOrderbook firstSymbolOrderbook);
                     var secondOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out IOrderbook secondSymbolOrderbook);
                     var thirdOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out IOrderbook thirdSymbolOrderbook);
 
-                    if (firstOrderbookSet && secondOrderbookSet && thirdOrderbookSet)
+                    if (firstOrderbookSet && secondOrderbookSet && thirdOrderbookSet && 
+                        thirdSymbolOrderbook.OfficialBids.Count > 0 && secondSymbolOrderbook.OfficialAsks.Count > 0 && firstSymbolOrderbook.OfficialAsks.Count > 0
+                        && firstSymbolOrderbook.OfficialBids.Count > 0 && secondSymbolOrderbook.OfficialBids.Count > 0)
                     {
+                        sw.Start();
                         var updated = triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
                         if (!updated)
                         {
                             continue;
                         }
+                        sw.Stop();
+
+                        if(sw.ElapsedMilliseconds > 50)
+                        {
+                            _logger.LogInformation($"triangle calc time was {sw.ElapsedMilliseconds}ms");
+                        }
+                        sw.Reset();
                         var oldestTimestamp = new List<DateTime> { firstSymbolOrderbook.Timestamp, secondSymbolOrderbook.Timestamp, thirdSymbolOrderbook.Timestamp }.Min();
                         var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
 
