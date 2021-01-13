@@ -91,15 +91,22 @@ namespace TriangleCollector.Models.Exchanges.Binance
         {
             foreach (var market in Markets)
             {
-                await Snapshot(market);
-                await Client.SendAsync(new ArraySegment<byte>(
-                            Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
-                            ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                ID++;
+                if(Client.State == WebSocketState.Open)
+                {
+                    await Snapshot(market);
+                    await Client.SendAsync(new ArraySegment<byte>(
+                                Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
+                                ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                    ID++;
+                } else
+                {
+                    Exchange.SubscriptionQueue.Enqueue(market);
+                }
+                
                 await Task.Delay(250);
             }
 
-            Exchange.Clients.Add(Client);
+            await Task.Run(() => Exchange.Clients.Add(Client));
         }
     }
 }

@@ -74,7 +74,7 @@ namespace TriangleCollector.Services
 
                         if(sw.ElapsedMilliseconds > 50)
                         {
-                            _logger.LogInformation($"triangle calc time was {sw.ElapsedMilliseconds}ms");
+                            _logger.LogWarning($"Irregular triangle calculation time for {triangle.ToString()}: {sw.ElapsedMilliseconds}ms");
                         }
                         sw.Reset();
                         var oldestTimestamp = new List<DateTime> { firstSymbolOrderbook.Timestamp, secondSymbolOrderbook.Timestamp, thirdSymbolOrderbook.Timestamp }.Min();

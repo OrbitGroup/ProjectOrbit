@@ -59,13 +59,19 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         {
             foreach (var market in Markets)
             {
-                await Client.SendAsync(
+                if(Client.State == WebSocketState.Open) //given the amount of time it takes to complete this for loop, a client could be aborted in process.
+                {
+                    await Client.SendAsync(
                     new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
                     WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                await Task.Delay(10); //encountered '429' responses from hitbtc for exceeding the rate limit, which appears to be 100 requests per second
+                } else //client was aborted prior to completing the for loop
+                {
+                    Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
+                }
+                await Task.Delay(250); //encountered '429' responses from hitbtc for exceeding the rate limit, which appears to be 100 requests per second
             }
 
-            Exchange.Clients.Add(Client);
+            await Task.Run(() => Exchange.Clients.Add(Client));
         }
     }
 }

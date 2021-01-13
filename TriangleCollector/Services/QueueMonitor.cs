@@ -45,7 +45,7 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (Exchange.TrianglesToRecalculate.Count > Exchange.TriarbMarketMapping.Count && CalculatorCount < MaxTriangleCalculators)
+                if (Exchange.TrianglesToRecalculate.Count > Exchange.TriarbMarketMapping.Count * .75 && CalculatorCount < MaxTriangleCalculators)//start a new calculator if the queue is >75% its theoretical maximum
                 {
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
                     CalculatorCount++;

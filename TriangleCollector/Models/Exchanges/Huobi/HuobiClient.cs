@@ -85,11 +85,19 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         {
             foreach (var market in Markets)
             {
-                await Snapshot(market);
-                await Client.SendAsync(new ArraySegment<byte>(
-                            Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
-                            ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                ID++;
+                if(Client.State == WebSocketState.Open)
+                {
+                    await Task.Delay(100); //there is a rate limit for snapshots of 10 per second
+                    await Snapshot(market);
+                    await Client.SendAsync(new ArraySegment<byte>(
+                                Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
+                                ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                    ID++;
+                } else
+                {
+                    Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
+                }
+                
             }
 
             Exchange.Clients.Add(Client);
