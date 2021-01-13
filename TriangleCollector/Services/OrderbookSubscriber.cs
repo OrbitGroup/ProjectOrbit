@@ -69,10 +69,14 @@ namespace TriangleCollector.Services
                             var client = await exchange.ExchangeClient.GetExchangeClientAsync();
                             var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
                             await listener.StartAsync(stoppingToken);
-                            var markets = exchange.SubscriptionQueue.Take(marketCount).ToList();
+                            var markets = new List<IOrderbook>();
+                            for (int i = 0; i < marketCount; i++ ) 
+                            {
+                                var market = exchange.SubscriptionQueue.Dequeue();
+                                markets.Add(market);
+                            }
                             listener.Markets = markets; //store the markets in the Listener object for this client
                             await exchange.ExchangeClient.Subscribe(markets);
-
                             sw.Stop();
                             _logger.LogInformation($"Took {sw.ElapsedMilliseconds}ms to subscribe on {exchange.ExchangeName}");
                         }

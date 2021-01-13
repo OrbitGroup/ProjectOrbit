@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,8 +66,8 @@ namespace TriangleCollector.Services
                         {
                             continue;
                         }
-                        var newestTimestamp = new List<DateTime> { firstSymbolOrderbook.Timestamp, secondSymbolOrderbook.Timestamp, thirdSymbolOrderbook.Timestamp }.Max();
-                        var age = (DateTime.UtcNow - newestTimestamp).TotalMilliseconds;
+                        var oldestTimestamp = new List<DateTime> { firstSymbolOrderbook.Timestamp, secondSymbolOrderbook.Timestamp, thirdSymbolOrderbook.Timestamp }.Min();
+                        var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
 
                         //if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
                         //{
@@ -75,7 +76,7 @@ namespace TriangleCollector.Services
 
                         Exchange.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
                         
-                        Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), newestTimestamp, (key, oldValue) => oldValue = newestTimestamp);
+                        Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), oldestTimestamp, (key, oldValue) => oldValue = oldestTimestamp);
                         Exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued
                     }
                 }

@@ -3,6 +3,9 @@ using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models.Interfaces;
+using System.Linq;
+using System.Collections.Generic;
+using TriangleCollector.Models;
 
 namespace TriangleCollector.Services
 {
@@ -15,8 +18,6 @@ namespace TriangleCollector.Services
         private readonly ILogger<QueueMonitor> _logger;
 
         private int CalculatorCount = 1;
-
-        private int MaxTriangleCalculatorQueueLength = 1000;
 
         private int MaxTriangleCalculators = 7;
 
@@ -44,12 +45,13 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (Exchange.TrianglesToRecalculate.Count > MaxTriangleCalculatorQueueLength && CalculatorCount < MaxTriangleCalculators)
+                if (Exchange.TrianglesToRecalculate.Count > Exchange.TriarbMarketMapping.Count && CalculatorCount < MaxTriangleCalculators)
                 {
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
                     CalculatorCount++;
                     var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), CalculatorCount, Exchange);
                     await newCalc.StartAsync(stoppingToken);
+                    
                 }
                 await Task.Delay(5000);
             }

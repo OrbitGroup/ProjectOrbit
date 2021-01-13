@@ -23,7 +23,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public ConcurrentDictionary<string, IOrderbook> OfficialOrderbooks { get; } = new ConcurrentDictionary<string, IOrderbook>();
 
-        public ConcurrentQueue<Triangle> TrianglesToRecalculate { get; } = new ConcurrentQueue<Triangle>();
+        public ConcurrentQueue<Triangle> TrianglesToRecalculate { get; set; } = new ConcurrentQueue<Triangle>();
 
         public ConcurrentDictionary<string, Triangle> Triangles { get; } = new ConcurrentDictionary<string, Triangle>();
 

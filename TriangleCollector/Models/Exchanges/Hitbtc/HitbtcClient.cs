@@ -62,6 +62,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
                 await Client.SendAsync(
                     new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
                     WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                await Task.Delay(10); //encountered '429' responses from hitbtc for exceeding the rate limit, which appears to be 100 requests per second
             }
 
             Exchange.Clients.Add(Client);

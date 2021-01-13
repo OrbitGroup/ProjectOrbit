@@ -21,7 +21,7 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, IOrderbook> OfficialOrderbooks { get; }
 
-        public ConcurrentQueue<Triangle> TrianglesToRecalculate { get; }
+        public ConcurrentQueue<Triangle> TrianglesToRecalculate { get; set; }
 
         public ConcurrentDictionary<string, Triangle> Triangles { get; }
 

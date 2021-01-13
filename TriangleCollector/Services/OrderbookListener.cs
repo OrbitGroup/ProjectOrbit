@@ -117,10 +117,9 @@ namespace TriangleCollector.Services
                                             foreach (var impactedTriangle in impactedTriangles)
                                             {
                                                 Exchange.ImpactedTriangleCounter++;
-                                                if ((DateTime.UtcNow - impactedTriangle.LastQueued).TotalSeconds > 1) //this triangle hasn't been queued in the last second
+                                                if (Exchange.TrianglesToRecalculate.Contains(impactedTriangle) == false) //this triangle isn't already in the queue
                                                 {
                                                     Exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                                                    impactedTriangle.LastQueued = DateTime.UtcNow;
                                                 } else
                                                 {
                                                     Exchange.RedundantTriangleCounter++;
