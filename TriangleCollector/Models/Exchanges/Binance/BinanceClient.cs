@@ -62,7 +62,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public Task Snapshot(IOrderbook Market)
         {
             var httpClient = new HttpClient();
-            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=1000").Result).Result.RootElement;
+            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
             var bids = snapshot.GetProperty("bids").EnumerateArray();
             foreach (var bid in bids)
             {
