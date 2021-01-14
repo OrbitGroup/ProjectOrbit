@@ -22,6 +22,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 20;
 
+        private HttpClient HttpClient = new HttpClient();
+
         public int ID = 1;
 
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
@@ -61,8 +63,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public Task Snapshot(IOrderbook Market)
         {
-            var httpClient = new HttpClient();
-            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
+            var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
             var bids = snapshot.GetProperty("bids").EnumerateArray();
             foreach (var bid in bids)
             {
@@ -83,7 +84,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
                 Market.OfficialAsks.TryAdd(priceDecimal, sizeDecimal);
             }
-
             return Task.CompletedTask;
         }
 

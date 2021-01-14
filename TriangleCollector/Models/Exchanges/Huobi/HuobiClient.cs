@@ -22,6 +22,8 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 30;
 
+        private HttpClient HttpClient = new HttpClient();
+
         public int ID = 1;
 
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
@@ -61,23 +63,29 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public Task Snapshot(IOrderbook Market)
         {
-            var httpClient = new HttpClient();
-            var snapshot = JsonDocument.ParseAsync(httpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={Market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement;
-            var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
-            foreach (var bid in bids)
+            try
             {
-                decimal price = bid[0].GetDecimal();
-                decimal size = bid[1].GetDecimal();
-                Market.OfficialBids.TryAdd(price, size);
-            }
-            var asks = snapshot.GetProperty("tick").GetProperty("asks").EnumerateArray();
-            foreach (var ask in asks)
+                var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={Market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement;
+                var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
+                foreach (var bid in bids)
+                {
+                    decimal price = bid[0].GetDecimal();
+                    decimal size = bid[1].GetDecimal();
+                    Market.OfficialBids.TryAdd(price, size);
+                }
+                var asks = snapshot.GetProperty("tick").GetProperty("asks").EnumerateArray();
+                foreach (var ask in asks)
+                {
+                    decimal price = ask[0].GetDecimal();
+                    decimal size = ask[1].GetDecimal();
+                    Market.OfficialAsks.TryAdd(price, size);
+                }
+            } catch(Exception ex)
             {
-                decimal price = ask[0].GetDecimal();
-                decimal size = ask[1].GetDecimal();
-                Market.OfficialAsks.TryAdd(price, size);
+                Console.WriteLine("broke on snapshot");
+                Console.WriteLine(ex);
             }
-
+            
             return Task.CompletedTask;
         }
 
@@ -86,12 +94,12 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             foreach (var market in Markets)
             {
                 if(Client.State == WebSocketState.Open)
-                {
-                    await Task.Delay(100); //there is a rate limit for snapshots of 10 per second
+                { 
                     await Snapshot(market);
                     await Client.SendAsync(new ArraySegment<byte>(
                                 Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
                                 ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                    await Task.Delay(100); //there is a rate limit for snapshots of 10 per second
                     ID++;
                 } else
                 {
