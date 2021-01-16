@@ -11,14 +11,15 @@ namespace TriangleCollector.Models.Interfaces
     public interface IExchangeClient
     {
         public IExchange Exchange { get; set; }
-        public string TickerRestApi { get; }
+        public string SymbolsRestApi { get; }
+        public string PricesRestApi { get; }
         public string SocketClientApi { get; }
         public JsonElement.ArrayEnumerator Tickers { get; }
         public List<IClientWebSocket> Clients { get; set; }
         public IClientWebSocket Client { get; }
         public int MaxMarketsPerClient { get; }
 
-        public void GetTickers();
+        public HashSet<IOrderbook> GetMarketsViaRestApi();
 
         public Task<WebSocketAdapter> GetExchangeClientAsync(); //establishes initial connection to exchange for websocket
 

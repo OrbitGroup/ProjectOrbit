@@ -15,7 +15,8 @@ namespace TriangleCollector.Models.Exchanges.Huobi
     public class HuobiClient : IExchangeClient
     {
         public IExchange Exchange { get; set; }
-        public string TickerRestApi { get; set; } = "https://api.huobi.pro/v1/common/symbols"; //dictionary of the REST API calls which pull all symbols for the exchanges
+        public string SymbolsRestApi { get; set; } = "https://api.huobi.pro/v1/common/symbols"; //dictionary of the REST API calls which pull all symbols for the exchanges
+        public string PricesRestApi { get; set; } = "https://api.huobi.pro/market/tickers";
         public string SocketClientApi { get; set; } = "wss://api.huobi.pro/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public List<IClientWebSocket> Clients { get; set; } = new List<IClientWebSocket>();
@@ -39,14 +40,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         //    SocketClientAPI.Add("bitstamp", "wss://ws.bitstamp.net");
         //    PingRESTAPI();
         //}
-        public void GetTickers() //each exchange requires a different method to parse their REST API output
-        {
-            var httpClient = new HttpClient();
-            var rootElement = JsonDocument.ParseAsync(httpClient.GetStreamAsync(TickerRestApi).Result).Result.RootElement;
-            Tickers = rootElement.GetProperty("data").EnumerateArray();
-            httpClient.Dispose();
-
-        }
 
         public async Task<WebSocketAdapter> GetExchangeClientAsync()
         {
@@ -60,9 +53,46 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             Client = adapter;
             return adapter;
         }
-
+        public HashSet<IOrderbook> GetMarketsViaRestApi()
+        {
+            var output = new HashSet<IOrderbook>();
+            var symbols = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.GetProperty("data").EnumerateArray();
+            foreach (var responseItem in symbols)
+            {
+                if (responseItem.GetProperty("state").ToString() == "online")
+                {
+                    var market = new HuobiOrderbook();
+                    market.Symbol = responseItem.GetProperty("symbol").ToString().ToUpper();
+                    market.BaseCurrency = responseItem.GetProperty("base-currency").ToString().ToUpper();
+                    market.QuoteCurrency = responseItem.GetProperty("quote-currency").ToString().ToUpper();
+                    market.Exchange = Exchange;
+                    output.Add(market);
+                }
+            }
+            var tickerPrices = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement.GetProperty("data").EnumerateArray();
+            foreach (var ticker in tickerPrices)
+            {
+                var symbol = ticker.GetProperty("symbol").ToString().ToUpper();
+                if (output.Where(m => m.Symbol == symbol).Count() > 0)
+                {
+                    var bidPrice = ticker.GetProperty("bid").GetDecimal();
+                    var bidSize = ticker.GetProperty("bidSize").GetDecimal();
+                    var askPrice = ticker.GetProperty("ask").GetDecimal();
+                    var askSize = ticker.GetProperty("askSize").GetDecimal();
+                    if (bidPrice > 0 && askPrice > 0 && bidSize > 0 && askSize > 0)
+                    {
+                        output.Where(m => m.Symbol == symbol).First().OfficialBids.TryAdd(bidPrice, bidSize);
+                        output.Where(m => m.Symbol == symbol).First().OfficialAsks.TryAdd(askPrice, askSize);
+                    }
+                }
+            }
+            output = output.Where(m => m.OfficialAsks.Count > 0 && m.OfficialBids.Count > 0).ToHashSet();
+            return output;
+        }
         public Task Snapshot(IOrderbook Market)
         {
+            Market.OfficialAsks.Clear();
+            Market.OfficialBids.Clear();
             try
             {
                 var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={Market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement;
@@ -93,19 +123,20 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         {
             foreach (var market in Markets)
             {
-                if(Client.State == WebSocketState.Open)
+                await Snapshot(market);
+                if (Client.State == WebSocketState.Open)
                 { 
-                    await Snapshot(market);
                     await Client.SendAsync(new ArraySegment<byte>(
                                 Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
                                 ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                    await Task.Delay(100); //there is a rate limit for snapshots of 10 per second
+                     //there is a rate limit for snapshots of 10 per second
                     ID++;
+                    Exchange.SubscribedMarkets.Add(market);
                 } else
                 {
                     Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
                 }
-                
+                await Task.Delay(100);
             }
 
             Exchange.Clients.Add(Client);

@@ -8,6 +8,9 @@ namespace TriangleCollector.Services
 {
     public class MarketMapper
     {
+        private static int UniqueTriangleCount = 0;
+        private static HashSet<IOrderbook> TriarbEligibleMarkets = new HashSet<IOrderbook>();
+
         public static void MapOpportunities(IExchange Exchange)
         {
             foreach (var firstMarket in Exchange.TradedMarkets)
@@ -69,29 +72,48 @@ namespace TriangleCollector.Services
                     }
                 }
             }
+            Exchange.UniqueTriangleCount = UniqueTriangleCount;
+            Exchange.TriarbEligibleMarkets = TriarbEligibleMarkets;
         }
         public static void MapHelper(string firstDirection, string secondDirection, string thirdDirection, IOrderbook firstMarket, IOrderbook secondMarket, IOrderbook thirdMarket, IExchange Exchange)
         {
             var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
             var newTriangle = new Triangle(firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol, direction, Exchange);
             //Console.WriteLine($"{exchangeName}: {firstDirection} {firstMarket.symbol}, {secondDirection} {secondMarket.symbol}, {thirdDirection} {thirdMarket.symbol}");
-            Exchange.UniqueTriangleCount++;
-            Exchange.TriarbEligibleMarkets.Add(firstMarket);
-            Exchange.TriarbEligibleMarkets.Add(secondMarket);
-            Exchange.TriarbEligibleMarkets.Add(thirdMarket);
-            Exchange.OfficialOrderbooks.AddOrUpdate(firstMarket.Symbol, firstMarket, (key, oldValue) => oldValue = firstMarket);
-            Exchange.OfficialOrderbooks.AddOrUpdate(secondMarket.Symbol, secondMarket, (key, oldValue) => oldValue = secondMarket);
-            Exchange.OfficialOrderbooks.AddOrUpdate(thirdMarket.Symbol, thirdMarket, (key, oldValue) => oldValue = thirdMarket);
-            foreach (var trade in new List<string> { firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol })
+            UniqueTriangleCount++;
+            TriarbEligibleMarkets.Add(firstMarket);
+            TriarbEligibleMarkets.Add(secondMarket);
+            TriarbEligibleMarkets.Add(thirdMarket);
+            Exchange.OfficialOrderbooks.TryAdd(firstMarket.Symbol, firstMarket);
+            Exchange.OfficialOrderbooks.TryAdd(secondMarket.Symbol, secondMarket);
+            Exchange.OfficialOrderbooks.TryAdd(thirdMarket.Symbol, thirdMarket);
+            foreach (var marketName in new List<string> { firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol })
             {
-                Exchange.TriarbMarketMapping.AddOrUpdate(trade, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                if(!Exchange.TriarbMarketMapping.Keys.Contains(marketName))
                 {
-                    if (key == trade)
+                    Exchange.TriarbMarketMapping.AddOrUpdate(marketName, new List<Triangle>() { newTriangle }, (key, triangleList) =>
                     {
-                        triangleList.Add(newTriangle);
+                        if (key == marketName && !triangleList.Contains(newTriangle))
+                        {
+                            triangleList.Add(newTriangle);
+                        }
+                        return triangleList;
+                    });
+                } else
+                {
+                    Exchange.TriarbMarketMapping.TryGetValue(marketName, out var triangles);
+                    if(!triangles.Contains(newTriangle))
+                    {
+                        Exchange.TriarbMarketMapping.AddOrUpdate(marketName, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                        {
+                            if (key == marketName && !triangleList.Contains(newTriangle))
+                            {
+                                triangleList.Add(newTriangle);
+                            }
+                            return triangleList;
+                        });
                     }
-                    return triangleList;
-                });
+                }
             }
         }
     }

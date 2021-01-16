@@ -40,20 +40,7 @@ namespace TriangleCollector.Services
         public void BackgroundProcessing(CancellationToken stoppingToken)
         {
             Parallel.ForEach(TriangleCollector.Exchanges, async (exchange) =>
-            {
-                string exchangeName = exchange.ExchangeName;
-                //_logger.LogDebug($"{exchange.exchangeName}: Subscribing to {exchange.triarbEligibleMarkets.Count()} markets.");
-
-                //we also start a TriangleCalculator for each exchange here so that we are ready to dequeue and calculate triangles as soon as the subscriptions are intialized.
-                var calculator = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), exchange);
-                await calculator.StartAsync(stoppingToken);
-
-                //also a QueueMonitor for each exchange
-                var monitor = new QueueMonitor(_factory, _factory.CreateLogger<QueueMonitor>(), exchange);
-                await monitor.StartAsync(stoppingToken);
-
-                var eligibleMarkets = exchange.TriarbEligibleMarkets.ToList();
-                eligibleMarkets.ForEach(exchange.SubscriptionQueue.Enqueue);
+            {   
                 try
                 {
                     var sw = new Stopwatch();
@@ -88,7 +75,7 @@ namespace TriangleCollector.Services
                     _logger.LogError(ex.Message);
                     throw ex;
                 }
-                _logger.LogDebug($"Subscribing complete for {exchangeName}.");
+                _logger.LogDebug($"Subscribing complete for {exchange.ExchangeName}.");
             });
         }
     }

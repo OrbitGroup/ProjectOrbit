@@ -1,8 +1,11 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using TriangleCollector.Models.Interfaces;
 using TriangleCollector.Services;
@@ -27,9 +30,11 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public ConcurrentDictionary<string, Triangle> Triangles { get; } = new ConcurrentDictionary<string, Triangle>();
 
-        public HashSet<IOrderbook> TriarbEligibleMarkets { get; } = new HashSet<IOrderbook>();
+        public HashSet<IOrderbook> TriarbEligibleMarkets { get; set; } = new HashSet<IOrderbook>();
 
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
+
+        public List<IOrderbook> SubscribedMarkets { get; set; } = new List<IOrderbook>();
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 
@@ -55,42 +60,23 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
 
+        private readonly ILoggerFactory _factory = new NullLoggerFactory();
+
         public HitbtcExchange(string name)
         {
             ExchangeName = name;
-            ExchangeClient.GetTickers();
             ExchangeClient.Exchange = this;
-            TradedMarkets = ParseMarkets(ExchangeClient.Tickers); //pull the REST API response from the restAPI object which stores the restAPI responses for each exchange, indexed by exchange name.
-            MarketMapper.MapOpportunities(this);
+            CancellationToken stoppingToken = new CancellationToken();
+            var subscriptionManager = new SubscriptionManager(_factory, _factory.CreateLogger<SubscriptionManager>(), this);
+            subscriptionManager.StartAsync(stoppingToken);
+
+            var calculator = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), this);
+            calculator.StartAsync(stoppingToken);
+
+            var monitor = new QueueMonitor(_factory, _factory.CreateLogger<QueueMonitor>(), this);
+            monitor.StartAsync(stoppingToken);
+
             //Console.WriteLine($"there are {TradedMarkets.Count} markets traded on {ExchangeName}. Of these markets, {TriarbEligibleMarkets.Count} markets interact to form {UniqueTriangleCount} triangular arbitrage opportunities");
-        }
-
-        public HashSet<IOrderbook> ParseMarkets(JsonElement.ArrayEnumerator symbols)
-        {
-            var output = new HashSet<IOrderbook>();
-            foreach (var responseItem in symbols)
-            {
-                var market = new HitbtcOrderbook();
-                market.Symbol = responseItem.GetProperty("id").ToString();
-                market.BaseCurrency = responseItem.GetProperty("baseCurrency").ToString();
-                market.QuoteCurrency = responseItem.GetProperty("quoteCurrency").ToString();
-                market.Exchange = this;
-                output.Add(market);
-            }
-
-            //else if (ExchangeName == "bittrex") //https://bittrex.github.io/api/v3
-            //{
-            //    foreach (var responseItem in symbols)
-            //    {
-            //        var market = new BinanceOrderbook();
-            //        market.Symbol = responseItem.GetProperty("symbol").ToString();
-            //        market.BaseCurrency = responseItem.GetProperty("baseCurrencySymbol").ToString();
-            //        market.QuoteCurrency = responseItem.GetProperty("quoteCurrencySymbol").ToString();
-            //        market.Exchange = this;
-            //        output.Add(market);
-            //    }
-            //}
-            return (output);
         }
     }
 }

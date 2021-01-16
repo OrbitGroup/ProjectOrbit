@@ -169,6 +169,10 @@ namespace TriangleCollector.Services
                 }
             }
             _logger.LogWarning($"client aborted on {Exchange} with {Markets.Count} subscribed markets. Queuing lost markets for re-subscription");
+            foreach(var market in Markets)
+            {
+                Exchange.SubscribedMarkets.Remove(market);
+            }
             Markets.ForEach(Exchange.SubscriptionQueue.Enqueue); //if the client is closed, queue the markets up for re-subscription
         }
     }

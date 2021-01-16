@@ -15,7 +15,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
     public class BinanceClient : IExchangeClient
     {
         public IExchange Exchange { get; set; }
-        public string TickerRestApi { get; set; } = "https://api.binance.com/api/v3/exchangeInfo"; //dictionary of the REST API calls which pull all symbols for the exchanges
+        public string SymbolsRestApi { get; set; } = "https://api.binance.com/api/v3/exchangeInfo";
+        public string PricesRestApi { get; set; } = "https://api.binance.com/api/v3/ticker/bookTicker";
         public string SocketClientApi { get; set; } = "wss://stream.binance.com:9443/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public List<IClientWebSocket> Clients { get; set; } = new List<IClientWebSocket>();
@@ -39,13 +40,41 @@ namespace TriangleCollector.Models.Exchanges.Binance
         //    SocketClientAPI.Add("bitstamp", "wss://ws.bitstamp.net");
         //    PingRESTAPI();
         //}
-        public void GetTickers() //each exchange requires a different method to parse their REST API output
-        {
-            var httpClient = new HttpClient();
-            var rootElement = JsonDocument.ParseAsync(httpClient.GetStreamAsync(TickerRestApi).Result).Result.RootElement;
-            Tickers = rootElement.GetProperty("symbols").EnumerateArray();
-            httpClient.Dispose();
 
+        public HashSet<IOrderbook> GetMarketsViaRestApi()
+        {
+            var output = new HashSet<IOrderbook>();
+            var symbols = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.GetProperty("symbols").EnumerateArray();
+            foreach (var responseItem in symbols)
+            {
+                if(responseItem.GetProperty("status").ToString() == "TRADING")
+                {
+                    var market = new BinanceOrderbook();
+                    market.Symbol = responseItem.GetProperty("symbol").ToString();
+                    market.BaseCurrency = responseItem.GetProperty("baseAsset").ToString();
+                    market.QuoteCurrency = responseItem.GetProperty("quoteAsset").ToString();
+                    market.Exchange = Exchange;
+                    output.Add(market);
+                }
+            }
+            var tickerPrices = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement.EnumerateArray();
+            foreach (var ticker in tickerPrices)
+            {
+                var symbol = ticker.GetProperty("symbol").ToString();
+                var bidPrice = Decimal.Parse(ticker.GetProperty("bidPrice").ToString());
+                var bidSize = Decimal.Parse(ticker.GetProperty("bidQty").ToString());
+                var askPrice = Decimal.Parse(ticker.GetProperty("askPrice").ToString());
+                var askSize = Decimal.Parse(ticker.GetProperty("askQty").ToString());
+
+                if (bidPrice > 0 && askPrice > 0 && bidSize > 0 && askSize > 0)
+                {
+                    output.Where(m => m.Symbol == symbol).First().OfficialBids.TryAdd(bidPrice, bidSize);
+                    output.Where(m => m.Symbol == symbol).First().OfficialAsks.TryAdd(askPrice, askSize);
+                }
+
+            }
+            output = output.Where(m => m.OfficialAsks.Count > 0 && m.OfficialBids.Count > 0).ToHashSet();
+            return output;
         }
 
         public async Task<WebSocketAdapter> GetExchangeClientAsync()
@@ -63,6 +92,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public Task Snapshot(IOrderbook Market)
         {
+            Market.OfficialAsks.Clear();
+            Market.OfficialBids.Clear();
             var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
             var bids = snapshot.GetProperty("bids").EnumerateArray();
             foreach (var bid in bids)
@@ -98,6 +129,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
                                 Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
                                 ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                     ID++;
+                    Exchange.SubscribedMarkets.Add(market);
                 } else
                 {
                     Exchange.SubscriptionQueue.Enqueue(market);

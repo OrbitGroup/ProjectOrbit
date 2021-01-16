@@ -25,9 +25,10 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, Triangle> Triangles { get; }
 
-        public HashSet<IOrderbook> TriarbEligibleMarkets { get; }
+        public HashSet<IOrderbook> TriarbEligibleMarkets { get; set; }
 
         public Queue<IOrderbook> SubscriptionQueue { get; set; } 
+        public List<IOrderbook> SubscribedMarkets { get; set; }
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; }
 
@@ -52,9 +53,6 @@ namespace TriangleCollector.Models.Interfaces
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; }
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; }
-
-        public HashSet<IOrderbook> ParseMarkets(JsonElement.ArrayEnumerator symbols); // each exchange uses different JSON properties to describe the attributes of a market.
-
     }
 }
 

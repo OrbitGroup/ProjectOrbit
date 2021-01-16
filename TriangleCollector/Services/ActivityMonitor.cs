@@ -53,8 +53,9 @@ namespace TriangleCollector.Services
                     var lastTriarbCount = LastTriarbCounter[exchange.ExchangeName];
                     var activeClientCount = exchange.Clients.Where(c => c.State == WebSocketState.Open).Count();
                     var abortedClientCount = exchange.Clients.Where(c => c.State != WebSocketState.Open).Count();
-                    double activeSubscriptions = exchange.TriarbEligibleMarkets.Count - exchange.SubscriptionQueue.Count;
-                    double targetSubscriptions = exchange.TriarbEligibleMarkets.Count;
+                    double activeSubscriptions = exchange.SubscribedMarkets.Count;
+                    double targetSubscriptions = exchange.SubscribedMarkets.Count + exchange.SubscriptionQueue.Count;
+                    double relevantRatio = Math.Round(targetSubscriptions / exchange.TradedMarkets.Count,2)*100;
 
                     double oldestClientAge = 0;
                     if(exchange.Clients.Count > 0)
@@ -65,7 +66,7 @@ namespace TriangleCollector.Services
                     
                     _logger.LogDebug($"{exchange.ExchangeName} --- Data Points Received: {exchange.AllOrderBookCounter}. Data Receipts/Second (last {LoopTimer}s): {(exchange.AllOrderBookCounter - lastOBcount) / LoopTimer}.");
                     _logger.LogDebug($"{exchange.ExchangeName} --- Triarb Opportunities Calculated: {exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last {LoopTimer}s): {(exchange.RecalculatedTriangles.Count() - lastTriarbCount) / LoopTimer}");
-                    _logger.LogDebug($"{exchange.ExchangeName} --- Queue Size: {exchange.TrianglesToRecalculate.Count()} - Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions/targetSubscriptions,2)*100}% subscribed");
+                    _logger.LogDebug($"{exchange.ExchangeName} --- Queue Size: {exchange.TrianglesToRecalculate.Count()} - Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions/targetSubscriptions,2)*100}% subscribed. {relevantRatio}% of markets are deemed relevant.");
                     _logger.LogDebug($"{exchange.ExchangeName} --- Active Clients: {activeClientCount} - Aborted Clients: {abortedClientCount} - Oldest Active Client: {oldestClientAge} minutes");
 
                     LastOBCounter[exchange.ExchangeName] = Convert.ToInt32(exchange.AllOrderBookCounter);
