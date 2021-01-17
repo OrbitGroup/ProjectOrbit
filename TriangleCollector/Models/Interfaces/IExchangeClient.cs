@@ -15,7 +15,6 @@ namespace TriangleCollector.Models.Interfaces
         public string PricesRestApi { get; }
         public string SocketClientApi { get; }
         public JsonElement.ArrayEnumerator Tickers { get; }
-        public List<IClientWebSocket> Clients { get; set; }
         public IClientWebSocket Client { get; }
         public int MaxMarketsPerClient { get; }
 
@@ -23,6 +22,6 @@ namespace TriangleCollector.Models.Interfaces
 
         public Task<WebSocketAdapter> GetExchangeClientAsync(); //establishes initial connection to exchange for websocket
 
-        public Task Subscribe(List<IOrderbook> Markets);
+        public Task Subscribe(IOrderbook market);
     }
 }

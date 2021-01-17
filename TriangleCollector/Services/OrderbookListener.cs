@@ -24,8 +24,6 @@ namespace TriangleCollector.Services
 
         private IExchange Exchange { get; set; }
 
-        public List<IOrderbook> Markets { get; set; }
-
         public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, IExchange exch)
         {
             _logger = logger;
@@ -168,12 +166,12 @@ namespace TriangleCollector.Services
                     }
                 }
             }
-            _logger.LogWarning($"client aborted on {Exchange} with {Markets.Count} subscribed markets. Queuing lost markets for re-subscription");
-            foreach(var market in Markets)
+            _logger.LogWarning($"client aborted on {Exchange} with {Client.Markets.Count} subscribed markets. Queuing lost markets for re-subscription");
+            foreach(var market in Client.Markets)
             {
                 Exchange.SubscribedMarkets.Remove(market);
             }
-            Markets.ForEach(Exchange.SubscriptionQueue.Enqueue); //if the client is closed, queue the markets up for re-subscription
+            Client.Markets.ForEach(Exchange.SubscriptionQueue.Enqueue); //if the client is closed, queue the markets up for re-subscription
         }
     }
 }

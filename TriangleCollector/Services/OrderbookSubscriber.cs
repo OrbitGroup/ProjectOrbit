@@ -43,29 +43,22 @@ namespace TriangleCollector.Services
             {   
                 try
                 {
-                    var sw = new Stopwatch();
-                    while(!stoppingToken.IsCancellationRequested)
+                    while(!stoppingToken.IsCancellationRequested) //structed on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
                     {
-                        while(exchange.SubscriptionQueue.Count > 0)
+                        var client = await exchange.ExchangeClient.GetExchangeClientAsync(); //initialize the first client/listener
+                        var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
+                        await listener.StartAsync(stoppingToken);
+                        while (exchange.SubscriptionQueue.Count > 0)
                         {
-                            var marketCount = Math.Min(exchange.ExchangeClient.MaxMarketsPerClient, exchange.SubscriptionQueue.Count); //for each loop, we subscribe to the lesser of the per-client-maximum and the number of markets in the queue
-                            _logger.LogInformation($"Starting subscribing to {marketCount} markets on {exchange.ExchangeName}");
-                            sw.Reset();
-                            sw.Start();
-
-                            var client = await exchange.ExchangeClient.GetExchangeClientAsync();
-                            var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
-                            await listener.StartAsync(stoppingToken);
-                            var markets = new List<IOrderbook>();
-                            for (int i = 0; i < marketCount; i++ ) 
+                            if(client.Markets.Count < exchange.ExchangeClient.MaxMarketsPerClient && client.State == WebSocketState.Open)
                             {
-                                var market = exchange.SubscriptionQueue.Dequeue();
-                                markets.Add(market);
+                                await exchange.ExchangeClient.Subscribe(exchange.SubscriptionQueue.Dequeue());
+                            } else //initialize a new client/listener if the current client is aborted or if it's reached it's maximum
+                            {
+                                client = await exchange.ExchangeClient.GetExchangeClientAsync();
+                                listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
+                                await listener.StartAsync(stoppingToken);
                             }
-                            listener.Markets = markets; //store the markets in the Listener object for this client
-                            await exchange.ExchangeClient.Subscribe(markets);
-                            sw.Stop();
-                            _logger.LogInformation($"Took {sw.ElapsedMilliseconds}ms to subscribe on {exchange.ExchangeName}");
                         }
                     }
                 }
@@ -75,7 +68,6 @@ namespace TriangleCollector.Services
                     _logger.LogError(ex.Message);
                     throw ex;
                 }
-                _logger.LogDebug($"Subscribing complete for {exchange.ExchangeName}.");
             });
         }
     }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Threading;
@@ -13,6 +14,7 @@ namespace TriangleCollector.Models
         private readonly ILogger<WebSocketAdapter> _logger;
         private readonly ClientWebSocket _client;
         public DateTime TimeStarted { get; set; }
+        public List<IOrderbook> Markets { get; set; } //tracks the markets subscribed on each websocket client
 
         public WebSocketAdapter(ILogger<WebSocketAdapter> logger, ClientWebSocket client)
         {

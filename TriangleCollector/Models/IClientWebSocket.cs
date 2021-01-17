@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Threading;
@@ -12,8 +13,8 @@ namespace TriangleCollector.Models
         public IExchange Exchange { get; set; }
         public WebSocketState State { get; }
         public Task<WebSocketReceiveResult> ReceiveAsync(MemoryStream ms, ArraySegment<byte> buffer, CancellationToken cancellationToken);
-
         public Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType type, bool endOfMessage, CancellationToken cancellationToken);
         public DateTime TimeStarted { get; set; }
+        public List<IOrderbook> Markets { get; set; } 
     }
 }

@@ -19,7 +19,6 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         public string PricesRestApi { get; set; } = "https://api.hitbtc.com/api/2/public/orderbook/?limit=1"; //REST API call to get all of the best prices for all markets
         public string SocketClientApi { get; set; } = "wss://api.hitbtc.com/api/2/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
-        public List<IClientWebSocket> Clients { get; set; } = new List<IClientWebSocket>();
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 40;
         private HttpClient HttpClient = new HttpClient();
@@ -82,7 +81,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             return output;
         }
 
-        public async Task<WebSocketAdapter> GetExchangeClientAsync()
+        public async Task<WebSocketAdapter> GetExchangeClientAsync() //create new websocket client
         {
             var client = new ClientWebSocket();
             var factory = new LoggerFactory();
@@ -91,28 +90,35 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
             await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
             adapter.TimeStarted = DateTime.UtcNow;
+            adapter.Markets = new List<IOrderbook>();
             Client = adapter;
+            Exchange.Clients.Add(Client);
             return adapter;
         }
 
-        public async Task Subscribe(List<IOrderbook> Markets)
+        public async Task Subscribe(IOrderbook market)
         {
-            foreach (var market in Markets)
+            if(Client.State == WebSocketState.Open) //given the amount of time it takes to complete this for loop, a client could be aborted in process.
             {
-                if(Client.State == WebSocketState.Open) //given the amount of time it takes to complete this for loop, a client could be aborted in process.
-                {
-                    await Client.SendAsync(
-                    new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
-                    WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                    Exchange.SubscribedMarkets.Add(market);
-                } else //client was aborted prior to completing the for loop
-                {
-                    Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
-                }
-                await Task.Delay(250); //encountered '429' responses from hitbtc for exceeding the rate limit, which appears to be 100 requests per second
+                await Client.SendAsync(
+                new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
+                WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                Exchange.SubscribedMarkets.Add(market);
+                Client.Markets.Add(market);
+            } else //client was aborted prior to completing the for loop
+            {
+                Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
             }
-
-            await Task.Run(() => Exchange.Clients.Add(Client));
+            await Task.Delay(250); //encountered '429' responses from hitbtc for exceeding the rate limit, which appears to be 100 requests per second
+        }
+        public async Task UnSubscribe(IOrderbook market, IClientWebSocket client)
+        {
+            if (client.State == WebSocketState.Open)
+            {
+                await Client.SendAsync(
+                new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"unsubscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
+                WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+            }
         }
     }
 }

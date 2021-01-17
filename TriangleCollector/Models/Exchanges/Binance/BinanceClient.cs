@@ -19,7 +19,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public string PricesRestApi { get; set; } = "https://api.binance.com/api/v3/ticker/bookTicker";
         public string SocketClientApi { get; set; } = "wss://stream.binance.com:9443/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
-        public List<IClientWebSocket> Clients { get; set; } = new List<IClientWebSocket>();
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 20;
 
@@ -86,7 +85,9 @@ namespace TriangleCollector.Models.Exchanges.Binance
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 1);
             await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
             adapter.TimeStarted = DateTime.UtcNow;
+            adapter.Markets = new List<IOrderbook>();
             Client = adapter;
+            Exchange.Clients.Add(Client);
             return adapter;
         }
 
@@ -118,27 +119,23 @@ namespace TriangleCollector.Models.Exchanges.Binance
             return Task.CompletedTask;
         }
 
-        public async Task Subscribe(List<IOrderbook> Markets)
+        public async Task Subscribe(IOrderbook market)
         {
-            foreach (var market in Markets)
-            {
-                if(Client.State == WebSocketState.Open)
-                {
-                    await Snapshot(market);
-                    await Client.SendAsync(new ArraySegment<byte>(
-                                Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
-                                ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                    ID++;
-                    Exchange.SubscribedMarkets.Add(market);
-                } else
-                {
-                    Exchange.SubscriptionQueue.Enqueue(market);
-                }
-                
-                await Task.Delay(250);
-            }
 
-            await Task.Run(() => Exchange.Clients.Add(Client));
+            if(Client.State == WebSocketState.Open)
+            {
+                await Snapshot(market);
+                await Client.SendAsync(new ArraySegment<byte>(
+                            Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
+                            ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                ID++;
+                Exchange.SubscribedMarkets.Add(market);
+                Client.Markets.Add(market);
+            } else
+            {
+                Exchange.SubscriptionQueue.Enqueue(market);
+            }
+            await Task.Delay(250);
         }
     }
 }

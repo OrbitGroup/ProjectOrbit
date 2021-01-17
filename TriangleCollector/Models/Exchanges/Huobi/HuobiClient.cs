@@ -19,7 +19,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public string PricesRestApi { get; set; } = "https://api.huobi.pro/market/tickers";
         public string SocketClientApi { get; set; } = "wss://api.huobi.pro/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
-        public List<IClientWebSocket> Clients { get; set; } = new List<IClientWebSocket>();
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 30;
 
@@ -50,7 +49,9 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
             await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
             adapter.TimeStarted = DateTime.UtcNow;
+            adapter.Markets = new List<IOrderbook>();
             Client = adapter;
+            Exchange.Clients.Add(Client);
             return adapter;
         }
         public HashSet<IOrderbook> GetMarketsViaRestApi()
@@ -119,27 +120,33 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             return Task.CompletedTask;
         }
 
-        public async Task Subscribe(List<IOrderbook> Markets)
-        {
-            foreach (var market in Markets)
+        public async Task Subscribe(IOrderbook market)
+        {  
+            if (Client.State == WebSocketState.Open)
             {
                 await Snapshot(market);
-                if (Client.State == WebSocketState.Open)
-                { 
-                    await Client.SendAsync(new ArraySegment<byte>(
-                                Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
-                                ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                     //there is a rate limit for snapshots of 10 per second
-                    ID++;
-                    Exchange.SubscribedMarkets.Add(market);
-                } else
-                {
-                    Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
-                }
-                await Task.Delay(100);
+                await Client.SendAsync(new ArraySegment<byte>(
+                            Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
+                            ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                    //there is a rate limit for snapshots of 10 per second
+                ID++;
+                Exchange.SubscribedMarkets.Add(market);
+                Client.Markets.Add(market);
+            } else
+            {
+                Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
             }
+            await Task.Delay(100);
+        }
 
-            Exchange.Clients.Add(Client);
+        public async Task UnSubscribe(IOrderbook market, IClientWebSocket client)
+        {
+            if (client.State == WebSocketState.Open)
+            {
+                await Client.SendAsync(new ArraySegment<byte>(
+                            Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
+                            ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+            }
         }
     }
 }
