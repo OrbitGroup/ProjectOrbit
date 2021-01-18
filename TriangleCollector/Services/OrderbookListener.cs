@@ -34,14 +34,17 @@ namespace TriangleCollector.Services
         }
         public async Task SendPong(long pong) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
         {
-            var cts = new CancellationToken();
-            await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"pong\": {pong}}}")), WebSocketMessageType.Text, true, cts);
-            //Console.WriteLine($"sent back pong {pong} to {Exchange.ExchangeName}");
+            if(Client.State == WebSocketState.Open)
+            {
+                var cts = new CancellationToken();
+                await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"pong\": {pong}}}")), WebSocketMessageType.Text, true, cts);
+                //Console.WriteLine($"sent back pong {pong} to {Exchange.ExchangeName}");
+            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogDebug("Starting Orderbook Listener...");
+            _logger.LogDebug($"Starting Orderbook Listener for {Exchange.ExchangeName}...");
             stoppingToken.Register(() => _logger.LogDebug("Stopping Orderbook Listener..."));
 
             await Task.Run(async () =>
@@ -107,7 +110,8 @@ namespace TriangleCollector.Services
                                     lock (OfficialOrderbook.OrderbookLock) //only lock the orderbook when the orderbook is actually being modified
                                     {
                                         shouldRecalculate = OfficialOrderbook.Merge(orderbook);
-                                    }    
+                                    }
+                                    
                                     if (shouldRecalculate)
                                     {
                                         if (Exchange.TriarbMarketMapping.TryGetValue(orderbook.Symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
@@ -151,7 +155,12 @@ namespace TriangleCollector.Services
                     }
                     catch (Exception ex)
                     {
-                        if(payload == string.Empty && result.MessageType == WebSocketMessageType.Close)
+                        if (ex.InnerException.Message == "An established connection was aborted by the software in your host machine." || ex.InnerException.Message == "Unable to read data from the transport connection: An established connection was aborted by the software in your host machine..")
+                        {
+                            _logger.LogError($"Connection aborted on {Exchange.ExchangeName}");
+                            continue;
+                        }
+                        if (payload == string.Empty && result.MessageType == WebSocketMessageType.Close)
                         {
                             _logger.LogError("socket connection closed");
                             _logger.LogError($"reason for closure is {result.CloseStatusDescription}");

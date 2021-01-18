@@ -88,6 +88,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
             adapter.Markets = new List<IOrderbook>();
             Client = adapter;
             Exchange.Clients.Add(Client);
+            await Task.Delay(250); // clients with zero subscriptions are being aborted; give 1/4 second to ensure connection is complete
             return adapter;
         }
 

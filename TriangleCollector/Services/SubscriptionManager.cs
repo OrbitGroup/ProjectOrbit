@@ -19,7 +19,7 @@ namespace TriangleCollector.Services
 
         private int TimeInterval = 1; //time interval in minutes
 
-        private decimal SubscriptionThreshold = -0.05m;
+        private decimal SubscriptionThreshold = -0.03m;
 
         public SubscriptionManager(ILoggerFactory factory, ILogger<SubscriptionManager> logger, IExchange exch)
         {
@@ -41,7 +41,6 @@ namespace TriangleCollector.Services
             {
                 Exchange.TradedMarkets = Exchange.ExchangeClient.GetMarketsViaRestApi(); 
                 MarketMapper.MapOpportunities(Exchange);
-                var relevantMarketList = new List<IOrderbook>();
                 foreach(var market in Exchange.TradedMarkets)
                 {
                     if(!Exchange.SubscribedMarkets.Contains(market) && !Exchange.SubscriptionQueue.Contains(market))
@@ -57,17 +56,22 @@ namespace TriangleCollector.Services
 
                                 if (triangle.ProfitPercent > SubscriptionThreshold)
                                 {
-                                    relevantMarketList.Add(market);
                                     if (!Exchange.SubscribedMarkets.Contains(triangle.FirstSymbolOrderbook) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
                                     {
+                                        triangle.FirstSymbolOrderbook.OfficialAsks.Clear();
+                                        triangle.FirstSymbolOrderbook.OfficialBids.Clear();
                                         Exchange.SubscriptionQueue.Enqueue(triangle.FirstSymbolOrderbook);
                                     }
                                     if (!Exchange.SubscribedMarkets.Contains(triangle.SecondSymbolOrderbook) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
                                     {
+                                        triangle.SecondSymbolOrderbook.OfficialAsks.Clear();
+                                        triangle.SecondSymbolOrderbook.OfficialBids.Clear();
                                         Exchange.SubscriptionQueue.Enqueue(triangle.SecondSymbolOrderbook);
                                     }
                                     if (!Exchange.SubscribedMarkets.Contains(triangle.ThirdSymbolOrderbook) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
                                     {
+                                        triangle.ThirdSymbolOrderbook.OfficialAsks.Clear();
+                                        triangle.ThirdSymbolOrderbook.OfficialBids.Clear();
                                         Exchange.SubscriptionQueue.Enqueue(triangle.ThirdSymbolOrderbook);
                                     }
                                 }
@@ -75,7 +79,6 @@ namespace TriangleCollector.Services
                         }
                     }
                 }
-                relevantMarketList.Clear();
                 await Task.Delay(TimeInterval * 60 * 1000);
             }
         }

@@ -90,6 +90,13 @@ namespace TriangleCollector.Services
                         Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), oldestTimestamp, (key, oldValue) => oldValue = oldestTimestamp);
                         Exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued
                     }
+                } else
+                {
+                    if(Exchange.TrianglesToRecalculate.Count > 0)
+                    {
+                        var test = Exchange.TrianglesToRecalculate.TryPeek(out var result);
+                        _logger.LogError("unable to dequeue triangles");
+                    }
                 }
             }
             return Task.CompletedTask;

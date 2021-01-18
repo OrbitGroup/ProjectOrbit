@@ -43,22 +43,42 @@ namespace TriangleCollector.Services
             {   
                 try
                 {
-                    while(!stoppingToken.IsCancellationRequested) //structed on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
+                    var client = await exchange.ExchangeClient.GetExchangeClientAsync(); //initialize the first client/listener
+                    var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
+                    await listener.StartAsync(stoppingToken);
+                    while (!stoppingToken.IsCancellationRequested) //structured on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
                     {
-                        var client = await exchange.ExchangeClient.GetExchangeClientAsync(); //initialize the first client/listener
-                        var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
-                        await listener.StartAsync(stoppingToken);
-                        while (exchange.SubscriptionQueue.Count > 0)
+                        if(client.Markets.Count < exchange.ExchangeClient.MaxMarketsPerClient && client.State == WebSocketState.Open)
                         {
-                            if(client.Markets.Count < exchange.ExchangeClient.MaxMarketsPerClient && client.State == WebSocketState.Open)
+                            if(exchange.SubscriptionQueue.TryDequeue(out var market) && market != null)
                             {
-                                await exchange.ExchangeClient.Subscribe(exchange.SubscriptionQueue.Dequeue());
-                            } else //initialize a new client/listener if the current client is aborted or if it's reached it's maximum
-                            {
-                                client = await exchange.ExchangeClient.GetExchangeClientAsync();
-                                listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
-                                await listener.StartAsync(stoppingToken);
+                                try
+                                {
+                                    await exchange.ExchangeClient.Subscribe(market);
+                                } 
+                                catch(Exception ex)
+                                {
+                                    if(ex.Message == "Unable to connect to the remote server" || ex.Message == "The WebSocket is in an invalid state ('Aborted') for this operation. Valid states are: 'Open, CloseReceived'"
+                                    || ex.Message == "Unable to read data from the transport connection: An established connection was aborted by the software in your host machine..")
+                                    {
+                                        _logger.LogWarning($"Websocket exception encountered during subscription process. Initializing new connection");
+                                        //_logger.LogWarning($"{ex}");
+                                        client = await exchange.ExchangeClient.GetExchangeClientAsync();
+                                        listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
+                                        await listener.StartAsync(stoppingToken);
+                                        await exchange.ExchangeClient.Subscribe(market);
+                                    } else
+                                    {
+                                        _logger.LogError(ex.ToString());
+                                    }
+                                        
+                                }
                             }
+                        } else //initialize a new client/listener if the current client is aborted or if it's reached it's maximum
+                        {
+                            client = await exchange.ExchangeClient.GetExchangeClientAsync();
+                            listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
+                            await listener.StartAsync(stoppingToken);
                         }
                     }
                 }
