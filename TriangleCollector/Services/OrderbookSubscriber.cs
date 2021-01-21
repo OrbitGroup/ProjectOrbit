@@ -49,7 +49,6 @@ namespace TriangleCollector.Services
                 {
                     await CreateNewListenerAsync(exchange, stoppingToken);
                 }
-                
                 while (!stoppingToken.IsCancellationRequested) //structured on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
                 {
                     try
@@ -64,12 +63,18 @@ namespace TriangleCollector.Services
                                     //_logger.LogInformation($"successfully subscribed to {market.Symbol}");
                                 } else
                                 {
-                                    _logger.LogError($"error: subscribed to market that is already subscribed {market.Symbol}");
+                                    _logger.LogError($"error for {exchange.ExchangeName}: subscribed to market that is already subscribed {market.Symbol}");
                                 }
                             }
                         }
-                        else //initialize a new client/listener if the current client is aborted or if it's reached it's maximum number of markets
+                        else if (!(exchange.ExchangeClient.Client.Markets.Count < exchange.ExchangeClient.MaxMarketsPerClient)) //initialize a new client/listener if the current client reached it's maximum number of markets without a websocket disconnection or exception
                         {
+                            await CreateNewListenerAsync(exchange, stoppingToken);
+
+                        } else if (exchange.ExchangeClient.Client.State != WebSocketState.Open) //handles a subscription issue due to disconnection
+                        {
+                            exchange.ExchangeClient.Client.Markets.ForEach(m => exchange.SubscribedMarkets.TryRemove(m.Symbol, out var _));
+                            exchange.ExchangeClient.Client.Markets.ForEach(m => exchange.SubscriptionQueue.Enqueue(m));
                             await CreateNewListenerAsync(exchange, stoppingToken);
                         }
                     }
@@ -87,6 +92,21 @@ namespace TriangleCollector.Services
                         else
                         {
                             _logger.LogError(ex.ToString());
+                        }
+                    }
+                    if(exchange.SubscribedMarkets.Count > (exchange.Clients.Where(c=>c.State == WebSocketState.Open).Count() * exchange.ExchangeClient.MaxMarketsPerClient))
+                    {
+                        _logger.LogWarning($"{exchange.ExchangeName}: Paring SubscribedMarkets list for unhandled websocket disconnections.");
+                        var abortedClients = exchange.Clients.Where(c => c.State != WebSocketState.Open);
+                        foreach(var client in abortedClients)
+                        {
+                            foreach(var market in client.Markets)
+                            {
+                                if(exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _))
+                                {
+                                    exchange.SubscriptionQueue.Enqueue(market);
+                                }
+                            }
                         }
                     }
                 }

@@ -116,7 +116,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 }
                 return ob;
             }
-
+            ob.Timestamp = DateTime.UtcNow;
             return ob;
         }
 

@@ -20,7 +20,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public string SocketClientApi { get; set; } = "wss://api.huobi.pro/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public IClientWebSocket Client { get; set; }
-        public int MaxMarketsPerClient { get; } = 20;
+        public int MaxMarketsPerClient { get; } = 30;
 
         private HttpClient HttpClient = new HttpClient();
 
