@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,13 +38,15 @@ namespace TriangleCollector.Services
         }
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
+            var sw = new Stopwatch();
             while (!stoppingToken.IsCancellationRequested)
             {
+                sw.Start();
                 Exchange.TradedMarkets = Exchange.ExchangeClient.GetMarketsViaRestApi(); 
                 MarketMapper.MapOpportunities(Exchange);
                 foreach(var market in Exchange.TradedMarkets)
                 {
-                    if(!Exchange.SubscribedMarkets.Contains(market) && !Exchange.SubscriptionQueue.Contains(market))
+                    if(!Exchange.SubscribedMarkets.Keys.Contains(market.Symbol))
                     {
                         if(Exchange.TriarbMarketMapping.TryGetValue(market.Symbol, out var triangles))
                         {
@@ -56,19 +59,19 @@ namespace TriangleCollector.Services
 
                                 if (triangle.ProfitPercent > SubscriptionThreshold)
                                 {
-                                    if (!Exchange.SubscribedMarkets.Contains(triangle.FirstSymbolOrderbook) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
+                                    if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.FirstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
                                     {
                                         triangle.FirstSymbolOrderbook.OfficialAsks.Clear();
                                         triangle.FirstSymbolOrderbook.OfficialBids.Clear();
                                         Exchange.SubscriptionQueue.Enqueue(triangle.FirstSymbolOrderbook);
                                     }
-                                    if (!Exchange.SubscribedMarkets.Contains(triangle.SecondSymbolOrderbook) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
+                                    if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.SecondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
                                     {
                                         triangle.SecondSymbolOrderbook.OfficialAsks.Clear();
                                         triangle.SecondSymbolOrderbook.OfficialBids.Clear();
                                         Exchange.SubscriptionQueue.Enqueue(triangle.SecondSymbolOrderbook);
                                     }
-                                    if (!Exchange.SubscribedMarkets.Contains(triangle.ThirdSymbolOrderbook) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
+                                    if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.ThirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
                                     {
                                         triangle.ThirdSymbolOrderbook.OfficialAsks.Clear();
                                         triangle.ThirdSymbolOrderbook.OfficialBids.Clear();
@@ -79,7 +82,9 @@ namespace TriangleCollector.Services
                         }
                     }
                 }
-                await Task.Delay(TimeInterval * 60 * 1000);
+                sw.Stop();
+                //Console.WriteLine($"took {sw.ElapsedMilliseconds}ms to map markets");
+                await Task.Delay(TimeInterval * 60 * 10000000);
             }
         }
     }

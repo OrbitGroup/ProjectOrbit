@@ -111,6 +111,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                     {
                         ob.Pong = true;
                         ob.PongValue = reader.GetInt64();
+                        ob.Timestamp = DateTime.UtcNow;
                     }
                 }
                 return ob;

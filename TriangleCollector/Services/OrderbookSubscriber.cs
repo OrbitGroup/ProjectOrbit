@@ -39,56 +39,64 @@ namespace TriangleCollector.Services
 
         public void BackgroundProcessing(CancellationToken stoppingToken)
         {
-            Parallel.ForEach(TriangleCollector.Exchanges, async (exchange) =>
-            {   
-                try
+            Parallel.ForEach(ProjectOrbit.Exchanges, async (exchange) =>
+            {
+
+                try //try to start the first websocket client
                 {
-                    var client = await exchange.ExchangeClient.GetExchangeClientAsync(); //initialize the first client/listener
-                    var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
-                    await listener.StartAsync(stoppingToken);
-                    while (!stoppingToken.IsCancellationRequested) //structured on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
+                    await CreateNewListenerAsync(exchange, stoppingToken);
+                } catch(Exception ex)
+                {
+                    await CreateNewListenerAsync(exchange, stoppingToken);
+                }
+                
+                while (!stoppingToken.IsCancellationRequested) //structured on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
+                {
+                    try
                     {
-                        if(client.Markets.Count < exchange.ExchangeClient.MaxMarketsPerClient && client.State == WebSocketState.Open)
+                        if (exchange.ExchangeClient.Client.Markets.Count < exchange.ExchangeClient.MaxMarketsPerClient && exchange.ExchangeClient.Client.State == WebSocketState.Open)
                         {
-                            if(exchange.SubscriptionQueue.TryDequeue(out var market) && market != null)
+                            if (exchange.SubscriptionQueue.TryDequeue(out var market) && market != null)
                             {
-                                try
+                                await exchange.ExchangeClient.Subscribe(market);
+                                if(exchange.SubscribedMarkets.TryAdd(market.Symbol, market))
                                 {
-                                    await exchange.ExchangeClient.Subscribe(market);
-                                } 
-                                catch(Exception ex)
+                                    //_logger.LogInformation($"successfully subscribed to {market.Symbol}");
+                                } else
                                 {
-                                    if(ex.Message == "Unable to connect to the remote server" || ex.Message == "The WebSocket is in an invalid state ('Aborted') for this operation. Valid states are: 'Open, CloseReceived'"
-                                    || ex.Message == "Unable to read data from the transport connection: An established connection was aborted by the software in your host machine..")
-                                    {
-                                        _logger.LogWarning($"Websocket exception encountered during subscription process. Initializing new connection");
-                                        //_logger.LogWarning($"{ex}");
-                                        client = await exchange.ExchangeClient.GetExchangeClientAsync();
-                                        listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
-                                        await listener.StartAsync(stoppingToken);
-                                        await exchange.ExchangeClient.Subscribe(market);
-                                    } else
-                                    {
-                                        _logger.LogError(ex.ToString());
-                                    }
-                                        
+                                    _logger.LogError($"error: subscribed to market that is already subscribed {market.Symbol}");
                                 }
                             }
-                        } else //initialize a new client/listener if the current client is aborted or if it's reached it's maximum
+                        }
+                        else //initialize a new client/listener if the current client is aborted or if it's reached it's maximum number of markets
                         {
-                            client = await exchange.ExchangeClient.GetExchangeClientAsync();
-                            listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), client, exchange);
-                            await listener.StartAsync(stoppingToken);
+                            await CreateNewListenerAsync(exchange, stoppingToken);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex.Message == "Unable to connect to the remote server" || ex.Message == "The WebSocket is in an invalid state ('Aborted') for this operation. Valid states are: 'Open, CloseReceived'"
+                            || ex.Message == "Unable to read data from the transport connection: An established connection was aborted by the software in your host machine.."
+                            || ex.Message == "Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host..")
+                        {
+                            _logger.LogWarning($"Websocket exception encountered during subscription process. Initializing new client and connection");
+                            exchange.ExchangeClient.Client.Markets.ForEach(m => exchange.SubscribedMarkets.TryRemove(m.Symbol, out var _));
+                            exchange.ExchangeClient.Client.Markets.ForEach(m => exchange.SubscriptionQueue.Enqueue(m));
+                            await CreateNewListenerAsync(exchange, stoppingToken);
+                        }
+                        else
+                        {
+                            _logger.LogError(ex.ToString());
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"issue with subscribing on {exchange.ExchangeName}");
-                    _logger.LogError(ex.Message);
-                    throw ex;
-                }
             });
+        }
+        public async Task CreateNewListenerAsync(IExchange exchange, CancellationToken stoppingtoken)
+        {
+            await exchange.ExchangeClient.GetExchangeClientAsync();
+            var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), exchange.ExchangeClient.Client, exchange);
+            await listener.StartAsync(stoppingtoken);
         }
     }
 }

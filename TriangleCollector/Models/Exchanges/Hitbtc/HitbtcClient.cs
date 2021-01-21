@@ -103,7 +103,6 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
                 await Client.SendAsync(
                 new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
                 WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                Exchange.SubscribedMarkets.Add(market);
                 Client.Markets.Add(market);
             } else //client was aborted prior to completing the for loop
             {

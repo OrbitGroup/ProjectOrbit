@@ -29,16 +29,16 @@ namespace TriangleCollector.Services
             _logger = logger;
             Client = client;
             Exchange = exch;
-            Exchange.Clients.Add(Client);
             Client.Exchange = Exchange;
         }
-        public async Task SendPong(long pong) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
+        public async Task SendPong(IOrderbook orderbook) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
         {
             if(Client.State == WebSocketState.Open)
             {
                 var cts = new CancellationToken();
-                await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"pong\": {pong}}}")), WebSocketMessageType.Text, true, cts);
-                //Console.WriteLine($"sent back pong {pong} to {Exchange.ExchangeName}");
+                await Client.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"pong\": {orderbook.PongValue}}}")), WebSocketMessageType.Text, true, cts);
+                //_logger.LogDebug($"took {(DateTime.UtcNow - orderbook.Timestamp).TotalMilliseconds}ms to send pong");
+                orderbook.Pong = false; //set the flag back to false   
             }
         }
 
@@ -146,8 +146,16 @@ namespace TriangleCollector.Services
                             }
                         } else if (orderbook.Pong == true)
                         {
-                            await SendPong(orderbook.PongValue);
-                            orderbook.Pong = false; //set the flag back to false
+                            try
+                            {
+                                SendPong(orderbook); //do not await this task; the listener should move on in reading other websocket messages
+                            } catch(Exception ex)
+                            {
+                                _logger.LogError($"problem sending pong: {ex.Message}");
+                                await Stop();
+                            }
+                            
+                            
                         } else
                         {
                             //Console.WriteLine($"no orderbook symbol - payload was {payload}");
@@ -158,29 +166,32 @@ namespace TriangleCollector.Services
                         if (ex.InnerException.Message == "An established connection was aborted by the software in your host machine." || ex.InnerException.Message == "Unable to read data from the transport connection: An established connection was aborted by the software in your host machine..")
                         {
                             _logger.LogError($"Connection aborted on {Exchange.ExchangeName}");
-                            continue;
+                            await Stop();
                         }
                         if (payload == string.Empty && result.MessageType == WebSocketMessageType.Close)
                         {
                             _logger.LogError("socket connection closed");
                             _logger.LogError($"reason for closure is {result.CloseStatusDescription}");
-                            
+                            await Stop();
                         } else
                         {
                             _logger.LogError($"exception related to {payload}");
                             _logger.LogError($"exception: {ex.Message}");
                         }
-                        
                         throw ex;
                     }
                 }
             }
+            await Stop();
+        }
+        private async Task Stop()
+        {
             _logger.LogWarning($"client aborted on {Exchange} with {Client.Markets.Count} subscribed markets. Queuing lost markets for re-subscription");
-            foreach(var market in Client.Markets)
+            foreach (var market in Client.Markets)
             {
-                Exchange.SubscribedMarkets.Remove(market);
+                Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _);
+                Exchange.SubscriptionQueue.Enqueue(market);
             }
-            Client.Markets.ForEach(Exchange.SubscriptionQueue.Enqueue); //if the client is closed, queue the markets up for re-subscription
         }
     }
 }

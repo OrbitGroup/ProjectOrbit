@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TriangleCollector\TriangleCollector.csproj" />
+    <ProjectReference Include="..\TriangleCollector\ProjectOrbit.csproj" />
   </ItemGroup>
 
 </Project>

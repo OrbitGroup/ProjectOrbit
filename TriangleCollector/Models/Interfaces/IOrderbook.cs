@@ -34,6 +34,8 @@ namespace TriangleCollector.Models.Interfaces
         public long PongValue { get; set; } //contains the required pong value, if required
 
         public decimal HighestBid { get; set; }
+        public decimal PreviousLowestAsk { get; set; }
+        public decimal PreviousHighestBid { get; set; }
 
         public object OrderbookLock { get; }
 
@@ -53,7 +55,7 @@ namespace TriangleCollector.Models.Interfaces
         /// <param name="update">An orderbook update</param>
         public bool Merge(IOrderbook update);
 
-        public bool SignificantChange(IOrderbook updatedOrderbook, decimal previousHighestBid, decimal previousLowestAsk); //TO DO: add flagging system to simply flag triangles as profitable and therefore signficant
+        public bool SignificantChange(IOrderbook updatedOrderbook); //TO DO: add flagging system to simply flag triangles as profitable and therefore signficant
 
         public void CreateSorted();
 

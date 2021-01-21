@@ -38,7 +38,7 @@ namespace TriangleCollector.Services
         }
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-            foreach(var exchange in TriangleCollector.Exchanges)
+            foreach(var exchange in ProjectOrbit.Exchanges)
             {
                 LastOBCounter.Add(exchange.ExchangeName, 0);
                 LastTriarbCounter.Add(exchange.ExchangeName, 0);
@@ -47,13 +47,13 @@ namespace TriangleCollector.Services
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogDebug("*********************************************************************************************************************************************");
-                foreach (var exchange in TriangleCollector.Exchanges)
+                foreach (var exchange in ProjectOrbit.Exchanges)
                 {
                     var lastOBcount = LastOBCounter[exchange.ExchangeName];
                     var lastTriarbCount = LastTriarbCounter[exchange.ExchangeName];
                     var activeClientCount = exchange.Clients.Where(c => c.State == WebSocketState.Open).Count();
                     var abortedClientCount = exchange.Clients.Where(c => c.State != WebSocketState.Open).Count();
-                    double activeSubscriptions = exchange.SubscribedMarkets.Count;
+                    double activeSubscriptions = exchange.SubscribedMarkets.Count();
                     double targetSubscriptions = exchange.SubscribedMarkets.Count + exchange.SubscriptionQueue.Count;
                     double relevantRatio = Math.Round(targetSubscriptions / exchange.TradedMarkets.Count,2)*100;
 

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30128.74
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TriangleCollector", "TriangleCollector\TriangleCollector.csproj", "{92CF7FDC-7BE0-4E22-BB68-2E86E79D1D57}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectOrbit", "TriangleCollector\ProjectOrbit.csproj", "{92CF7FDC-7BE0-4E22-BB68-2E86E79D1D57}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5DE855F6-5A68-418B-85D9-7C7657C17CDB}"
 	ProjectSection(SolutionItems) = preProject
@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TriangleCollector.UnitTests", "UnitTestsforTriangleCollector\TriangleCollector.UnitTests.csproj", "{C9DFBE93-07EE-4FC6-8FF1-8A38EFAE4F8F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectOrbit.UnitTests", "UnitTestsforTriangleCollector\ProjectOrbit.UnitTests.csproj", "{C9DFBE93-07EE-4FC6-8FF1-8A38EFAE4F8F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

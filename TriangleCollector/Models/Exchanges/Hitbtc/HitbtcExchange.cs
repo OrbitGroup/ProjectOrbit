@@ -34,7 +34,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
 
-        public List<IOrderbook> SubscribedMarkets { get; set; } = new List<IOrderbook>();
+        public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 

@@ -20,7 +20,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public string SocketClientApi { get; set; } = "wss://api.huobi.pro/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public IClientWebSocket Client { get; set; }
-        public int MaxMarketsPerClient { get; } = 30;
+        public int MaxMarketsPerClient { get; } = 20;
 
         private HttpClient HttpClient = new HttpClient();
 
@@ -131,7 +131,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                             ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                     //there is a rate limit for snapshots of 10 per second
                 ID++;
-                Exchange.SubscribedMarkets.Add(market);
                 Client.Markets.Add(market);
             } else
             {

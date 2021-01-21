@@ -25,6 +25,8 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public bool Pong { get; set; }
         public long PongValue { get; set; }
         public decimal HighestBid { get; set; }
+        public decimal PreviousLowestAsk { get; set; }
+        public decimal PreviousHighestBid { get; set; }
 
         public object OrderbookLock { get; } = new object();
 
@@ -61,12 +63,15 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 this.Timestamp = update.Timestamp;
                 Exchange.AllOrderBookCounter++;
 
-                decimal previousLowestAsk = 0;
-                decimal previousHighestBid = 0;
                 if (OfficialAsks.Count() != 0 && OfficialBids.Count() != 0)
                 {
-                    previousLowestAsk = OfficialAsks.Keys.Min();
-                    previousHighestBid = OfficialBids.Keys.Max();
+                    PreviousLowestAsk = OfficialAsks.Keys.Min();
+                    PreviousHighestBid = OfficialBids.Keys.Max();
+                }
+                else
+                {
+                    PreviousLowestAsk = 0;
+                    PreviousHighestBid = 0;
                 }
 
 
@@ -76,7 +81,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 update.OfficialAsks.AsParallel().ForAll(UpdateAskLayer);
                 update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
 
-                if (SignificantChange(update, previousHighestBid, previousLowestAsk))
+                if (SignificantChange(update))
                 {
                     return true;
                 }
@@ -86,7 +91,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             return false;
         }
 
-        public bool SignificantChange(IOrderbook updatedOrderbook, decimal previousHighestBid, decimal previousLowestAsk)
+        public bool SignificantChange(IOrderbook updatedOrderbook)
         {
             if (Exchange.ProfitableSymbolMapping.TryGetValue(Symbol, out var layers))
             {
@@ -117,7 +122,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                     return false;
                 }
 
-                if (OfficialAsks.Keys.Min() < previousLowestAsk || OfficialBids.Keys.Max() > previousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
+                if (OfficialAsks.Keys.Min() < PreviousLowestAsk || OfficialBids.Keys.Max() > PreviousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
                     Exchange.PositivePriceChangeCounter++;
                     return true;

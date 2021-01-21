@@ -130,7 +130,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
                             Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
                             ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                 ID++;
-                Exchange.SubscribedMarkets.Add(market);
                 Client.Markets.Add(market);
             } else
             {

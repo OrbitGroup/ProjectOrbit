@@ -53,7 +53,7 @@ namespace TriangleCollector.Services
 
         private async Task MergeProcessing(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            /*while (!stoppingToken.IsCancellationRequested)
             {
                 if (TriangleCollector.MergeTimings.TryDequeue(out long merge))
                 {
@@ -61,12 +61,12 @@ namespace TriangleCollector.Services
                     MergeTotal += merge;
                     AverageMerge = MergeTotal / MergeCount;
                 }
-            }
+            }*/
         }
 
         private async Task OrderbookUpdateProcessing(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            /*while (!stoppingToken.IsCancellationRequested)
             {
                 if (TriangleCollector.OrderbookUpdateDeltas.TryDequeue(out TimeSpan delta))
                 {
@@ -74,7 +74,7 @@ namespace TriangleCollector.Services
                     OrderbookUpdateTotal += delta.TotalSeconds;
                     AverageOrderbookUpdateDelta = OrderbookUpdateTotal / OrderbookUpdateCount;
                 }
-            }
+            }*/
         }
     }
 }
