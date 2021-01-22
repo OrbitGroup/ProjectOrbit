@@ -40,9 +40,9 @@ namespace TriangleCollector
             })
             .ConfigureServices((hostContext, services) =>
             {
+                services.AddHostedService<ExchangeServiceInitializer>();
                 services.AddHostedService<USDMonitor>();
                 services.AddHostedService<OrderbookSubscriber>();
-                services.AddHostedService<ActivityMonitor>();
             });
 
        

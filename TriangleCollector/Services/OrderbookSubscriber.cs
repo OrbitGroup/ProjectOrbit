@@ -41,14 +41,8 @@ namespace TriangleCollector.Services
         {
             Parallel.ForEach(ProjectOrbit.Exchanges, async (exchange) =>
             {
-
-                try //try to start the first websocket client
-                {
-                    await CreateNewListenerAsync(exchange, stoppingToken);
-                } catch(Exception ex)
-                {
-                    await CreateNewListenerAsync(exchange, stoppingToken);
-                }
+                await CreateNewListenerAsync(exchange, stoppingToken);
+                
                 while (!stoppingToken.IsCancellationRequested) //structured on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
                 {
                     try
@@ -85,8 +79,13 @@ namespace TriangleCollector.Services
                             || ex.Message == "Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host..")
                         {
                             _logger.LogWarning($"Websocket exception encountered during subscription process. Initializing new client and connection");
-                            exchange.ExchangeClient.Client.Markets.ForEach(m => exchange.SubscribedMarkets.TryRemove(m.Symbol, out var _));
-                            exchange.ExchangeClient.Client.Markets.ForEach(m => exchange.SubscriptionQueue.Enqueue(m));
+                            foreach (var market in exchange.ExchangeClient.Client.Markets)
+                            {
+                                if (exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _))
+                                {
+                                    exchange.SubscriptionQueue.Enqueue(market);
+                                }
+                            }
                             await CreateNewListenerAsync(exchange, stoppingToken);
                         }
                         else
@@ -114,9 +113,17 @@ namespace TriangleCollector.Services
         }
         public async Task CreateNewListenerAsync(IExchange exchange, CancellationToken stoppingtoken)
         {
-            await exchange.ExchangeClient.GetExchangeClientAsync();
-            var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), exchange.ExchangeClient.Client, exchange);
-            await listener.StartAsync(stoppingtoken);
+            try
+            {
+                await exchange.ExchangeClient.GetExchangeClientAsync();
+                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), exchange.ExchangeClient.Client, exchange);
+                await listener.StartAsync(stoppingtoken);
+            } catch (Exception ex)
+            {
+                await Task.Delay(3000);
+                await CreateNewListenerAsync(exchange, stoppingtoken);
+            }
+            
         }
     }
 }

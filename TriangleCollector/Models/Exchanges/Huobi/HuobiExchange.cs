@@ -63,18 +63,10 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public HuobiExchange(string name)
         {
+
             ExchangeName = name;
             ExchangeClient.Exchange = this;
-            CancellationToken stoppingToken = new CancellationToken();
-            var subscriptionManager = new SubscriptionManager(_factory, _factory.CreateLogger<SubscriptionManager>(), this);
-            subscriptionManager.StartAsync(stoppingToken);
 
-            var calculator = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), this);
-            calculator.StartAsync(stoppingToken);
-
-            var monitor = new QueueMonitor(_factory, _factory.CreateLogger<QueueMonitor>(), this);
-            monitor.StartAsync(stoppingToken);
-            //Console.WriteLine($"there are {TradedMarkets.Count} markets traded on {ExchangeName}. Of these markets, {TriarbEligibleMarkets.Count} markets interact to form {UniqueTriangleCount} triangular arbitrage opportunities");
         }
     }
 }

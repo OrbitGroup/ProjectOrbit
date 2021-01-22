@@ -95,7 +95,7 @@ namespace TriangleCollector.Services
                     if(Exchange.TrianglesToRecalculate.Count > 0)
                     {
                         var test = Exchange.TrianglesToRecalculate.TryPeek(out var result);
-                        _logger.LogError("unable to dequeue triangles");
+                        //_logger.LogError("unable to dequeue triangles");
                     }
                 }
             }
