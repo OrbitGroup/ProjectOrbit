@@ -55,29 +55,27 @@ namespace TriangleCollector.Services
                                 Exchange.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out IOrderbook firstSymbolOrderbook);
                                 Exchange.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out IOrderbook secondSymbolOrderbook);
                                 Exchange.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out IOrderbook thirdSymbolOrderbook);
-                                triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
-
-                                if (triangle.ProfitPercent > SubscriptionThreshold)
+                                if(firstSymbolOrderbook.OfficialAsks.Count>0 && firstSymbolOrderbook.OfficialBids.Count>0 
+                                    && secondSymbolOrderbook.OfficialAsks.Count>0 && secondSymbolOrderbook.OfficialBids.Count>0 
+                                    && thirdSymbolOrderbook.OfficialAsks.Count>0 && thirdSymbolOrderbook.OfficialBids.Count>0)
                                 {
-                                    if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.FirstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
+                                    triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
+                                    if (triangle.ProfitPercent > SubscriptionThreshold)
                                     {
-                                        triangle.FirstSymbolOrderbook.OfficialAsks.Clear();
-                                        triangle.FirstSymbolOrderbook.OfficialBids.Clear();
-                                        Exchange.SubscriptionQueue.Enqueue(triangle.FirstSymbolOrderbook);
+                                        if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.FirstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
+                                        {
+                                            Exchange.SubscriptionQueue.Enqueue(triangle.FirstSymbolOrderbook);
+                                        }
+                                        if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.SecondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
+                                        {
+                                            Exchange.SubscriptionQueue.Enqueue(triangle.SecondSymbolOrderbook);
+                                        }
+                                        if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.ThirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
+                                        {
+                                            Exchange.SubscriptionQueue.Enqueue(triangle.ThirdSymbolOrderbook);
+                                        }
                                     }
-                                    if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.SecondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
-                                    {
-                                        triangle.SecondSymbolOrderbook.OfficialAsks.Clear();
-                                        triangle.SecondSymbolOrderbook.OfficialBids.Clear();
-                                        Exchange.SubscriptionQueue.Enqueue(triangle.SecondSymbolOrderbook);
-                                    }
-                                    if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.ThirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
-                                    {
-                                        triangle.ThirdSymbolOrderbook.OfficialAsks.Clear();
-                                        triangle.ThirdSymbolOrderbook.OfficialBids.Clear();
-                                        Exchange.SubscriptionQueue.Enqueue(triangle.ThirdSymbolOrderbook);
-                                    }
-                                }
+                                } 
                             }
                         }
                     }

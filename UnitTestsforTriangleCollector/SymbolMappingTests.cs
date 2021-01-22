@@ -41,18 +41,20 @@ namespace TriangleCollector.UnitTests
             eosbtc.QuoteCurrency = "BTC";
             eosbtc.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosbtc);
-
+            
+            var btcusd = new HitbtcOrderbook();
+            btcusd.Symbol = "BTCUSD";
+            btcusd.QuoteCurrency = "USD";
+            btcusd.BaseCurrency = "BTC";
+            expectedTriangleEligiblePairs.Add(btcusd);
+            
             var eosusd = new HitbtcOrderbook();
             eosusd.Symbol = "EOSUSD";
             eosusd.QuoteCurrency = "USD";
             eosusd.BaseCurrency = "EOS";
             expectedTriangleEligiblePairs.Add(eosusd);
 
-            var btcusd = new HitbtcOrderbook();
-            btcusd.Symbol = "BTCUSD";
-            btcusd.QuoteCurrency = "USD";
-            btcusd.BaseCurrency = "BTC";
-            expectedTriangleEligiblePairs.Add(btcusd);
+            
 
             //Act: run the sample API response through the function
 

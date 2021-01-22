@@ -26,6 +26,11 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public int ID = 1;
 
+        public BinanceClient()
+        {
+            HttpClient.Timeout = TimeSpan.FromSeconds(10);
+        }
+
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
         //{
         //    TickerRESTAPI.Add("hitbtc", "https://api.hitbtc.com/api/2/public/symbol");
@@ -96,27 +101,38 @@ namespace TriangleCollector.Models.Exchanges.Binance
         {
             Market.OfficialAsks.Clear();
             Market.OfficialBids.Clear();
-            var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
-            var bids = snapshot.GetProperty("bids").EnumerateArray();
-            foreach (var bid in bids)
+            try
             {
-                string price = bid[0].GetString();
-                decimal priceDecimal = Convert.ToDecimal(price);
-                string size = bid[1].GetString();
-                decimal sizeDecimal = Convert.ToDecimal(size);
+                var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
+                var bids = snapshot.GetProperty("bids").EnumerateArray();
+                foreach (var bid in bids)
+                {
+                    string price = bid[0].GetString();
+                    decimal priceDecimal = Convert.ToDecimal(price);
+                    string size = bid[1].GetString();
+                    decimal sizeDecimal = Convert.ToDecimal(size);
 
-                Market.OfficialBids.TryAdd(priceDecimal, sizeDecimal);
-            }
-            var asks = snapshot.GetProperty("asks").EnumerateArray();
-            foreach (var ask in asks)
+                    Market.OfficialBids.TryAdd(priceDecimal, sizeDecimal);
+                }
+                var asks = snapshot.GetProperty("asks").EnumerateArray();
+                foreach (var ask in asks)
+                {
+                    string price = ask[0].GetString();
+                    decimal priceDecimal = Convert.ToDecimal(price);
+                    string size = ask[1].GetString();
+                    decimal sizeDecimal = Convert.ToDecimal(size);
+
+                    Market.OfficialAsks.TryAdd(priceDecimal, sizeDecimal);
+                }
+            } catch (Exception ex)
             {
-                string price = ask[0].GetString();
-                decimal priceDecimal = Convert.ToDecimal(price);
-                string size = ask[1].GetString();
-                decimal sizeDecimal = Convert.ToDecimal(size);
-
-                Market.OfficialAsks.TryAdd(priceDecimal, sizeDecimal);
+                Console.WriteLine("broke on snapshot");
+                Console.WriteLine(ex);
+                HttpClient.Dispose();
+                HttpClient = new HttpClient();
+                HttpClient.Timeout = TimeSpan.FromSeconds(10);
             }
+            
             return Task.CompletedTask;
         }
 

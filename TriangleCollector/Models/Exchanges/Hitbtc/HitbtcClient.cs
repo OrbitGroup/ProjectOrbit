@@ -98,7 +98,9 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public async Task Subscribe(IOrderbook market)
         {
-            if(Client.State == WebSocketState.Open) //given the amount of time it takes to complete this for loop, a client could be aborted in process.
+            market.OfficialAsks.Clear();
+            market.OfficialBids.Clear();
+            if (Client.State == WebSocketState.Open) //given the amount of time it takes to complete this for loop, a client could be aborted in process.
             {
                 await Client.SendAsync(
                 new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),

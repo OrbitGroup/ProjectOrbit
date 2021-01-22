@@ -26,6 +26,11 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public int ID = 1;
 
+        public HuobiClient()
+        {
+            HttpClient.Timeout = TimeSpan.FromSeconds(10);
+        }
+
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
         //{
         //    TickerRESTAPI.Add("hitbtc", "https://api.hitbtc.com/api/2/public/symbol");
@@ -116,6 +121,9 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             {
                 Console.WriteLine("broke on snapshot");
                 Console.WriteLine(ex);
+                HttpClient.Dispose();
+                HttpClient = new HttpClient();
+                HttpClient.Timeout = TimeSpan.FromSeconds(10);
             }
             
             return Task.CompletedTask;

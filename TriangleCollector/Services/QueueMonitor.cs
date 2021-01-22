@@ -11,8 +11,6 @@ namespace TriangleCollector.Services
 {
     public class QueueMonitor : BackgroundService
     {
-        private int QueueSizeTarget = 10;
-
         private readonly ILoggerFactory _factory;
 
         private readonly ILogger<QueueMonitor> _logger;
@@ -20,8 +18,6 @@ namespace TriangleCollector.Services
         private int CalculatorCount = 1;
 
         private int MaxTriangleCalculators = 7;
-
-        private int NumberOfSecondsUntilStale = 60;
 
         private IExchange Exchange { get; set; }
 
@@ -45,7 +41,7 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (Exchange.TrianglesToRecalculate.Count > Exchange.TriarbMarketMapping.Count * .75 && CalculatorCount < MaxTriangleCalculators)//start a new calculator if the queue is >75% its theoretical maximum
+                if (Exchange.TrianglesToRecalculate.Count > Exchange.SubscribedMarkets.Count && CalculatorCount < MaxTriangleCalculators)//start a new calculator if the queue is >75% its theoretical maximum
                 {
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
                     CalculatorCount++;

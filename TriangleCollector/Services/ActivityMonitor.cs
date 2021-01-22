@@ -47,10 +47,11 @@ namespace TriangleCollector.Services
                 {
                     LogMetricsAsync();
                 });
-                bool completedSuccessfully = task.Wait(TimeSpan.FromSeconds(5));
+                bool completedSuccessfully = task.Wait(TimeSpan.FromSeconds(LoopTimer));
                 if(!completedSuccessfully)
                 {
-                    _logger.LogError($"activity monitor timed out");
+                    continue;
+                    //_logger.LogError($"activity monitor timed out for {Exchange.ExchangeName}");
                 }
                 await Task.Delay(LoopTimer * 1000);
             }

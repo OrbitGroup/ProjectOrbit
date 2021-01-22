@@ -42,7 +42,6 @@ namespace TriangleCollector
             {
                 services.AddHostedService<ExchangeServiceInitializer>();
                 services.AddHostedService<USDMonitor>();
-                services.AddHostedService<OrderbookSubscriber>();
             });
 
        
