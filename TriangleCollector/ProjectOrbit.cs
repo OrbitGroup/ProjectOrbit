@@ -9,6 +9,7 @@ using TriangleCollector.Models.Exchanges.Binance;
 using TriangleCollector.Models.Interfaces;
 using TriangleCollector.Models.Exchanges.Hitbtc;
 using TriangleCollector.Models.Exchanges.Huobi;
+using System.Net.Http;
 
 namespace TriangleCollector
 {
@@ -16,6 +17,7 @@ namespace TriangleCollector
     {
         public static List<Type> ExchangesToInitialize = new List<Type>() { typeof(BinanceExchange), typeof(HuobiExchange), typeof(HitbtcExchange)}; 
         public static List<IExchange> Exchanges = new List<IExchange>(); //contains all exchange objects
+        public static HttpClient StaticHttpClient = new HttpClient();
 
         public static void Main(string[] args)
         {

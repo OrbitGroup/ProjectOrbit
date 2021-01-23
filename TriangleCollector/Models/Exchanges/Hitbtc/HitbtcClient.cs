@@ -21,7 +21,6 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 40;
-        private HttpClient HttpClient = new HttpClient();
 
 
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
@@ -40,7 +39,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         public HashSet<IOrderbook> GetMarketsViaRestApi() //Poll the REST API for the exchange to get all traded markets and their best price/sizes
         {
             var output = new HashSet<IOrderbook>();
-            var symbols = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.EnumerateArray();
+            var symbols = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.EnumerateArray();
             foreach (var responseItem in symbols)
             {
                 var market = new HitbtcOrderbook();
@@ -50,7 +49,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
                 market.Exchange = Exchange;
                 output.Add(market);
             }
-            var tickerPrices = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement;
+            var tickerPrices = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement;
             foreach (var market in output)
             {
                 try

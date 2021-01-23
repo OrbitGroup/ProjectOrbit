@@ -47,7 +47,7 @@ namespace TriangleCollector.Services
                 var activityMonitor = new ActivityMonitor(_factory, _factory.CreateLogger<ActivityMonitor>(), exchange);
                 await activityMonitor.StartAsync(stoppingToken);
 
-                _logger.LogInformation($"there are {exchange.TradedMarkets.Count} markets traded on {exchange.ExchangeName}. Of these markets, {exchange.TriarbEligibleMarkets.Count} markets interact to form {exchange.UniqueTriangleCount} triangular arbitrage opportunities");
+                //_logger.LogInformation($"there are {exchange.TradedMarkets.Count} markets traded on {exchange.ExchangeName}. Of these markets, {exchange.TriarbEligibleMarkets.Count} markets interact to form {exchange.UniqueTriangleCount} triangular arbitrage opportunities");
             }
         }
     }

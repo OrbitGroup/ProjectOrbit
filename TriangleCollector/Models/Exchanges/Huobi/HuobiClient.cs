@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
@@ -22,14 +23,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 30;
 
-        private HttpClient HttpClient = new HttpClient();
-
         public int ID = 1;
-
-        public HuobiClient()
-        {
-            HttpClient.Timeout = TimeSpan.FromSeconds(10);
-        }
 
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
         //{
@@ -63,7 +57,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public HashSet<IOrderbook> GetMarketsViaRestApi()
         {
             var output = new HashSet<IOrderbook>();
-            var symbols = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.GetProperty("data").EnumerateArray();
+            var symbols = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.GetProperty("data").EnumerateArray();
             foreach (var responseItem in symbols)
             {
                 if (responseItem.GetProperty("state").ToString() == "online")
@@ -76,7 +70,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                     output.Add(market);
                 }
             }
-            var tickerPrices = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement.GetProperty("data").EnumerateArray();
+            var tickerPrices = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement.GetProperty("data").EnumerateArray();
             foreach (var ticker in tickerPrices)
             {
                 var symbol = ticker.GetProperty("symbol").ToString().ToUpper();
@@ -102,7 +96,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             Market.OfficialBids.Clear();
             try
             {
-                var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={Market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement;
+                var snapshot = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={Market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement;
                 var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
                 foreach (var bid in bids)
                 {
@@ -119,30 +113,55 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 }
             } catch(Exception ex)
             {
-                Console.WriteLine("broke on snapshot");
-                Console.WriteLine(ex);
-                HttpClient.Dispose();
-                HttpClient = new HttpClient();
-                HttpClient.Timeout = TimeSpan.FromSeconds(10);
+                /*Console.WriteLine("broke on snapshot");
+                Console.WriteLine(ex);*/
             }
             
             return Task.CompletedTask;
         }
 
         public async Task Subscribe(IOrderbook market)
-        {  
+        {
+            bool successfulSnapshot = false;
+            int snapshotAttempts = 1;
+            int timeoutSeconds = 5;
             if (Client.State == WebSocketState.Open)
             {
-                await Snapshot(market);
-                await Client.SendAsync(new ArraySegment<byte>(
+                var sw = new Stopwatch();
+                sw.Start();
+                while (!successfulSnapshot && snapshotAttempts < 3)
+                {
+                    var snapshotTask = Task.Run(() =>
+                    {
+                        Snapshot(market);
+                    });
+                    successfulSnapshot = snapshotTask.Wait(TimeSpan.FromSeconds(timeoutSeconds));
+                    if (!successfulSnapshot)
+                    {
+                        snapshotAttempts++;
+                        timeoutSeconds = timeoutSeconds * 2;
+                        Console.WriteLine($"Huobi: snapshot timeout for {market.Symbol}");
+                        Console.WriteLine($"Huobi: processing Snapshot for {market.Symbol}, attempt #{snapshotAttempts}");
+                    }
+                }
+                sw.Stop();
+                if (snapshotAttempts>1 && successfulSnapshot) { Console.WriteLine($"Huobi: took {snapshotAttempts} attempts and {sw.ElapsedMilliseconds}ms to complete snapshot for {market.Symbol}"); }
+                sw.Reset();
+
+                if(successfulSnapshot)
+                {
+                    await Client.SendAsync(new ArraySegment<byte>(
                             Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
                             ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                    //there is a rate limit for snapshots of 10 per second
-                ID++;
-                Client.Markets.Add(market);
+                    ID++;
+                    Client.Markets.Add(market);
+                } else
+                {
+                    Exchange.SubscriptionQueue.Enqueue(market); //add this market back to the queue
+                }
             } else
             {
-                Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
+                Exchange.SubscriptionQueue.Enqueue(market); //add this market back to the queue
             }
             await Task.Delay(100);
         }

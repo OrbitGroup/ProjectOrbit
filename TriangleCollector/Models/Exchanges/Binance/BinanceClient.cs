@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
@@ -22,14 +23,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 20;
 
-        private HttpClient HttpClient = new HttpClient();
-
         public int ID = 1;
-
-        public BinanceClient()
-        {
-            HttpClient.Timeout = TimeSpan.FromSeconds(10);
-        }
 
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
         //{
@@ -48,7 +42,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public HashSet<IOrderbook> GetMarketsViaRestApi()
         {
             var output = new HashSet<IOrderbook>();
-            var symbols = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.GetProperty("symbols").EnumerateArray();
+            var symbols = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync(SymbolsRestApi).Result).Result.RootElement.GetProperty("symbols").EnumerateArray();
             foreach (var responseItem in symbols)
             {
                 if(responseItem.GetProperty("status").ToString() == "TRADING")
@@ -61,7 +55,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
                     output.Add(market);
                 }
             }
-            var tickerPrices = JsonDocument.ParseAsync(HttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement.EnumerateArray();
+            var tickerPrices = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync(PricesRestApi).Result).Result.RootElement.EnumerateArray();
             foreach (var ticker in tickerPrices)
             {
                 var symbol = ticker.GetProperty("symbol").ToString();
@@ -103,7 +97,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
             Market.OfficialBids.Clear();
             try
             {
-                var snapshot = JsonDocument.ParseAsync(HttpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
+                var snapshot = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
                 var bids = snapshot.GetProperty("bids").EnumerateArray();
                 foreach (var bid in bids)
                 {
@@ -126,11 +120,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
                 }
             } catch (Exception ex)
             {
-                Console.WriteLine("broke on snapshot");
-                Console.WriteLine(ex);
-                HttpClient.Dispose();
-                HttpClient = new HttpClient();
-                HttpClient.Timeout = TimeSpan.FromSeconds(10);
+                /*Console.WriteLine("broke on snapshot");
+                Console.WriteLine(ex);*/
             }
             
             return Task.CompletedTask;
@@ -138,15 +129,43 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public async Task Subscribe(IOrderbook market)
         {
-
-            if(Client.State == WebSocketState.Open)
+            bool successfulSnapshot = false;
+            int snapshotAttempts = 1;
+            int timeoutSeconds = 5;
+            if (Client.State == WebSocketState.Open)
             {
-                await Snapshot(market);
-                await Client.SendAsync(new ArraySegment<byte>(
+                var sw = new Stopwatch();
+                sw.Start();
+                while (!successfulSnapshot && snapshotAttempts < 3)
+                {
+                    var snapshotTask = Task.Run(() =>
+                    {
+                        Snapshot(market);
+                    });
+                    successfulSnapshot = snapshotTask.Wait(TimeSpan.FromSeconds(timeoutSeconds));
+                    if (!successfulSnapshot)
+                    {
+                        snapshotAttempts++;
+                        timeoutSeconds = timeoutSeconds * 2;
+                        Console.WriteLine($"Binance: snapshot timeout for {market.Symbol}");
+                        Console.WriteLine($"Binance: processing Snapshot for {market.Symbol}, attempt #{snapshotAttempts}");
+                    }
+                }
+                sw.Stop();
+                if(snapshotAttempts > 1 && successfulSnapshot) { Console.WriteLine($"Binance: took {snapshotAttempts} attempts and {sw.ElapsedMilliseconds}ms to complete snapshot for {market.Symbol}"); }
+                sw.Reset();
+
+                if(successfulSnapshot)
+                {
+                    await Client.SendAsync(new ArraySegment<byte>(
                             Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
                             ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                ID++;
-                Client.Markets.Add(market);
+                    ID++;
+                    Client.Markets.Add(market);
+                } else
+                {
+                    Exchange.SubscriptionQueue.Enqueue(market);
+                }
             } else
             {
                 Exchange.SubscriptionQueue.Enqueue(market);
