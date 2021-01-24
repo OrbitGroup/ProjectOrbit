@@ -31,6 +31,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public ConcurrentDictionary<string, Triangle> Triangles { get; } = new ConcurrentDictionary<string, Triangle>();
 
         public HashSet<IOrderbook> TriarbEligibleMarkets { get; set; } = new HashSet<IOrderbook>();
+
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
@@ -58,8 +59,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; } = new ConcurrentDictionary<string, DateTime>();
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
-
-        private readonly ILoggerFactory _factory = new NullLoggerFactory();
 
         public HuobiExchange(string name)
         {

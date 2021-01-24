@@ -57,8 +57,8 @@ namespace TriangleCollector.Services
                         else if (!(Exchange.ExchangeClient.Client.Markets.Count < Exchange.ExchangeClient.MaxMarketsPerClient)) //initialize a new client/listener if the current client reached it's maximum number of markets without a websocket disconnection or exception
                         {
                             await CreateNewListenerAsync(stoppingToken);
-
-                        } else if (Exchange.ExchangeClient.Client.State != WebSocketState.Open) //handles a subscription issue due to disconnection
+                        }
+                        else if (Exchange.ExchangeClient.Client.State != WebSocketState.Open) //handles a subscription issue due to disconnection
                         {
                             foreach (var market in Exchange.ExchangeClient.Client.Markets)
                             {
@@ -121,7 +121,6 @@ namespace TriangleCollector.Services
                 await Task.Delay(3000);
                 await CreateNewListenerAsync(stoppingtoken);
             }
-            
         }
     }
 }
