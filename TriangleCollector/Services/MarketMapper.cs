@@ -9,7 +9,7 @@ namespace TriangleCollector.Services
     public class MarketMapper
     {
         private static int UniqueTriangleCount = 0;
-        private static HashSet<IOrderbook> TriarbEligibleMarkets = new HashSet<IOrderbook>();
+        private static HashSet<string> TriarbEligibleMarkets = new HashSet<string>();
 
         public static void MapOpportunities(IExchange Exchange)
         {
@@ -81,9 +81,9 @@ namespace TriangleCollector.Services
             var newTriangle = new Triangle(firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol, direction, Exchange);
             //Console.WriteLine($"{exchangeName}: {firstDirection} {firstMarket.symbol}, {secondDirection} {secondMarket.symbol}, {thirdDirection} {thirdMarket.symbol}");
             UniqueTriangleCount++;
-            TriarbEligibleMarkets.Add(firstMarket);
-            TriarbEligibleMarkets.Add(secondMarket);
-            TriarbEligibleMarkets.Add(thirdMarket);
+            TriarbEligibleMarkets.Add(firstMarket.Symbol);
+            TriarbEligibleMarkets.Add(secondMarket.Symbol);
+            TriarbEligibleMarkets.Add(thirdMarket.Symbol);
             Exchange.OfficialOrderbooks.TryAdd(firstMarket.Symbol, firstMarket);
             Exchange.OfficialOrderbooks.TryAdd(secondMarket.Symbol, secondMarket);
             Exchange.OfficialOrderbooks.TryAdd(thirdMarket.Symbol, thirdMarket);

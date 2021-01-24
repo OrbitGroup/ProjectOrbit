@@ -71,16 +71,14 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 else
                 {
                     PreviousLowestAsk = 0;
-                    PreviousHighestBid = 0;
+                    PreviousHighestBid = decimal.MaxValue;
                 }
 
 
-                //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
-
-
-                update.OfficialAsks.AsParallel().ForAll(UpdateAskLayer);
-                update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
-
+                //For Huobi, the OfficialAsks and OfficialBids of the update are now the OfficialAsks and OfficialBids of the orderbook.
+                OfficialAsks = update.OfficialAsks;
+                OfficialBids = update.OfficialBids;
+                
                 if (SignificantChange(update))
                 {
                     return true;

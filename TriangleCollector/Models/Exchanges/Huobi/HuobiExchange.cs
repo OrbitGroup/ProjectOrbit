@@ -30,7 +30,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public ConcurrentDictionary<string, Triangle> Triangles { get; } = new ConcurrentDictionary<string, Triangle>();
 
-        public HashSet<IOrderbook> TriarbEligibleMarkets { get; set; } = new HashSet<IOrderbook>();
+        public HashSet<string> TriarbEligibleMarkets { get; set; } = new HashSet<string>();
 
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
 

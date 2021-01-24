@@ -30,7 +30,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public ConcurrentDictionary<string, Triangle> Triangles { get; } = new ConcurrentDictionary<string, Triangle>();
 
-        public HashSet<IOrderbook> TriarbEligibleMarkets { get; set; } = new HashSet<IOrderbook>();
+        public HashSet<string> TriarbEligibleMarkets { get; set; } = new HashSet<string>();
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();

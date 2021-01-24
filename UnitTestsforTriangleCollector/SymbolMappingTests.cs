@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using TriangleCollector.UnitTests.Models;
 using TriangleCollector.Models.Interfaces;
 using TriangleCollector.Models.Exchanges.Hitbtc;
+using System.Linq;
 
 namespace TriangleCollector.UnitTests
 {
@@ -23,36 +24,37 @@ namespace TriangleCollector.UnitTests
         {
             //Arrange: Expected outcomes are declared. 
 
-            HashSet<IOrderbook> expectedTriangleEligiblePairs = new HashSet<IOrderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
+            HashSet<string> expectedTriangleEligiblePairs = new HashSet<string>() { "ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD" }; //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
+            HashSet<IOrderbook> testTradedMarkets = new HashSet<IOrderbook>();
             var ethbtc = new HitbtcOrderbook();
             ethbtc.Symbol = "ETHBTC";
             ethbtc.QuoteCurrency = "BTC";
             ethbtc.BaseCurrency= "ETH";
-            expectedTriangleEligiblePairs.Add(ethbtc);
+            testTradedMarkets.Add(ethbtc);
 
             var eoseth = new HitbtcOrderbook();
             eoseth.Symbol = "EOSETH";
             eoseth.QuoteCurrency = "ETH";
             eoseth.BaseCurrency = "EOS";
-            expectedTriangleEligiblePairs.Add(eoseth);
+            testTradedMarkets.Add(eoseth);
 
             var eosbtc = new HitbtcOrderbook();
             eosbtc.Symbol = "EOSBTC";
             eosbtc.QuoteCurrency = "BTC";
             eosbtc.BaseCurrency = "EOS";
-            expectedTriangleEligiblePairs.Add(eosbtc);
+            testTradedMarkets.Add(eosbtc);
             
             var btcusd = new HitbtcOrderbook();
             btcusd.Symbol = "BTCUSD";
             btcusd.QuoteCurrency = "USD";
             btcusd.BaseCurrency = "BTC";
-            expectedTriangleEligiblePairs.Add(btcusd);
+            testTradedMarkets.Add(btcusd);
             
             var eosusd = new HitbtcOrderbook();
             eosusd.Symbol = "EOSUSD";
             eosusd.QuoteCurrency = "USD";
             eosusd.BaseCurrency = "EOS";
-            expectedTriangleEligiblePairs.Add(eosusd);
+            testTradedMarkets.Add(eosusd);
 
             
 
@@ -60,12 +62,22 @@ namespace TriangleCollector.UnitTests
 
             var testExchange = (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString());
             testExchange.TriarbEligibleMarkets.Clear();
-            testExchange.TradedMarkets = expectedTriangleEligiblePairs;
+            testExchange.TradedMarkets = testTradedMarkets;
             MarketMapper.MapOpportunities(testExchange);
 
             //Assert: confirm that the results of the test symbols match the expected outcome
-
-            Assert.IsTrue(expectedTriangleEligiblePairs.SetEquals(testExchange.TriarbEligibleMarkets));
+            Assert.IsTrue(testExchange.TriarbEligibleMarkets.Count == expectedTriangleEligiblePairs.Count, $"wrong count: expected is {expectedTriangleEligiblePairs.Count}, actual is {testExchange.TriarbEligibleMarkets.Count}");
+            
+            bool setsMatch = true;
+            foreach( var item in expectedTriangleEligiblePairs)
+            {
+                if(!testExchange.TriarbEligibleMarkets.Contains(item))
+                {
+                    Assert.Fail($"{item} missing from actual hashset");
+                    setsMatch = false;
+                }
+            }
+            Assert.IsTrue(setsMatch);
         }
         
         [TestMethod]

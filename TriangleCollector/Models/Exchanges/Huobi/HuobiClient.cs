@@ -82,76 +82,18 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             output = output.Where(m => m.OfficialAsks.Count > 0 && m.OfficialBids.Count > 0).ToHashSet();
             return output;
         }
-        public Task Snapshot(IOrderbook Market)
-        {
-            Market.OfficialAsks.Clear();
-            Market.OfficialBids.Clear();
-            try
-            {
-                var snapshot = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync($"https://api.huobi.pro/market/depth?symbol={Market.Symbol.ToLower()}&type=step1&depth=10").Result).Result.RootElement; 
-                var bids = snapshot.GetProperty("tick").GetProperty("bids").EnumerateArray();
-                foreach (var bid in bids)
-                {
-                    decimal price = bid[0].GetDecimal();
-                    decimal size = bid[1].GetDecimal();
-                    Market.OfficialBids.TryAdd(price, size);
-                }
-                var asks = snapshot.GetProperty("tick").GetProperty("asks").EnumerateArray();
-                foreach (var ask in asks)
-                {
-                    decimal price = ask[0].GetDecimal();
-                    decimal size = ask[1].GetDecimal();
-                    Market.OfficialAsks.TryAdd(price, size);
-                }
-            } catch(Exception ex)
-            {
-                //Console.WriteLine("broke on snapshot");
-                Console.WriteLine(ex);
-            }
-            
-            return Task.CompletedTask;
-        }
-
+        
         public async Task Subscribe(IOrderbook market)
         {
-            bool successfulSnapshot = false;
-            int snapshotAttempts = 1;
-            int timeoutSeconds = 5;
             if (Client.State == WebSocketState.Open)
             {
-                var sw = new Stopwatch();
-                sw.Start();
-                while (!successfulSnapshot && snapshotAttempts < 3)
-                {
-                    var snapshotTask = Task.Run(() =>
-                    {
-                        Snapshot(market);
-                    });
-                    successfulSnapshot = snapshotTask.Wait(TimeSpan.FromSeconds(timeoutSeconds));
-                    if (!successfulSnapshot)
-                    {
-                        snapshotAttempts++;
-                        timeoutSeconds = timeoutSeconds * 2;
-                        Console.WriteLine($"Huobi: snapshot timeout for {market.Symbol}");
-                        Console.WriteLine($"Huobi: processing Snapshot for {market.Symbol}, attempt #{snapshotAttempts}");
-                    }
-                }
-                sw.Stop();
-                if (snapshotAttempts>1 && successfulSnapshot) { Console.WriteLine($"Huobi: took {snapshotAttempts} attempts and {sw.ElapsedMilliseconds}ms to complete snapshot for {market.Symbol}"); }
-                sw.Reset();
-
-                if(successfulSnapshot)
-                {
-                    await Client.SendAsync(new ArraySegment<byte>(
-                            Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
-                            ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                    ID++;
-                    Client.Markets.Add(market);
-                } else
-                {
-                    Exchange.SubscriptionQueue.Enqueue(market); //add this market back to the queue
-                }
-            } else
+                await Client.SendAsync(new ArraySegment<byte>(
+                        Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.refresh.10\",\n  \"id\": \"id{ID}\"\n }}")
+                        ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                ID++;
+                Client.Markets.Add(market);
+            } 
+            else
             {
                 Exchange.SubscriptionQueue.Enqueue(market); //add this market back to the queue
             }

@@ -25,7 +25,7 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, Triangle> Triangles { get; }
 
-        public HashSet<IOrderbook> TriarbEligibleMarkets { get; set; }
+        public HashSet<string> TriarbEligibleMarkets { get; set; }
 
         public Queue<IOrderbook> SubscriptionQueue { get; set; } 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; }
