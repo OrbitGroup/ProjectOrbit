@@ -27,83 +27,51 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public override BinanceOrderbook Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var ob = new BinanceOrderbook();
-            var orders = new ConcurrentDictionary<decimal, decimal>();
-            bool ask = true;
-            decimal lastPrice = 0;
+            decimal bestBidPrice = 0m;
+            decimal bestBidSize = 0m;
+            decimal bestAskPrice = 0m;
+            decimal bestAskSize = 0m;
 
-            var firstLine = string.Empty; //the first line will determine which exchange the JSON response is from
-            if (reader.Read() && reader.TokenType != JsonTokenType.StartObject)
-            {
-                firstLine = reader.GetString();
-                //Console.WriteLine($"first line is {firstLine}");
-            }
             string currentProperty = string.Empty;
-
             
-            if (firstLine == "e" || firstLine == "result") //binance
+            while (reader.Read())
             {
-                while (reader.Read())
+                if (reader.TokenType == JsonTokenType.PropertyName)
                 {
-                    if (reader.TokenType == JsonTokenType.PropertyName)
+                    currentProperty = reader.GetString();
+                }
+                else if (reader.TokenType == JsonTokenType.Number && currentProperty == "u")
+                {
+                    ob.Sequence = reader.GetInt64();
+                }
+                else if (reader.TokenType == JsonTokenType.String)
+                {
+                    if (currentProperty == "s")
                     {
-                        currentProperty = reader.GetString();
+                        ob.Symbol = reader.GetString();
                     }
-                    else if (reader.TokenType == JsonTokenType.Number && currentProperty == "u")
+                    else if (currentProperty == "b")
                     {
-                        ob.Sequence = reader.GetInt64();
+                        bestBidPrice = Convert.ToDecimal(reader.GetString());
                     }
-                    else if (reader.TokenType == JsonTokenType.String)
+                    else if (currentProperty == "B") 
                     {
-                        if (currentProperty == "s")
-                        {
-                            ob.Symbol = reader.GetString();
-                        }
+                        bestBidSize = Convert.ToDecimal(reader.GetString());
                     }
-                    else if (reader.TokenType == JsonTokenType.StartArray)
+                    else if (currentProperty == "a")
                     {
-                        reader.Read();
-                        if (reader.TokenType == JsonTokenType.StartArray)
-                        {
-                            reader.Read();
-                        }
-                        while (reader.TokenType != JsonTokenType.EndArray && reader.TokenType != JsonTokenType.StartArray)
-                        {
-                            var price = Convert.ToDecimal(reader.GetString());
-                            reader.Read();
-                            var size = Convert.ToDecimal(reader.GetString());
-                            if (currentProperty == "a")
-                            {
-                                ob.OfficialAsks.TryAdd(price, size);
-                            }
-                            else if (currentProperty == "b")
-                            {
-                                ob.OfficialBids.TryAdd(price, size);
-                            }
-                            reader.Read();
-                        }
+                        bestAskPrice = Convert.ToDecimal(reader.GetString());
+                    }
+                    else if (currentProperty == "A")
+                    {
+                        bestAskSize = Convert.ToDecimal(reader.GetString());
                     }
                 }
-                ob.Timestamp = DateTime.UtcNow;
-                return ob;
             }
-            else if (firstLine == "ping")
-            {
-                while (reader.Read())
-                {
-                    if (reader.TokenType == JsonTokenType.Number)
-                    {
-                        ob.Pong = true;
-                        ob.PongValue = reader.GetInt64();
-                    }
-                }
-                return ob;
-            }
-
+            ob.OfficialAsks.TryAdd(bestAskPrice, bestAskSize);
+            ob.OfficialBids.TryAdd(bestBidPrice, bestBidSize);
+            ob.Timestamp = DateTime.UtcNow;
             return ob;
-
-
-
-
         }
 
         /// <summary>

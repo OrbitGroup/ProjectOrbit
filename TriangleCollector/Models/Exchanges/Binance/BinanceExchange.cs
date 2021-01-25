@@ -33,13 +33,13 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public HashSet<string> TriarbEligibleMarkets { get; set; } = new HashSet<string>();
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
+
+        public bool QueuedSubscription { get; set; } = false;
+
+        public bool AggregateStreamOpen { get; set; } = false;
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
-
+        
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
-
-        public double ImpactedTriangleCounter { get; set; } = 0;
-
-        public double RedundantTriangleCounter { get; set; } = 0;
 
         public double AllOrderBookCounter { get; set; } = 0;
 

@@ -75,7 +75,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
             return output;
         }
 
-        public async Task<WebSocketAdapter> GetExchangeClientAsync()
+        public async Task<WebSocketAdapter> CreateExchangeClientAsync()
         {
             var client = new ClientWebSocket();
             var factory = new LoggerFactory();
@@ -91,86 +91,21 @@ namespace TriangleCollector.Models.Exchanges.Binance
             return adapter;
         }
 
-        public Task Snapshot(IOrderbook Market)
+        public async Task SubscribeViaAggregate()
         {
-            Market.OfficialAsks.Clear();
-            Market.OfficialBids.Clear();
-            try
-            {
-                var snapshot = JsonDocument.ParseAsync(ProjectOrbit.StaticHttpClient.GetStreamAsync($"https://api.binance.com/api/v3/depth?symbol={Market.Symbol}&limit=100").Result).Result.RootElement;
-                var bids = snapshot.GetProperty("bids").EnumerateArray();
-                foreach (var bid in bids)
-                {
-                    string price = bid[0].GetString();
-                    decimal priceDecimal = Convert.ToDecimal(price);
-                    string size = bid[1].GetString();
-                    decimal sizeDecimal = Convert.ToDecimal(size);
-
-                    Market.OfficialBids.TryAdd(priceDecimal, sizeDecimal);
-                }
-                var asks = snapshot.GetProperty("asks").EnumerateArray();
-                foreach (var ask in asks)
-                {
-                    string price = ask[0].GetString();
-                    decimal priceDecimal = Convert.ToDecimal(price);
-                    string size = ask[1].GetString();
-                    decimal sizeDecimal = Convert.ToDecimal(size);
-
-                    Market.OfficialAsks.TryAdd(priceDecimal, sizeDecimal);
-                }
-            } catch (Exception ex)
-            {
-                /*Console.WriteLine("broke on snapshot");
-                Console.WriteLine(ex);*/
-            }
-            
-            return Task.CompletedTask;
-        }
-
-        public async Task Subscribe(IOrderbook market)
-        {
-            bool successfulSnapshot = false;
-            int snapshotAttempts = 1;
-            int timeoutSeconds = 5;
             if (Client.State == WebSocketState.Open)
             {
-                var sw = new Stopwatch();
-                sw.Start();
-                while (!successfulSnapshot && snapshotAttempts < 3)
-                {
-                    var snapshotTask = Task.Run(() =>
-                    {
-                        Snapshot(market);
-                    });
-                    successfulSnapshot = snapshotTask.Wait(TimeSpan.FromSeconds(timeoutSeconds));
-                    if (!successfulSnapshot)
-                    {
-                        snapshotAttempts++;
-                        timeoutSeconds = timeoutSeconds * 2;
-                        Console.WriteLine($"Binance: snapshot timeout for {market.Symbol}");
-                        Console.WriteLine($"Binance: processing Snapshot for {market.Symbol}, attempt #{snapshotAttempts}");
-                    }
-                }
-                sw.Stop();
-                if(snapshotAttempts > 1 && successfulSnapshot) { Console.WriteLine($"Binance: took {snapshotAttempts} attempts and {sw.ElapsedMilliseconds}ms to complete snapshot for {market.Symbol}"); }
-                sw.Reset();
-
-                if(successfulSnapshot)
-                {
-                    await Client.SendAsync(new ArraySegment<byte>(
-                            Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@depth@100ms\"], \"id\": {ID} }}")
-                            ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                    ID++;
-                    Client.Markets.Add(market);
-                } else
-                {
-                    Exchange.SubscriptionQueue.Enqueue(market);
-                }
-            } else
-            {
-                Exchange.SubscriptionQueue.Enqueue(market);
-            }
-            await Task.Delay(250);
+                await Client.SendAsync(new ArraySegment<byte>(
+                        Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"!bookTicker\"], \"id\": {ID} }}")
+                        ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                ID++;
+                Exchange.AggregateStreamOpen = true;
+            } 
+            await Task.Delay(500);
+        }
+        public Task SubscribeViaQueue(IOrderbook market)
+        {
+            return Task.CompletedTask;
         }
     }
 }

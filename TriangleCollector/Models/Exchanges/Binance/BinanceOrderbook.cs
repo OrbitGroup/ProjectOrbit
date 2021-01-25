@@ -71,15 +71,16 @@ namespace TriangleCollector.Models.Exchanges.Binance
                 else
                 {
                     PreviousLowestAsk = 0;
-                    PreviousHighestBid = 0;
+                    PreviousHighestBid = decimal.MaxValue;
                 }
 
 
                 //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
+                OfficialAsks = update.OfficialAsks;
+                OfficialBids = update.OfficialBids;
 
-
-                update.OfficialAsks.AsParallel().ForAll(UpdateAskLayer);
-                update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
+                //update.OfficialAsks.AsParallel().ForAll(UpdateAskLayer);
+                //update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
 
                 if (SignificantChange(update))
                 {

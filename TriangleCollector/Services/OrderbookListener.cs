@@ -20,15 +20,21 @@ namespace TriangleCollector.Services
     {
         private readonly ILogger<OrderbookListener> _logger;
 
+        private int ID { get; set; }
+
         private IClientWebSocket Client;
 
         private IExchange Exchange { get; set; }
 
-        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, IExchange exch)
+        private Type OrderbookType { get; set; }
+
+        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, IExchange exch, int id)
         {
             _logger = logger;
             Client = client;
             Exchange = exch;
+            ID = id;
+            OrderbookType = Exchange.OrderbookType;
             Client.Exchange = Exchange;
         }
         public async Task SendPong(IOrderbook orderbook) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
@@ -44,8 +50,8 @@ namespace TriangleCollector.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogDebug($"Starting Orderbook Listener for {Exchange.ExchangeName}...");
-            stoppingToken.Register(() => _logger.LogDebug("Stopping Orderbook Listener..."));
+            _logger.LogDebug($"Starting Orderbook Listener {ID} for {Exchange.ExchangeName}...");
+            stoppingToken.Register(() => _logger.LogDebug($"Stopping Orderbook Listener {ID} for {Exchange.ExchangeName}..."));
 
             await Task.Run(async () =>
             {
@@ -61,21 +67,19 @@ namespace TriangleCollector.Services
                 {
                     _logger.LogWarning("CLOSE RECEIVED");
                 }
-                var buffer = WebSocket.CreateClientBuffer(1024 * 64, 1024);
-
-                WebSocketReceiveResult result = null;
+                var buffer = WebSocket.CreateClientBuffer(1024 * 640, 1024);
 
                 using (var ms = new MemoryStream())
                 {
                     string payload = string.Empty;
-                    result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
-                    //_logger.LogInformation($"socket message type is {result.MessageType.ToString()}");
+                    WebSocketReceiveResult result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
 
                     if(result.MessageType == WebSocketMessageType.Text) //hitbtc, binance
                     {
                         var reader = new StreamReader(ms, Encoding.UTF8);
                         payload = await reader.ReadToEndAsync();
-                    } else if (result.MessageType == WebSocketMessageType.Binary) //huobi global sends all data in a compressed GZIP format
+                    } 
+                    else if (result.MessageType == WebSocketMessageType.Binary) //huobi global sends all data in a compressed GZIP format
                     {
                         var byteArray = ms.ToArray();
                         using var decompressedStream = new MemoryStream();
@@ -85,66 +89,57 @@ namespace TriangleCollector.Services
                         decompressedStream.Position = 0;
 
                         using var streamReader = new StreamReader(decompressedStream);
-                        payload = streamReader.ReadToEnd();                        
+                        payload = streamReader.ReadToEnd();
                     }
                     try
                     {
-                        //_logger.LogInformation($"payload is {payload}");
                         if (payload == "")
                         {
-                            _logger.LogWarning("Blank payload");
+                            //_logger.LogWarning("Blank payload");
+                            if (result.MessageType == WebSocketMessageType.Close)
+                            {
+                                _logger.LogError($"Socket connection closed because: {result.CloseStatusDescription.ToString()}");
+                                await Stop();
+                            }
                             continue;
                         }
-                        var orderbookType = Client.Exchange.OrderbookType;
-                        IOrderbook orderbook = (IOrderbook)JsonSerializer.Deserialize(payload, orderbookType);
-                        //IOrderbook orderbook = JsonSerializer.Deserialize<typeof(orderbookType)>(payload); //takes a string and returns an orderbook
+
+                        IOrderbook orderbook = (IOrderbook)JsonSerializer.Deserialize(payload, OrderbookType);
 
                         if (orderbook.Symbol != null)
                         {
                             try
                             {
-                                Exchange.OfficialOrderbooks.TryGetValue(orderbook.Symbol, out IOrderbook OfficialOrderbook);
-                                if (OfficialOrderbook != null)
+                                if(Exchange.OfficialOrderbooks.TryGetValue(orderbook.Symbol, out IOrderbook OfficialOrderbook))
                                 {
                                     bool shouldRecalculate = false;
-                                    lock (OfficialOrderbook.OrderbookLock) //only lock the orderbook when the orderbook is actually being modified
+                                    lock (OfficialOrderbook.OrderbookLock) //lock the orderbook when the orderbook is being modified
                                     {
                                         shouldRecalculate = OfficialOrderbook.Merge(orderbook);
                                     }
-                                    
+
                                     if (shouldRecalculate)
                                     {
                                         if (Exchange.TriarbMarketMapping.TryGetValue(orderbook.Symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
                                         {
                                             foreach (var impactedTriangle in impactedTriangles)
                                             {
-                                                Exchange.ImpactedTriangleCounter++;
                                                 if (Exchange.TrianglesToRecalculate.Contains(impactedTriangle) == false) //this triangle isn't already in the queue
                                                 {
                                                     Exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                                                } else
-                                                {
-                                                    Exchange.RedundantTriangleCounter++;
                                                 }
                                             }
-                                        } else
-                                        {
-                                            _logger.LogError("no mapped triangles corresponding to orderbook");
                                         }
                                     }
-                                } else
-                                {
-                                    _logger.LogError("there was no corresponding official orderbook to merge to");
-                                }
+                                }                                
                             }
                             catch (Exception ex)
                             {
-                                
-                                _logger.LogError($"orderbook is {orderbook.Symbol}. Official Asks {orderbook.OfficialAsks.Count()} official bids {orderbook.OfficialBids.Count()}");
                                 _logger.LogError($"Error merging orderbook for market {orderbook.Symbol} on {Exchange.ExchangeName}. Websocket payload was {payload}");
                                 _logger.LogError(ex.Message);
                             }
-                        } else if (orderbook.Pong == true)
+                        } 
+                        else if (orderbook.Pong == true)
                         {
                             try
                             {
@@ -153,13 +148,8 @@ namespace TriangleCollector.Services
                             {
                                 _logger.LogError($"problem sending pong: {ex.Message}");
                                 await Stop();
-                            }
-                            
-                            
-                        } else
-                        {
-                            //Console.WriteLine($"no orderbook symbol - payload was {payload}");
-                        }
+                            }  
+                        } 
                     }
                     catch (Exception ex)
                     {
@@ -168,12 +158,7 @@ namespace TriangleCollector.Services
                             _logger.LogError($"Connection aborted on {Exchange.ExchangeName}");
                             await Stop();
                         }
-                        if (payload == string.Empty && result.MessageType == WebSocketMessageType.Close)
-                        {
-                            _logger.LogError("socket connection closed");
-                            _logger.LogError($"reason for closure is {result.CloseStatusDescription}");
-                            await Stop();
-                        } else
+                        else
                         {
                             _logger.LogError($"exception related to {payload}");
                             _logger.LogError($"exception: {ex.Message}");

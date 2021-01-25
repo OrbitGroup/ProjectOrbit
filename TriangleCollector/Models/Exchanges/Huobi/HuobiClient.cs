@@ -31,7 +31,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public int ID = 1;
 
-        public async Task<WebSocketAdapter> GetExchangeClientAsync()
+        public async Task<WebSocketAdapter> CreateExchangeClientAsync()
         {
             var client = new ClientWebSocket();
             var factory = new LoggerFactory();
@@ -83,7 +83,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             return output;
         }
         
-        public async Task Subscribe(IOrderbook market)
+        public async Task SubscribeViaQueue(IOrderbook market)
         {
             if (Client.State == WebSocketState.Open)
             {
@@ -98,6 +98,10 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 Exchange.SubscriptionQueue.Enqueue(market); //add this market back to the queue
             }
             await Task.Delay(100);
+        }
+        public Task SubscribeViaAggregate()
+        {
+            return Task.CompletedTask;
         }
 
         public async Task UnSubscribe(IOrderbook market, IClientWebSocket client)

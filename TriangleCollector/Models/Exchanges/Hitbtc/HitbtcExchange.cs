@@ -34,13 +34,13 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
 
+        public bool QueuedSubscription { get; set; } = true;
+
+        public bool AggregateStreamOpen { get; set; } = false;
+
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
-
-        public double ImpactedTriangleCounter { get; set; } = 0;
-
-        public double RedundantTriangleCounter { get; set; } = 0;
 
         public double AllOrderBookCounter { get; set; } = 0;
 

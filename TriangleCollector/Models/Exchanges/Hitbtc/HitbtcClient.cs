@@ -80,7 +80,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             return output;
         }
 
-        public async Task<WebSocketAdapter> GetExchangeClientAsync() //create new websocket client
+        public async Task<WebSocketAdapter> CreateExchangeClientAsync() //create new websocket client
         {
             var client = new ClientWebSocket();
             var factory = new LoggerFactory();
@@ -95,7 +95,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             return adapter;
         }
 
-        public async Task Subscribe(IOrderbook market)
+        public async Task SubscribeViaQueue(IOrderbook market)
         {
             market.OfficialAsks.Clear();
             market.OfficialBids.Clear();
@@ -110,6 +110,10 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
                 Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
             }
             await Task.Delay(250); //encountered '429' responses from hitbtc for exceeding the rate limit, which appears to be 100 requests per second
+        }
+        public Task SubscribeViaAggregate()
+        {
+            return Task.CompletedTask;
         }
         public async Task UnSubscribe(IOrderbook market, IClientWebSocket client)
         {

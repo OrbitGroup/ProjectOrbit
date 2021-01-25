@@ -15,6 +15,8 @@ namespace TriangleCollector.Services
 
         private readonly ILoggerFactory _factory;
 
+        private int ListenerID = 1; //identifier for each listener
+
         private IExchange Exchange { get; set; }
 
         public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger, IExchange exch)
@@ -37,37 +39,19 @@ namespace TriangleCollector.Services
 
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
-                await CreateNewListenerAsync(stoppingToken);
+                await CreateNewListenerAsync();
                 
-                while (!stoppingToken.IsCancellationRequested) //structured on a continuous subscription basis as opposed to a batched approached since the Subscription Manager will give rise to continuous individual subscriptions
+                while (!stoppingToken.IsCancellationRequested) 
                 {
                     try
                     {
-                        if (Exchange.ExchangeClient.Client.Markets.Count < Exchange.ExchangeClient.MaxMarketsPerClient && Exchange.ExchangeClient.Client.State == WebSocketState.Open)
+                        if(Exchange.QueuedSubscription == true)
                         {
-                            if (Exchange.SubscriptionQueue.TryDequeue(out var market) && market != null)
-                            {
-                                if(!Exchange.SubscribedMarkets.ContainsKey(market.Symbol))
-                                {
-                                    await Exchange.ExchangeClient.Subscribe(market);
-                                    Exchange.SubscribedMarkets.TryAdd(market.Symbol, market);
-                                }
-                            }
-                        }
-                        else if (!(Exchange.ExchangeClient.Client.Markets.Count < Exchange.ExchangeClient.MaxMarketsPerClient)) //initialize a new client/listener if the current client reached it's maximum number of markets without a websocket disconnection or exception
+                            await QueuedSubscriptionHandling();
+                        } 
+                        else
                         {
-                            await CreateNewListenerAsync(stoppingToken);
-                        }
-                        else if (Exchange.ExchangeClient.Client.State != WebSocketState.Open) //handles a subscription issue due to disconnection
-                        {
-                            foreach (var market in Exchange.ExchangeClient.Client.Markets)
-                            {
-                                if (Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _))
-                                {
-                                    Exchange.SubscriptionQueue.Enqueue(market);
-                                }
-                            }
-                            await CreateNewListenerAsync(stoppingToken);
+                            await AggregateSubscriptionHandling();
                         }
                     }
                     catch (Exception ex)
@@ -77,50 +61,55 @@ namespace TriangleCollector.Services
                             || ex.Message == "Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host..")
                         {
                             _logger.LogWarning($"Websocket exception encountered during subscription process for {Exchange.ExchangeName}. Initializing new client and connection");
-                            foreach (var market in Exchange.ExchangeClient.Client.Markets)
-                            {
-                                if (Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _))
-                                {
-                                    Exchange.SubscriptionQueue.Enqueue(market);
-                                }
-                            }
-                            await CreateNewListenerAsync(stoppingToken);
+                            await CreateNewListenerAsync();
                         }
                         else
                         {
                             _logger.LogError(ex.ToString());
                         }
                     }
-                    if(Exchange.SubscribedMarkets.Count > (Exchange.Clients.Where(c=>c.State == WebSocketState.Open).Count() * Exchange.ExchangeClient.MaxMarketsPerClient))
-                    {
-                        _logger.LogWarning($"{Exchange.ExchangeName}: Paring SubscribedMarkets list for unhandled websocket disconnections.");
-                        var abortedClients = Exchange.Clients.Where(c => c.State != WebSocketState.Open);
-                        foreach(var client in abortedClients)
-                        {
-                            foreach(var market in client.Markets)
-                            {
-                                if(Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _))
-                                {
-                                    Exchange.SubscriptionQueue.Enqueue(market);
-                                }
-                            }
-                        }
-                    }
                 }
-            
         }
-        public async Task CreateNewListenerAsync(CancellationToken stoppingtoken)
+        public async Task QueuedSubscriptionHandling()
+        {
+            if (Exchange.ExchangeClient.Client.Markets.Count < Exchange.ExchangeClient.MaxMarketsPerClient && Exchange.ExchangeClient.Client.State == WebSocketState.Open)
+            {
+                if (Exchange.SubscriptionQueue.TryDequeue(out var market))
+                {
+                    await Exchange.ExchangeClient.SubscribeViaQueue(market);
+                    Exchange.SubscribedMarkets.TryAdd(market.Symbol, market);
+                }
+            }
+            else //initialize a new client/listener if the current client reached it's maximum number of markets or if it's been disconnected
+            {
+                await CreateNewListenerAsync();
+            }
+        }
+        public async Task AggregateSubscriptionHandling()
+        {
+            if(Exchange.AggregateStreamOpen == false)
+            {
+                if(Exchange.ExchangeClient.Client.State != WebSocketState.Open)
+                {
+                    await CreateNewListenerAsync();
+                }
+                await Exchange.ExchangeClient.SubscribeViaAggregate();
+            }
+        }
+        public async Task CreateNewListenerAsync()
         {
             try
             {
-                await Exchange.ExchangeClient.GetExchangeClientAsync();
-                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), Exchange.ExchangeClient.Client, Exchange);
-                await listener.StartAsync(stoppingtoken);
+                var stoppingToken = new CancellationToken(); //create a new cancellation token for every listener
+                await Exchange.ExchangeClient.CreateExchangeClientAsync();
+                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), Exchange.ExchangeClient.Client, Exchange, ListenerID);
+                await listener.StartAsync(stoppingToken);
             } catch (Exception ex)
             {
                 await Task.Delay(3000);
-                await CreateNewListenerAsync(stoppingtoken);
+                await CreateNewListenerAsync();
             }
+            ListenerID++;
         }
     }
 }

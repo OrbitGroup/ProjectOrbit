@@ -20,8 +20,10 @@ namespace TriangleCollector.Models.Interfaces
 
         public HashSet<IOrderbook> GetMarketsViaRestApi();
 
-        public Task<WebSocketAdapter> GetExchangeClientAsync(); //establishes initial connection to exchange for websocket
+        public Task<WebSocketAdapter> CreateExchangeClientAsync(); //establishes initial connection to exchange for websocket
 
-        public Task Subscribe(IOrderbook market);
+        public Task SubscribeViaQueue(IOrderbook market);
+
+        public Task SubscribeViaAggregate();
     }
 }

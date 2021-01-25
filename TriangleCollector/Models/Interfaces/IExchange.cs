@@ -27,14 +27,15 @@ namespace TriangleCollector.Models.Interfaces
 
         public HashSet<string> TriarbEligibleMarkets { get; set; }
 
-        public Queue<IOrderbook> SubscriptionQueue { get; set; } 
+        public bool QueuedSubscription { get; set; }
+
+        public bool AggregateStreamOpen { get; set; }
+
+        public Queue<IOrderbook> SubscriptionQueue { get; set; }
+
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; }
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; }
-
-        public double ImpactedTriangleCounter { get; set; }
-
-        public double RedundantTriangleCounter { get; set; }
 
         public double AllOrderBookCounter { get; set; }
 
