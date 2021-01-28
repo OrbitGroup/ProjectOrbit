@@ -35,9 +35,17 @@ namespace TriangleCollector.Models
                 try
                 {
                     result = await _client.ReceiveAsync(buffer, CancellationToken.None);
-                    ms.Write(buffer.Array, buffer.Offset, result.Count);
+                    if(result != null)
+                    {
+                        ms.Write(buffer.Array, buffer.Offset, result.Count);
+                    } 
+                    else
+                    {
+                        var closeResult = new WebSocketReceiveResult(1, WebSocketMessageType.Close, true);
+                        return (closeResult);
+                    }
                 }
-                catch (WebSocketException ex)
+                catch (Exception ex)
                 {
                     _logger.LogError($"WebSocket Client disconnected: {_client.CloseStatusDescription}");
                     _logger.LogError(ex.Message);

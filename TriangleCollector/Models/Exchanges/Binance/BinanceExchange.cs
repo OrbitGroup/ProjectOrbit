@@ -18,7 +18,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public IExchangeClient ExchangeClient { get; } = new BinanceClient();
 
-        public List<IClientWebSocket> Clients { get; } = new List<IClientWebSocket>();
+        public List<IClientWebSocket> ActiveClients { get; } = new List<IClientWebSocket>();
+        public List<IClientWebSocket> InactiveClients { get; } = new List<IClientWebSocket>();
 
         public Type OrderbookType { get; } = typeof(BinanceOrderbook);
 
@@ -34,7 +35,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
 
-        public bool QueuedSubscription { get; set; } = false;
+        public bool QueuedSubscription { get; set; } = true;
 
         public bool AggregateStreamOpen { get; set; } = false;
         public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();

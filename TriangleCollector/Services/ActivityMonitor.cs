@@ -58,33 +58,34 @@ namespace TriangleCollector.Services
         }
         public async Task LogMetricsAsync()
         {
-            var activeClientCount = Exchange.Clients.Where(c => c.State == WebSocketState.Open).Count();
-            var abortedClientCount = Exchange.Clients.Count - activeClientCount;
+            var activeClientCount = Exchange.ActiveClients.Count;
+            var abortedClientCount = Exchange.InactiveClients.Count;
             double activeSubscriptions = Exchange.SubscribedMarkets.Count;
             double targetSubscriptions = Exchange.SubscribedMarkets.Count + Exchange.SubscriptionQueue.Count;
             double relevantRatio = Math.Round(targetSubscriptions / Exchange.TradedMarkets.Count, 2) * 100;
 
             double oldestClientAge = 0;
-            if (Exchange.Clients.Count > 0)
+            if (Exchange.ActiveClients.Count > 0)
             {
-                var oldestClient = Exchange.Clients.OrderByDescending(c => c.TimeStarted).Where(c => c.State == WebSocketState.Open);
-                oldestClientAge = Math.Round((DateTime.UtcNow - oldestClient.Last().TimeStarted).TotalMinutes, 2);
+                var oldestClient = Exchange.ActiveClients.OrderByDescending(c => c.TimeStarted).Last();
+                oldestClientAge = Math.Round((DateTime.UtcNow - oldestClient.TimeStarted).TotalMinutes, 2);
+
+
+                _logger.LogDebug("*********************************************************************************************************************************************" +
+                    Environment.NewLine +
+                    $"{Exchange.ExchangeName} --- Data Points Received: {Exchange.AllOrderBookCounter}. Data Receipts/Second (last {LoopTimer}s): {(Exchange.AllOrderBookCounter - LastOBCounter) / LoopTimer}." +
+                    Environment.NewLine +
+                    $"{Exchange.ExchangeName} --- Triarb Opportunities Calculated: {Exchange.RecalculatedTriangles.Count}. Triarb Opportunities/ Second(last {LoopTimer}s): {(Exchange.RecalculatedTriangles.Count - LastTriarbCounter) / LoopTimer}" +
+                    Environment.NewLine +
+                    $"{Exchange.ExchangeName} --- Queue Size: {Exchange.TrianglesToRecalculate.Count} - Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions / targetSubscriptions, 2) * 100}% subscribed. {relevantRatio}% of markets are deemed relevant." +
+                    Environment.NewLine +
+                    $"{Exchange.ExchangeName} --- Active Clients: {activeClientCount} - Aborted Clients: {abortedClientCount} - Oldest Active Client: {oldestClientAge} minutes" +
+                    Environment.NewLine +
+                    "*********************************************************************************************************************************************");
+
+                LastOBCounter = Exchange.AllOrderBookCounter;
+                LastTriarbCounter = Exchange.RecalculatedTriangles.Count;
             }
-
-            _logger.LogDebug("*********************************************************************************************************************************************" + 
-                Environment.NewLine + 
-                $"{Exchange.ExchangeName} --- Data Points Received: {Exchange.AllOrderBookCounter}. Data Receipts/Second (last {LoopTimer}s): {(Exchange.AllOrderBookCounter - LastOBCounter) / LoopTimer}." + 
-                Environment.NewLine +
-                $"{Exchange.ExchangeName} --- Triarb Opportunities Calculated: {Exchange.RecalculatedTriangles.Count()}. Triarb Opportunities/ Second(last {LoopTimer}s): {(Exchange.RecalculatedTriangles.Count() - LastTriarbCounter) / LoopTimer}" +
-                Environment.NewLine +
-                $"{Exchange.ExchangeName} --- Queue Size: {Exchange.TrianglesToRecalculate.Count()} - Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions / targetSubscriptions, 2) * 100}% subscribed. {relevantRatio}% of markets are deemed relevant." +
-                Environment.NewLine +
-                $"{Exchange.ExchangeName} --- Active Clients: {activeClientCount} - Aborted Clients: {abortedClientCount} - Oldest Active Client: {oldestClientAge} minutes" + 
-                Environment.NewLine +
-                "*********************************************************************************************************************************************");
-
-            LastOBCounter = Exchange.AllOrderBookCounter;
-            LastTriarbCounter = Exchange.RecalculatedTriangles.Count();
         }
     }
 }

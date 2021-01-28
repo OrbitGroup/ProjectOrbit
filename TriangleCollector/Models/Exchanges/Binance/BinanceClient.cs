@@ -21,23 +21,9 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public string SocketClientApi { get; set; } = "wss://stream.binance.com:9443/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public IClientWebSocket Client { get; set; }
-        public int MaxMarketsPerClient { get; } = 20;
+        public int MaxMarketsPerClient { get; } = 30;
 
         public int ID = 1;
-
-        //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
-        //{
-        //    TickerRESTAPI.Add("hitbtc", "https://api.hitbtc.com/api/2/public/symbol");
-        //    TickerRESTAPI.Add("binance", "");
-        //    TickerRESTAPI.Add("bittrex", "https://api.bittrex.com/v3/markets");
-        //    TickerRESTAPI.Add("huobi", "https://api.huobi.pro/v1/common/symbols");
-        //    SocketClientAPI.Add("hitbtc", "wss://api.hitbtc.com/api/2/ws");
-        //    SocketClientAPI.Add("binance", "");
-        //    SocketClientAPI.Add("bittrex", "https://socket-v3.bittrex.com/signalr");
-        //    SocketClientAPI.Add("huobi", "wss://api.huobi.pro/ws");
-        //    SocketClientAPI.Add("bitstamp", "wss://ws.bitstamp.net");
-        //    PingRESTAPI();
-        //}
 
         public HashSet<IOrderbook> GetMarketsViaRestApi()
         {
@@ -81,12 +67,12 @@ namespace TriangleCollector.Models.Exchanges.Binance
             var factory = new LoggerFactory();
             var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
 
-            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 1);
+            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
             await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
             adapter.TimeStarted = DateTime.UtcNow;
             adapter.Markets = new List<IOrderbook>();
             Client = adapter;
-            Exchange.Clients.Add(Client);
+            Exchange.ActiveClients.Add(Client);
             await Task.Delay(250); // clients with zero subscriptions are being aborted; give 1/4 second to ensure connection is complete
             return adapter;
         }
@@ -103,9 +89,17 @@ namespace TriangleCollector.Models.Exchanges.Binance
             } 
             await Task.Delay(500);
         }
-        public Task SubscribeViaQueue(IOrderbook market)
+        public async Task SubscribeViaQueue(IOrderbook market)
         {
-            return Task.CompletedTask;
+            if (Client.State == WebSocketState.Open)
+            {
+                await Client.SendAsync(new ArraySegment<byte>(
+                        Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@bookTicker\"], \"id\": {ID} }}")
+                        ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                ID++;
+                Client.Markets.Add(market);
+            }
+            await Task.Delay(250);
         }
     }
 }

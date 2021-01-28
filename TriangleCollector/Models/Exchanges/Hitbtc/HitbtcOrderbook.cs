@@ -11,7 +11,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
     [JsonConverter(typeof(HitbtcConverter))]
     public class HitbtcOrderbook : IOrderbook
     {
-        public string Symbol { get; set; }
+        public string Symbol { get; set; } = string.Empty;
         public string BaseCurrency { get; set; }
         public string QuoteCurrency { get; set; }
         public IExchange Exchange { get; set; }

@@ -91,7 +91,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             adapter.TimeStarted = DateTime.UtcNow;
             adapter.Markets = new List<IOrderbook>();
             Client = adapter;
-            Exchange.Clients.Add(Client);
+            Exchange.ActiveClients.Add(Client);
             return adapter;
         }
 
@@ -109,7 +109,6 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             {
                 Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
             }
-            await Task.Delay(250); //encountered '429' responses from hitbtc for exceeding the rate limit, which appears to be 100 requests per second
         }
         public Task SubscribeViaAggregate()
         {

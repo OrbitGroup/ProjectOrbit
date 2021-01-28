@@ -11,7 +11,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
     [JsonConverter(typeof(BinanceConverter))]
     public class BinanceOrderbook : IOrderbook
     {
-        public string Symbol { get; set; }
+        public string Symbol { get; set; } = string.Empty;
         public string BaseCurrency { get; set; }
         public string QuoteCurrency { get; set; }
         public IExchange Exchange { get; set; }
@@ -47,14 +47,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
             }
         }
 
-        public IOrderbook DeepCopy()
-        {
-            IOrderbook deepCopy = (IOrderbook)this.MemberwiseClone();
-            deepCopy.OfficialAsks = new ConcurrentDictionary<decimal, decimal>(OfficialAsks);
-            deepCopy.OfficialBids = new ConcurrentDictionary<decimal, decimal>(OfficialBids);
-            return (deepCopy);
-        }
-
         public bool Merge(IOrderbook update)
         {
             if (this.Sequence < update.Sequence)
@@ -74,13 +66,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
                     PreviousHighestBid = decimal.MaxValue;
                 }
 
-
-                //Loop through update.asks and update.bids in parallel and either add them to this.asks and this.bids or update the value thats currently there.
                 OfficialAsks = update.OfficialAsks;
                 OfficialBids = update.OfficialBids;
-
-                //update.OfficialAsks.AsParallel().ForAll(UpdateAskLayer);
-                //update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
 
                 if (SignificantChange(update))
                 {

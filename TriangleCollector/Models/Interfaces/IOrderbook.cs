@@ -47,8 +47,6 @@ namespace TriangleCollector.Models.Interfaces
             }
         }
 
-        public IOrderbook DeepCopy();
-
         /// <summary>
         /// Takes an update and merges it with this orderbook.
         /// </summary>

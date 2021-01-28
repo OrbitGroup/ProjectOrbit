@@ -62,17 +62,17 @@ namespace TriangleCollector.Services
                                     triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
                                     if (triangle.ProfitPercent > SubscriptionThreshold)
                                     {
-                                        if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.FirstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
+                                        if (!Exchange.SubscribedMarkets.Keys.Contains(firstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(firstSymbolOrderbook))
                                         {
-                                            Exchange.SubscriptionQueue.Enqueue(triangle.FirstSymbolOrderbook);
+                                            Exchange.SubscriptionQueue.Enqueue(firstSymbolOrderbook);
                                         }
-                                        if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.SecondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
+                                        if (!Exchange.SubscribedMarkets.Keys.Contains(secondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(secondSymbolOrderbook))
                                         {
-                                            Exchange.SubscriptionQueue.Enqueue(triangle.SecondSymbolOrderbook);
+                                            Exchange.SubscriptionQueue.Enqueue(secondSymbolOrderbook);
                                         }
-                                        if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.ThirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
+                                        if (!Exchange.SubscribedMarkets.Keys.Contains(thirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(thirdSymbolOrderbook))
                                         {
-                                            Exchange.SubscriptionQueue.Enqueue(triangle.ThirdSymbolOrderbook);
+                                            Exchange.SubscriptionQueue.Enqueue(thirdSymbolOrderbook);
                                         }
                                     }
                                 } 

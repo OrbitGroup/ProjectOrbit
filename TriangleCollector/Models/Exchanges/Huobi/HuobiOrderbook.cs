@@ -11,7 +11,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
     [JsonConverter(typeof(HuobiConverter))]
     public class HuobiOrderbook : IOrderbook
     {
-        public string Symbol { get; set; }
+        public string Symbol { get; set; } = string.Empty;
         public string BaseCurrency { get; set; }
         public string QuoteCurrency { get; set; }
         public IExchange Exchange { get; set; }
@@ -47,14 +47,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             }
         }
 
-        public IOrderbook DeepCopy()
-        {
-            IOrderbook deepCopy = (IOrderbook)this.MemberwiseClone();
-            deepCopy.OfficialAsks = new ConcurrentDictionary<decimal, decimal>(OfficialAsks);
-            deepCopy.OfficialBids = new ConcurrentDictionary<decimal, decimal>(OfficialBids);
-            return (deepCopy);
-        }
-
         public bool Merge(IOrderbook update)
         {
             if (this.Sequence < update.Sequence)
@@ -74,8 +66,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                     PreviousHighestBid = decimal.MaxValue;
                 }
 
-
-                //For Huobi, the OfficialAsks and OfficialBids of the update are now the OfficialAsks and OfficialBids of the orderbook.
                 OfficialAsks = update.OfficialAsks;
                 OfficialBids = update.OfficialBids;
                 

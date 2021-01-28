@@ -13,7 +13,9 @@ namespace TriangleCollector.Models.Interfaces
 
         public IExchangeClient ExchangeClient { get; }
 
-        public List<IClientWebSocket> Clients { get; }
+        public List<IClientWebSocket> ActiveClients { get; }
+
+        public List<IClientWebSocket> InactiveClients { get; }
 
         public Type OrderbookType { get; }
 

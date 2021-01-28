@@ -18,7 +18,8 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public IExchangeClient ExchangeClient { get; } = new HitbtcClient();
 
-        public List<IClientWebSocket> Clients { get; } = new List<IClientWebSocket>();
+        public List<IClientWebSocket> ActiveClients { get; } = new List<IClientWebSocket>();
+        public List<IClientWebSocket> InactiveClients { get; } = new List<IClientWebSocket>();
 
         public Type OrderbookType { get; } = typeof(HitbtcOrderbook);
 

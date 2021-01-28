@@ -27,7 +27,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public IClientWebSocket Client { get; set; }
 
-        public int MaxMarketsPerClient { get; } = 30;
+        public int MaxMarketsPerClient { get; } = 40;
 
         public int ID = 1;
 
@@ -42,8 +42,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             adapter.TimeStarted = DateTime.UtcNow;
             adapter.Markets = new List<IOrderbook>();
             Client = adapter;
-            Exchange.Clients.Add(Client);
-            await Task.Delay(250); // clients with zero subscriptions are being aborted; give 1/4 second to ensure connection is complete
+            Exchange.ActiveClients.Add(Client);
             return adapter;
         }
         public HashSet<IOrderbook> GetMarketsViaRestApi()
