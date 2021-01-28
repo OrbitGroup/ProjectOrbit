@@ -61,9 +61,12 @@ namespace TriangleCollector.Services
                 using (var ms = new MemoryStream())
                 {
                     string payload = string.Empty;
-                    
-                    WebSocketReceiveResult result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
-                    
+                    WebSocketReceiveResult result = null;
+                    result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
+                    if (result == null)
+                    {
+                        continue;
+                    }
                     if (result.MessageType == WebSocketMessageType.Text) //hitbtc, binance
                     {
                         var reader = new StreamReader(ms, Encoding.UTF8);
@@ -76,9 +79,7 @@ namespace TriangleCollector.Services
                     else if (result.MessageType == WebSocketMessageType.Close)
                     {
                         _logger.LogError($"{Exchange.ExchangeName}: Socket connection closed because {result.CloseStatusDescription}");
-                        Exchange.ActiveClients.Remove(Client);
-                        Exchange.InactiveClients.Add(Client);
-                        await StopAsync(StoppingToken);
+                        await HandleWebsocketClose();
                         continue;
                     }
 
@@ -104,19 +105,22 @@ namespace TriangleCollector.Services
                             {
                                 foreach (var impactedTriangle in impactedTriangles)
                                 {
-                                    if (Exchange.TrianglesToRecalculate.Contains(impactedTriangle) == false) //this triangle isn't already in the queue
-                                    {
-                                        Exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
-                                    }
+                                    var triangleSnapshot = CreateTriangleSnapshot(impactedTriangle);
+                                    Exchange.TrianglesToRecalculate.Enqueue(triangleSnapshot);
                                 }
                             }
                         }
                     } 
                 }
             }
-            Exchange.ActiveClients.Remove(Client);
-            Exchange.InactiveClients.Add(Client);
-            await StopAsync(StoppingToken);
+            await HandleWebsocketClose();
+        }
+
+        public Triangle CreateTriangleSnapshot(Triangle triangle)
+        {
+            var triangleSnapshot = new Triangle(triangle.FirstSymbolOrderbook, triangle.SecondSymbolOrderbook, triangle.ThirdSymbolOrderbook, triangle.Direction, triangle.Exchange);
+            triangleSnapshot.CreateOrderbookSnapshots();
+            return triangleSnapshot;
         }
         public async Task SendPong(IOrderbook orderbook) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
         {
@@ -146,6 +150,17 @@ namespace TriangleCollector.Services
 
             using var streamReader = new StreamReader(decompressedStream);
             return(streamReader.ReadToEnd());
+        }
+        public async Task HandleWebsocketClose()
+        {
+            Exchange.ActiveClients.Remove(Client);
+            Exchange.InactiveClients.Add(Client);
+            foreach(var market in Client.Markets)
+            {
+                Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _);
+                Exchange.SubscriptionQueue.Enqueue(market);
+            }
+            await StopAsync(StoppingToken);
         }
     }
 }

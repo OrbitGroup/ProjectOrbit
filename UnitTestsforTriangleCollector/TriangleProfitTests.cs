@@ -16,17 +16,18 @@ namespace TriangleCollector.UnitTests
     public class TriangleProfitTests
     {
         private static ILoggerFactory _factory = new NullLoggerFactory();
+        IOrderbook dummyOrderbook = new HitbtcOrderbook();
 
         //unprofitable triangles
-        public Triangle EthEosBtc = new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
+        public Triangle EthEosBtc = new Triangle(new HitbtcOrderbook(), new HitbtcOrderbook(), new HitbtcOrderbook(), Triangle.Directions.BuyBuySell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
         public decimal EthEosBtcUnprofitableProfit = 0.9924677859176047787362868849m - 1;
         public decimal EthEosBtcUnprofitableVolume = 0.005536389908m;
 
-        public Triangle EosEthBtc = new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
+        public Triangle EosEthBtc = new Triangle(new HitbtcOrderbook(), new HitbtcOrderbook(), new HitbtcOrderbook(), Triangle.Directions.BuySellSell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
         public decimal EosEthBtcUnprofitableProfit = 0.9994362518556066475976682718m - 1;
         public decimal EosEthBtcUnprofitableVolume = 0.005520685968m;
 
-        public Triangle UsdEosBtc = new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
+        public Triangle UsdEosBtc = new Triangle(new HitbtcOrderbook(), new HitbtcOrderbook(), new HitbtcOrderbook(), Triangle.Directions.SellBuySell, (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString()));
         public decimal UsdEosBtcUnprofitableProfit = 0.9994800007008076808521821399m - 1;
         public decimal UsdEosBtcUnprofitableVolume = 0.01019975m;
 
@@ -108,8 +109,8 @@ namespace TriangleCollector.UnitTests
             EthEosBtc.FirstSymbolOrderbook = EthBtc;
             EthEosBtc.SecondSymbolOrderbook = EosEth;
             EthEosBtc.ThirdSymbolOrderbook = EosBtcUnprofitable;
-
-            EthEosBtc.SetMaxVolumeAndProfitability(EthBtc, EosEth, EosBtcUnprofitable);
+            EthEosBtc.CreateOrderbookSnapshots();
+            EthEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EthEosBtcUnprofitableProfit, EthEosBtc.ProfitPercent);
             Assert.AreEqual(EthEosBtcUnprofitableVolume, EthEosBtc.MaxVolume);
         }
@@ -143,8 +144,9 @@ namespace TriangleCollector.UnitTests
             UsdEosBtc.FirstSymbolOrderbook = BtcUsdBids;
             UsdEosBtc.SecondSymbolOrderbook = EosUsdAsks;
             UsdEosBtc.ThirdSymbolOrderbook = EosBtcUnprofitable;
+            UsdEosBtc.CreateOrderbookSnapshots();
 
-            UsdEosBtc.SetMaxVolumeAndProfitability(BtcUsdBids, EosUsdAsks, EosBtcUnprofitable);
+            UsdEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(UsdEosBtcUnprofitableProfit, UsdEosBtc.ProfitPercent);
             Assert.AreEqual(UsdEosBtcUnprofitableVolume, UsdEosBtc.MaxVolume);
         }
@@ -188,8 +190,9 @@ namespace TriangleCollector.UnitTests
             EosEthBtc.FirstSymbolOrderbook = EosBtcUnprofitable;
             EosEthBtc.SecondSymbolOrderbook = EosEth;
             EosEthBtc.ThirdSymbolOrderbook = EthBtc;
+            EosEthBtc.CreateOrderbookSnapshots();
 
-            EosEthBtc.SetMaxVolumeAndProfitability(EosBtcUnprofitable, EosEth, EthBtc);
+            EosEthBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EosEthBtcUnprofitableProfit, EosEthBtc.ProfitPercent);
             Assert.AreEqual(EosEthBtcUnprofitableVolume, EosEthBtc.MaxVolume);
         }
@@ -234,8 +237,9 @@ namespace TriangleCollector.UnitTests
             EthEosBtc.FirstSymbolOrderbook = EthBtc;
             EthEosBtc.SecondSymbolOrderbook = EosEth;
             EthEosBtc.ThirdSymbolOrderbook = EosBtcProfitable;
+            EthEosBtc.CreateOrderbookSnapshots();
 
-            EthEosBtc.SetMaxVolumeAndProfitability(EthBtc, EosEth,EosBtcProfitable);
+            EthEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EthEosBtcProfitableBottleneckTwoProfit, EthEosBtc.Profit, "Incorrect Profit");
             Assert.AreEqual(EthEosBtcProfitableBottleneckTwoVolume, EthEosBtc.MaxVolume, "Incorrect Volume");
             Assert.AreEqual(EthEosBtcProfitableBottleneckTwoProfitPercent, EthEosBtc.ProfitPercent, "Incorrect ProfitPercent");
@@ -282,8 +286,9 @@ namespace TriangleCollector.UnitTests
             EthEosBtc.FirstSymbolOrderbook = EthBtcBuyBuySellBottleneckOne;
             EthEosBtc.SecondSymbolOrderbook = EosEthBuyBuySellBottleneckOne;
             EthEosBtc.ThirdSymbolOrderbook = EosBtcProfitable;
+            EthEosBtc.CreateOrderbookSnapshots();
 
-            EthEosBtc.SetMaxVolumeAndProfitability(EthBtcBuyBuySellBottleneckOne, EosEthBuyBuySellBottleneckOne, EosBtcProfitable);
+            EthEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EthEosBtcProfitableBottleneckOneProfit, EthEosBtc.Profit, "Incorrect Profit");
             Assert.AreEqual(EthEosBtcProfitableBottleneckOneVolume, EthEosBtc.MaxVolume, "Incorrect Volume");
             Assert.AreEqual(EthEosBtcProfitableBottleneckOneProfitPercent, EthEosBtc.ProfitPercent, "Incorrect ProfitPercent");
@@ -330,8 +335,9 @@ namespace TriangleCollector.UnitTests
             EthEosBtc.FirstSymbolOrderbook = EthBtcBuyBuySellBottleneckThree;
             EthEosBtc.SecondSymbolOrderbook = EosEthBuyBuySellBottleneckOne;
             EthEosBtc.ThirdSymbolOrderbook = EosBtcProfitable;
+            EthEosBtc.CreateOrderbookSnapshots();
 
-            EthEosBtc.SetMaxVolumeAndProfitability(EthBtcBuyBuySellBottleneckThree, EosEthBuyBuySellBottleneckOne, EosBtcProfitable);
+            EthEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EthEosBtcProfitableBottleneckThreeProfit, EthEosBtc.Profit);
             Assert.AreEqual(EthEosBtcProfitableBottleneckThreeVolume, EthEosBtc.MaxVolume);
             Assert.AreEqual(EthEosBtcProfitableBottleneckThreeProfitPercent, EthEosBtc.ProfitPercent);
@@ -377,8 +383,9 @@ namespace TriangleCollector.UnitTests
             EosEthBtc.FirstSymbolOrderbook = EosBtcProfitable;
             EosEthBtc.SecondSymbolOrderbook = EosEth;
             EosEthBtc.ThirdSymbolOrderbook = EthBtc;
+            EosEthBtc.CreateOrderbookSnapshots();
 
-            EosEthBtc.SetMaxVolumeAndProfitability(EosBtcProfitable, EosEth, EthBtc);
+            EosEthBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EosEthBtcProfitableBottleneckTwoProfit, EosEthBtc.Profit, "Incorrect Profit");
             Assert.AreEqual(EosEthBtcProfitableBottleneckTwoVolume, EosEthBtc.MaxVolume, "Incorrect Volume");
             Assert.AreEqual(EosEthBtcProfitableBottleneckTwoProfitPercent, EosEthBtc.ProfitPercent, "Incorrect ProfitPercent");
@@ -423,8 +430,9 @@ namespace TriangleCollector.UnitTests
             EosEthBtc.FirstSymbolOrderbook = EosBtcProfitable;
             EosEthBtc.SecondSymbolOrderbook = EosEth;
             EosEthBtc.ThirdSymbolOrderbook = EthBtc;
+            EosEthBtc.CreateOrderbookSnapshots();
 
-            EosEthBtc.SetMaxVolumeAndProfitability(EosBtcProfitable, EosEth, EthBtc);
+            EosEthBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(EosEthBtcProfitableBottleneckThreeProfit, EosEthBtc.Profit, "Incorrect Profit");
             Assert.AreEqual(EosEthBtcProfitableBottleneckThreeVolume, EosEthBtc.MaxVolume, "Incorrect Volume");
             Assert.AreEqual(EosEthBtcProfitableBottleneckThreeProfitPercent, EosEthBtc.ProfitPercent, "Incorrect ProfitPercent");
@@ -459,8 +467,9 @@ namespace TriangleCollector.UnitTests
             UsdEosBtc.FirstSymbolOrderbook = BtcUsdSortedBids;
             UsdEosBtc.SecondSymbolOrderbook = EosUsdSortedAsks;
             UsdEosBtc.ThirdSymbolOrderbook = EosBtcProfitable;
+            UsdEosBtc.CreateOrderbookSnapshots();
 
-            UsdEosBtc.SetMaxVolumeAndProfitability(BtcUsdSortedBids, EosUsdSortedAsks, EosBtcProfitable);
+            UsdEosBtc.SetMaxVolumeAndProfitability();
             Assert.AreEqual(UsdEosBtcProfitableBottlenecksProfit, UsdEosBtc.Profit, "Incorrect Profit");
             Assert.AreEqual(UsdEosBtcProfitableBottlenecksVolume, UsdEosBtc.MaxVolume, "Incorrect Volume");
             Assert.AreEqual(UsdEosBtcProfitableBottlenecksProfitPercent, UsdEosBtc.ProfitPercent, "Incorrect ProfitPercent");

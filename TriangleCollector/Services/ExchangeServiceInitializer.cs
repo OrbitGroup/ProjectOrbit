@@ -35,6 +35,9 @@ namespace TriangleCollector.Services
                 var subscriptionManager = new SubscriptionManager(_factory, _factory.CreateLogger<SubscriptionManager>(), exchange);
                 await subscriptionManager.StartAsync(stoppingToken);
 
+                var clientManager = new ClientManager(_factory, _factory.CreateLogger<ClientManager>(), exchange);
+                await clientManager.StartAsync(stoppingToken);
+
                 var calculator = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), exchange);
                 await calculator.StartAsync(stoppingToken);
 

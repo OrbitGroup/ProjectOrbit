@@ -78,7 +78,7 @@ namespace TriangleCollector.Services
         public static void MapHelper(string firstDirection, string secondDirection, string thirdDirection, IOrderbook firstMarket, IOrderbook secondMarket, IOrderbook thirdMarket, IExchange Exchange)
         {
             var direction = (Triangle.Directions)Enum.Parse(typeof(Triangle.Directions), $"{firstDirection}{secondDirection}{thirdDirection}");
-            var newTriangle = new Triangle(firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol, direction, Exchange);
+            var newTriangle = new Triangle(firstMarket, secondMarket, thirdMarket, direction, Exchange);
             //Console.WriteLine($"{exchangeName}: {firstDirection} {firstMarket.symbol}, {secondDirection} {secondMarket.symbol}, {thirdDirection} {thirdMarket.symbol}");
             UniqueTriangleCount++;
             TriarbEligibleMarkets.Add(firstMarket.Symbol);

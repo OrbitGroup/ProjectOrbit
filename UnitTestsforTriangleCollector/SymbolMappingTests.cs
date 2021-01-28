@@ -85,13 +85,7 @@ namespace TriangleCollector.UnitTests
         {
             var testExchange = (IExchange)Activator.CreateInstance(typeof(HitbtcExchange), typeof(HitbtcExchange).ToString());
             //Arrange: list all of the possible triangles and map them to their symbols
-            List<Triangle> triangles = new List<Triangle>()
-            {
-                new Triangle("ETHBTC", "EOSETH", "EOSBTC", Triangle.Directions.BuyBuySell, testExchange),
-                new Triangle("EOSBTC", "EOSETH", "ETHBTC", Triangle.Directions.BuySellSell, testExchange),
-                new Triangle("BTCUSD", "EOSUSD", "EOSBTC", Triangle.Directions.SellBuySell, testExchange)
-
-            };
+            
 
             HashSet<IOrderbook> expectedTriangleEligiblePairs = new HashSet<IOrderbook>(); //"ETHBTC", "EOSETH", "EOSBTC", "EOSUSD", "BTCUSD"
             var ethbtc = new HitbtcOrderbook();
@@ -123,6 +117,14 @@ namespace TriangleCollector.UnitTests
             btcusd.QuoteCurrency = "USD";
             btcusd.BaseCurrency = "BTC";
             expectedTriangleEligiblePairs.Add(btcusd);
+
+            List<Triangle> triangles = new List<Triangle>()
+            {
+                new Triangle(ethbtc, eoseth, eosbtc, Triangle.Directions.BuyBuySell, testExchange),
+                new Triangle(eosbtc, eoseth, ethbtc, Triangle.Directions.BuySellSell, testExchange),
+                new Triangle(btcusd, eosusd, eosbtc, Triangle.Directions.SellBuySell, testExchange)
+
+            };
 
 
             var expectedSymbolTriangleMapping = new ConcurrentDictionary<string, List<Triangle>>();

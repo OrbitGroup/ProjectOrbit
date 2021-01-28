@@ -56,40 +56,28 @@ namespace TriangleCollector.Services
                 var sw = new Stopwatch();
                 if (Exchange.TrianglesToRecalculate.TryDequeue(out Triangle triangle))
                 {
-                    var firstOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out IOrderbook firstSymbolOrderbook);
-                    var secondOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out IOrderbook secondSymbolOrderbook);
-                    var thirdOrderbookSet = Exchange.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out IOrderbook thirdSymbolOrderbook);
+                    sw.Start();
+                    triangle.SetMaxVolumeAndProfitability();
+                    sw.Stop();
 
-                    if (firstOrderbookSet && secondOrderbookSet && thirdOrderbookSet && 
-                        thirdSymbolOrderbook.OfficialBids.Count > 0 && secondSymbolOrderbook.OfficialAsks.Count > 0 && firstSymbolOrderbook.OfficialAsks.Count > 0
-                        && firstSymbolOrderbook.OfficialBids.Count > 0 && secondSymbolOrderbook.OfficialBids.Count > 0)
+                    if(sw.ElapsedMilliseconds > 50)
                     {
-                        sw.Start();
-                        var updated = triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
-                        if (!updated)
-                        {
-                            continue;
-                        }
-                        sw.Stop();
-
-                        if(sw.ElapsedMilliseconds > 50)
-                        {
-                            //_logger.LogWarning($"Irregular triangle calculation time for {triangle.ToString()}: {sw.ElapsedMilliseconds}ms");
-                        }
-                        sw.Reset();
-                        var oldestTimestamp = new List<DateTime> { firstSymbolOrderbook.Timestamp, secondSymbolOrderbook.Timestamp, thirdSymbolOrderbook.Timestamp }.Min();
-                        var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
-
-                        if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
-                        {
-                            //Console.WriteLine($"Triarb Opportunity on {Exchange.ExchangeName} | Markets: {firstSymbolOrderbook.Symbol}, {secondSymbolOrderbook.Symbol}, {thirdSymbolOrderbook.Symbol} | Profitability: {Math.Round(triangle.ProfitPercent, 4)}% | Liquidity: {Math.Round(triangle.MaxVolume, 4)} BTC | Profit: {Math.Round(triangle.Profit, 4)} BTC, or ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice, 2)} | Delay: {age}ms");
-                        }
-
-                        Exchange.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
-                        
-                        Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), oldestTimestamp, (key, oldValue) => oldValue = oldestTimestamp);
-                        Exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued
+                        _logger.LogWarning($"Irregular triangle calculation time for {triangle.ToString()}: {sw.ElapsedMilliseconds}ms");
                     }
+                    sw.Reset();
+                    var oldestTimestamp = new List<DateTime> { triangle.FirstSymbolOrderbook.Timestamp, triangle.SecondSymbolOrderbook.Timestamp, triangle.ThirdSymbolOrderbook.Timestamp }.Min();
+                    var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
+
+                    if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
+                    {
+                        //Console.WriteLine($"Triarb Opportunity on {Exchange.ExchangeName} | Markets: {firstSymbolOrderbook.Symbol}, {secondSymbolOrderbook.Symbol}, {thirdSymbolOrderbook.Symbol} | Profitability: {Math.Round(triangle.ProfitPercent, 4)}% | Liquidity: {Math.Round(triangle.MaxVolume, 4)} BTC | Profit: {Math.Round(triangle.Profit, 4)} BTC, or ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice, 2)} | Delay: {age}ms");
+                    }
+
+                    Exchange.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
+                        
+                    Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), oldestTimestamp, (key, oldValue) => oldValue = oldestTimestamp);
+                    Exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued
+                    
                 }
                 /*else
                 {

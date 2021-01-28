@@ -59,12 +59,15 @@ namespace TriangleCollector.Models
 
         private ILogger<Triangle> _logger;
 
-        public Triangle(string FirstSymbol, string SecondSymbol, string ThirdSymbol, Directions Direction, IExchange exch)
+        public Triangle(IOrderbook firstSymbolOrderbook, IOrderbook secondSymbolOrderbook, IOrderbook thirdSymbolOrderbook, Directions direction, IExchange exch)
         {
-            this.FirstSymbol = FirstSymbol;
-            this.SecondSymbol = SecondSymbol;
-            this.ThirdSymbol = ThirdSymbol;
-            this.Direction = Direction;
+            FirstSymbolOrderbook = firstSymbolOrderbook;
+            SecondSymbolOrderbook = secondSymbolOrderbook;
+            ThirdSymbolOrderbook = thirdSymbolOrderbook;
+            FirstSymbol = firstSymbolOrderbook.Symbol;
+            SecondSymbol = secondSymbolOrderbook.Symbol;
+            ThirdSymbol = thirdSymbolOrderbook.Symbol;
+            Direction = direction;
             _logger = new LoggerFactory().CreateLogger<Triangle>();
             Exchange = exch;
         }
@@ -86,80 +89,36 @@ namespace TriangleCollector.Models
         {
             get
             {
-                if (FirstOrderBook.Count == 0 || SecondOrderBook.Count == 0 || ThirdOrderBook.Count == 0) //the third trade is always a bid
+                if (FirstOrderBook.Count == 0 || SecondOrderBook.Count == 0 || ThirdOrderBook.Count == 0)
                 {
                     return false;
                 } else
                 {
                     return true;
                 }
-                
             }
         }
-
-        public bool SetMaxVolumeAndProfitability(IOrderbook firstSymbolOrderbook, IOrderbook secondSymbolOrderbook, IOrderbook thirdSymbolOrderbook)
+        public void CreateOrderbookSnapshots()
         {
-            try 
-            {
-                bool firstOrderbookEntered = Monitor.TryEnter(firstSymbolOrderbook.OrderbookLock, TimeSpan.FromMilliseconds(5));
-                if (!firstOrderbookEntered)
-                {
-                    return false;
-                }
-
-                bool secondOrderbookEntered = Monitor.TryEnter(secondSymbolOrderbook.OrderbookLock, TimeSpan.FromMilliseconds(5));
-                if (!secondOrderbookEntered)
-                {
-                    return false;
-                }
-
-                bool thirdOrderbookEntered = Monitor.TryEnter(thirdSymbolOrderbook.OrderbookLock, TimeSpan.FromMilliseconds(5));
-                if (!thirdOrderbookEntered)
-                {
-                    return false;
-                }
-                
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                CreateOrderbookSnapshots(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
-                stopwatch.Stop();
-                CreateSnapshotTime = stopwatch.ElapsedMilliseconds;
-                stopwatch.Reset();
-            }
-            finally
-            {
-                if (Monitor.IsEntered(firstSymbolOrderbook.OrderbookLock)) Monitor.Exit(firstSymbolOrderbook.OrderbookLock);
-                if (Monitor.IsEntered(secondSymbolOrderbook.OrderbookLock)) Monitor.Exit(secondSymbolOrderbook.OrderbookLock);
-                if (Monitor.IsEntered(thirdSymbolOrderbook.OrderbookLock)) Monitor.Exit(thirdSymbolOrderbook.OrderbookLock);
-            }
-
-            SetMaxVolumeAndProfitability();
-            return true;
-        }
-        public void CreateOrderbookSnapshots(IOrderbook firstSymbolOrderbook, IOrderbook secondSymbolOrderbook, IOrderbook thirdSymbolOrderbook)
-        {
-            
             if (Direction == Directions.BuyBuySell)
             {
-                FirstOrderBook = new Dictionary<decimal, decimal>(firstSymbolOrderbook.OfficialAsks);
-                SecondOrderBook = new Dictionary<decimal, decimal>(secondSymbolOrderbook.OfficialAsks);
-                FirstOrderBookVolumeConverter = new KeyValuePair<decimal, decimal>(firstSymbolOrderbook.OfficialBids.Keys.Max(),firstSymbolOrderbook.OfficialBids[firstSymbolOrderbook.OfficialBids.Keys.Max()]);
+                FirstOrderBook = new Dictionary<decimal, decimal>(FirstSymbolOrderbook.OfficialAsks);
+                SecondOrderBook = new Dictionary<decimal, decimal>(SecondSymbolOrderbook.OfficialAsks);
+                FirstOrderBookVolumeConverter = new KeyValuePair<decimal, decimal>(FirstSymbolOrderbook.OfficialBids.Keys.Max(), FirstSymbolOrderbook.OfficialBids[FirstSymbolOrderbook.OfficialBids.Keys.Max()]);
             }
             else if (Direction == Directions.BuySellSell)
             {
-                FirstOrderBook = new Dictionary<decimal, decimal>(firstSymbolOrderbook.OfficialAsks);
-                SecondOrderBook = new Dictionary<decimal, decimal>(secondSymbolOrderbook.OfficialBids);
-                ThirdOrderBookVolumeConverter = new KeyValuePair<decimal, decimal>(thirdSymbolOrderbook.OfficialAsks.Keys.Min(), thirdSymbolOrderbook.OfficialAsks[thirdSymbolOrderbook.OfficialAsks.Keys.Min()]);
+                FirstOrderBook = new Dictionary<decimal, decimal>(FirstSymbolOrderbook.OfficialAsks);
+                SecondOrderBook = new Dictionary<decimal, decimal>(SecondSymbolOrderbook.OfficialBids);
+                ThirdOrderBookVolumeConverter = new KeyValuePair<decimal, decimal>(ThirdSymbolOrderbook.OfficialAsks.Keys.Min(), ThirdSymbolOrderbook.OfficialAsks[ThirdSymbolOrderbook.OfficialAsks.Keys.Min()]);
             }
             else //SellBuySell
             {
-                FirstOrderBook = new Dictionary<decimal, decimal>(firstSymbolOrderbook.OfficialBids);
-                SecondOrderBook = new Dictionary<decimal, decimal>(secondSymbolOrderbook.OfficialAsks);
-         
+                FirstOrderBook = new Dictionary<decimal, decimal>(FirstSymbolOrderbook.OfficialBids);
+                SecondOrderBook = new Dictionary<decimal, decimal>(SecondSymbolOrderbook.OfficialAsks);
             }
-            ThirdOrderBook = new Dictionary<decimal, decimal>(thirdSymbolOrderbook.OfficialBids);
+            ThirdOrderBook = new Dictionary<decimal, decimal>(ThirdSymbolOrderbook.OfficialBids);
         }
-
         public void SetMaxVolumeAndProfitability()
         {
             MaxVolume = 0;

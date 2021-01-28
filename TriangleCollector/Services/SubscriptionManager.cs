@@ -20,7 +20,7 @@ namespace TriangleCollector.Services
 
         private int TimeInterval = 1; //time interval in minutes
 
-        private decimal SubscriptionThreshold = -0.03m;
+        private decimal SubscriptionThreshold = -0.1m;
 
         public SubscriptionManager(ILoggerFactory factory, ILogger<SubscriptionManager> logger, IExchange exch)
         {
@@ -39,51 +39,40 @@ namespace TriangleCollector.Services
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
             var sw = new Stopwatch();
-            while (!stoppingToken.IsCancellationRequested)
+            sw.Start();
+            Exchange.TradedMarkets = Exchange.ExchangeClient.GetMarketsViaRestApi(); 
+            MarketMapper.MapOpportunities(Exchange);
+            foreach(var market in Exchange.TradedMarkets)
             {
-                sw.Start();
-                Exchange.TradedMarkets = Exchange.ExchangeClient.GetMarketsViaRestApi(); 
-                MarketMapper.MapOpportunities(Exchange);
-                foreach(var market in Exchange.TradedMarkets)
+                if(!Exchange.SubscribedMarkets.Keys.Contains(market.Symbol))
                 {
-                    if(!Exchange.SubscribedMarkets.Keys.Contains(market.Symbol))
+                    if(Exchange.TriarbMarketMapping.TryGetValue(market.Symbol, out var triangles))
                     {
-                        if(Exchange.TriarbMarketMapping.TryGetValue(market.Symbol, out var triangles))
+                        foreach (var triangle in triangles)
                         {
-                            foreach (var triangle in triangles)
+                            triangle.CreateOrderbookSnapshots();
+                            triangle.SetMaxVolumeAndProfitability();
+                            if (triangle.ProfitPercent > SubscriptionThreshold)
                             {
-                                Exchange.OfficialOrderbooks.TryGetValue(triangle.FirstSymbol, out IOrderbook firstSymbolOrderbook);
-                                Exchange.OfficialOrderbooks.TryGetValue(triangle.SecondSymbol, out IOrderbook secondSymbolOrderbook);
-                                Exchange.OfficialOrderbooks.TryGetValue(triangle.ThirdSymbol, out IOrderbook thirdSymbolOrderbook);
-                                if(firstSymbolOrderbook.OfficialAsks.Count>0 && firstSymbolOrderbook.OfficialBids.Count>0 
-                                    && secondSymbolOrderbook.OfficialAsks.Count>0 && secondSymbolOrderbook.OfficialBids.Count>0 
-                                    && thirdSymbolOrderbook.OfficialAsks.Count>0 && thirdSymbolOrderbook.OfficialBids.Count>0)
+                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.FirstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
                                 {
-                                    triangle.SetMaxVolumeAndProfitability(firstSymbolOrderbook, secondSymbolOrderbook, thirdSymbolOrderbook);
-                                    if (triangle.ProfitPercent > SubscriptionThreshold)
-                                    {
-                                        if (!Exchange.SubscribedMarkets.Keys.Contains(firstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(firstSymbolOrderbook))
-                                        {
-                                            Exchange.SubscriptionQueue.Enqueue(firstSymbolOrderbook);
-                                        }
-                                        if (!Exchange.SubscribedMarkets.Keys.Contains(secondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(secondSymbolOrderbook))
-                                        {
-                                            Exchange.SubscriptionQueue.Enqueue(secondSymbolOrderbook);
-                                        }
-                                        if (!Exchange.SubscribedMarkets.Keys.Contains(thirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(thirdSymbolOrderbook))
-                                        {
-                                            Exchange.SubscriptionQueue.Enqueue(thirdSymbolOrderbook);
-                                        }
-                                    }
-                                } 
-                            }
+                                    Exchange.SubscriptionQueue.Enqueue(triangle.FirstSymbolOrderbook);
+                                }
+                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.SecondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
+                                {
+                                    Exchange.SubscriptionQueue.Enqueue(triangle.SecondSymbolOrderbook);
+                                }
+                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.ThirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
+                                {
+                                    Exchange.SubscriptionQueue.Enqueue(triangle.ThirdSymbolOrderbook);
+                                }
+                            } 
                         }
                     }
                 }
-                sw.Stop();
-                //Console.WriteLine($"took {sw.ElapsedMilliseconds}ms to map markets");
-                await Task.Delay(TimeInterval * 60 * 10000000);
             }
+            sw.Stop();
+            //Console.WriteLine($"took {sw.ElapsedMilliseconds}ms to map markets");
         }
     }
 }
