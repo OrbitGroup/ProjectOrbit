@@ -86,16 +86,19 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         {
             if (Client.State == WebSocketState.Open)
             {
-                await Client.SendAsync(new ArraySegment<byte>(
+                try
+                {
+                    await Client.SendAsync(new ArraySegment<byte>(
                         Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.refresh.10\",\n  \"id\": \"id{ID}\"\n }}")
                         ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                ID++;
-                Client.Markets.Add(market);
+                    ID++;
+                    Client.Markets.Add(market);
+                } catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+                
             } 
-            else
-            {
-                Exchange.SubscriptionQueue.Enqueue(market); //add this market back to the queue
-            }
             await Task.Delay(100);
         }
         public Task SubscribeViaAggregate()

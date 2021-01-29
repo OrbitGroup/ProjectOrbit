@@ -15,16 +15,23 @@ namespace TriangleCollector
 {
     public class ProjectOrbit
     {
-        public static List<Type> ExchangesToInitialize = new List<Type>() { typeof(BinanceExchange), typeof(HuobiExchange), typeof(HitbtcExchange)}; 
+        //public static List<Type> ExchangesToInitialize = new List<Type>() {typeof(HuobiExchange)}; 
         public static List<IExchange> Exchanges = new List<IExchange>(); //contains all exchange objects
         public static HttpClient StaticHttpClient = new HttpClient();
-
+        public static Dictionary<string, Type> ExchangeTypes = new Dictionary<string, Type>()
+        {
+            {"Binance", typeof(BinanceExchange) },
+            {"Huobi", typeof(HuobiExchange) },
+            {"Hitbtc", typeof(HitbtcExchange) }
+        };
         public static void Main(string[] args)
         {
             try
             {
-                InitializeExchanges(); //exchange objects are initialized synchronously and their constructors map out every possible triangular arbitrage trade. 
-                CreateHostBuilder(args).Build().Run(); //the orderbooksubscriber service then references those mapped markets 
+                Console.WriteLine("Enter the exchange you'd like to monitor. Valid exchange names are 'Binance', 'Huobi', and 'Hitbtc'");
+                var exchange = Console.ReadLine();
+                InitializeExchanges(exchange); 
+                CreateHostBuilder(args).Build().Run(); 
             }
             catch (OperationCanceledException)
             {
@@ -47,13 +54,11 @@ namespace TriangleCollector
             });
 
        
-        public static void InitializeExchanges()
+        public static void InitializeExchanges(string exch)
         {
-            foreach(var exchangeName in ExchangesToInitialize)
-            {
-                IExchange exchange = (IExchange)Activator.CreateInstance(exchangeName, exchangeName.ToString());
-                Exchanges.Add(exchange);
-            }
+            var exchangeType = ExchangeTypes[exch];
+            IExchange exchange = (IExchange)Activator.CreateInstance(exchangeType, exchangeType.ToString());
+            Exchanges.Add(exchange);   
         }
     }
 }

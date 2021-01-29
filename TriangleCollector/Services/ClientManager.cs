@@ -40,21 +40,20 @@ namespace TriangleCollector.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var inactiveClients = new List<IClientWebSocket>();
-                foreach(var activeClient in Exchange.ActiveClients)
+                var activeClientSnapshot = new List<IClientWebSocket>(Exchange.ActiveClients);
+                foreach(var activeClient in activeClientSnapshot)
                 {
                     if(activeClient.State != WebSocketState.Open)
                     {
                         _logger.LogWarning($"detected unhandled websocket closure");
-                        inactiveClients.Add(activeClient);
                         foreach(var market in activeClient.Markets)
                         {
                             Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _);
                             Exchange.SubscriptionQueue.Enqueue(market);
+                            Exchange.ActiveClients.Remove(activeClient);
                         }
                     }
                 }
-                inactiveClients.ForEach(c => Exchange.ActiveClients.Remove(c));
                 await Task.Delay(TimeInterval * 1000);
             }
         }

@@ -68,12 +68,20 @@ namespace TriangleCollector.Services
                     var oldestTimestamp = new List<DateTime> { triangle.FirstSymbolOrderbook.Timestamp, triangle.SecondSymbolOrderbook.Timestamp, triangle.ThirdSymbolOrderbook.Timestamp }.Min();
                     var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
 
-                    if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
+                    if(triangle.ProfitPercent > 0)
                     {
-                        //Console.WriteLine($"Triarb Opportunity on {Exchange.ExchangeName} | Markets: {firstSymbolOrderbook.Symbol}, {secondSymbolOrderbook.Symbol}, {thirdSymbolOrderbook.Symbol} | Profitability: {Math.Round(triangle.ProfitPercent, 4)}% | Liquidity: {Math.Round(triangle.MaxVolume, 4)} BTC | Profit: {Math.Round(triangle.Profit, 4)} BTC, or ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice, 2)} | Delay: {age}ms");
+                        Exchange.TotalUSDValueProfitableTriangles += (triangle.Profit * USDMonitor.BTCUSDPrice);
+                        if(triangle.ProfitPercent>0.02m)
+                        {
+                            Exchange.TotalUSDValueViableTriangles += (triangle.Profit * USDMonitor.BTCUSDPrice);
+                        }
                     }
 
-                    Exchange.Triangles.AddOrUpdate(triangle.ToString(), triangle, (key, oldValue) => oldValue = triangle);
+
+                    //if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
+                    //{
+                        //Console.WriteLine($"Triarb Opportunity on {Exchange.ExchangeName} | Markets: {firstSymbolOrderbook.Symbol}, {secondSymbolOrderbook.Symbol}, {thirdSymbolOrderbook.Symbol} | Profitability: {Math.Round(triangle.ProfitPercent, 4)}% | Liquidity: {Math.Round(triangle.MaxVolume, 4)} BTC | Profit: {Math.Round(triangle.Profit, 4)} BTC, or ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice, 2)} | Delay: {age}ms");
+                    //}
                         
                     Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), oldestTimestamp, (key, oldValue) => oldValue = oldestTimestamp);
                     Exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued

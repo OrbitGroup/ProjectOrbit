@@ -42,6 +42,7 @@ namespace TriangleCollector.Services
             sw.Start();
             Exchange.TradedMarkets = Exchange.ExchangeClient.GetMarketsViaRestApi(); 
             MarketMapper.MapOpportunities(Exchange);
+            var queuedMarkets = new List<IOrderbook>();
             foreach(var market in Exchange.TradedMarkets)
             {
                 if(!Exchange.SubscribedMarkets.Keys.Contains(market.Symbol))
@@ -54,17 +55,20 @@ namespace TriangleCollector.Services
                             triangle.SetMaxVolumeAndProfitability();
                             if (triangle.ProfitPercent > SubscriptionThreshold)
                             {
-                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.FirstSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.FirstSymbolOrderbook))
+                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.FirstSymbolOrderbook.Symbol) && !queuedMarkets.Contains(triangle.FirstSymbolOrderbook))
                                 {
                                     Exchange.SubscriptionQueue.Enqueue(triangle.FirstSymbolOrderbook);
+                                    queuedMarkets.Add(triangle.FirstSymbolOrderbook);
                                 }
-                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.SecondSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.SecondSymbolOrderbook))
+                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.SecondSymbolOrderbook.Symbol) && !queuedMarkets.Contains(triangle.SecondSymbolOrderbook))
                                 {
                                     Exchange.SubscriptionQueue.Enqueue(triangle.SecondSymbolOrderbook);
+                                    queuedMarkets.Add(triangle.SecondSymbolOrderbook);
                                 }
-                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.ThirdSymbolOrderbook.Symbol) && !Exchange.SubscriptionQueue.Contains(triangle.ThirdSymbolOrderbook))
+                                if (!Exchange.SubscribedMarkets.Keys.Contains(triangle.ThirdSymbolOrderbook.Symbol) && !queuedMarkets.Contains(triangle.ThirdSymbolOrderbook))
                                 {
                                     Exchange.SubscriptionQueue.Enqueue(triangle.ThirdSymbolOrderbook);
+                                    queuedMarkets.Add(triangle.ThirdSymbolOrderbook);
                                 }
                             } 
                         }

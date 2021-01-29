@@ -62,9 +62,12 @@ namespace TriangleCollector.Services
                 {
                     string payload = string.Empty;
                     WebSocketReceiveResult result = null;
-                    result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
-                    if (result == null)
+                    try
                     {
+                        result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
+                    } catch (Exception ex)
+                    {
+                        _logger.LogError("ReceiveAsync Failed");
                         continue;
                     }
                     if (result.MessageType == WebSocketMessageType.Text) //hitbtc, binance

@@ -38,8 +38,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public bool QueuedSubscription { get; set; } = true;
 
         public bool AggregateStreamOpen { get; set; } = false;
-        public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
-        
+        public ConcurrentQueue<IOrderbook> SubscriptionQueue { get; set; } = new ConcurrentQueue<IOrderbook>();
+
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 
         public double AllOrderBookCounter { get; set; } = 0;
@@ -61,6 +61,8 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
 
         private readonly ILoggerFactory _factory = new NullLoggerFactory();
+        public decimal TotalUSDValueProfitableTriangles { get; set; }
+        public decimal TotalUSDValueViableTriangles { get; set; }
 
         public BinanceExchange(string name)
         {

@@ -33,7 +33,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
 
         public HashSet<string> TriarbEligibleMarkets { get; set; } = new HashSet<string>();
 
-        public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
+        public ConcurrentQueue<IOrderbook> SubscriptionQueue { get; set; } = new ConcurrentQueue<IOrderbook>();
 
         public bool QueuedSubscription { get; set; } = true;
 
@@ -62,6 +62,8 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
 
         private readonly ILoggerFactory _factory = new NullLoggerFactory();
+        public decimal TotalUSDValueProfitableTriangles { get; set; }
+        public decimal TotalUSDValueViableTriangles { get; set; }
 
         public HitbtcExchange(string name)
         {

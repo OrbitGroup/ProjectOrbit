@@ -21,7 +21,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public string SocketClientApi { get; set; } = "wss://stream.binance.com:9443/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public IClientWebSocket Client { get; set; }
-        public int MaxMarketsPerClient { get; } = 30;
+        public int MaxMarketsPerClient { get; } = 20;
 
         public int ID = 1;
 

@@ -33,7 +33,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public HashSet<string> TriarbEligibleMarkets { get; set; } = new HashSet<string>();
 
-        public Queue<IOrderbook> SubscriptionQueue { get; set; } = new Queue<IOrderbook>();
+        public ConcurrentQueue<IOrderbook> SubscriptionQueue { get; set; } = new ConcurrentQueue<IOrderbook>();
 
         public bool QueuedSubscription { get; set; } = true;
 
@@ -60,6 +60,9 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; } = new ConcurrentDictionary<string, DateTime>();
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
+
+        public decimal TotalUSDValueProfitableTriangles { get; set; }
+        public decimal TotalUSDValueViableTriangles { get; set; }
 
         public HuobiExchange(string name)
         {

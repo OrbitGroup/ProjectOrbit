@@ -105,10 +105,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
                 new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
                 WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                 Client.Markets.Add(market);
-            } else //client was aborted prior to completing the for loop
-            {
-                Exchange.SubscriptionQueue.Enqueue(market); //add these markets back to the queue
-            }
+            } 
         }
         public Task SubscribeViaAggregate()
         {

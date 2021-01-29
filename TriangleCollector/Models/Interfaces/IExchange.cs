@@ -33,7 +33,7 @@ namespace TriangleCollector.Models.Interfaces
 
         public bool AggregateStreamOpen { get; set; }
 
-        public Queue<IOrderbook> SubscriptionQueue { get; set; }
+        public ConcurrentQueue<IOrderbook> SubscriptionQueue { get; set; }
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; }
 
@@ -56,6 +56,9 @@ namespace TriangleCollector.Models.Interfaces
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; }
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; }
+
+        public decimal TotalUSDValueProfitableTriangles { get; set; }
+        public decimal TotalUSDValueViableTriangles { get; set; }
     }
 }
 
