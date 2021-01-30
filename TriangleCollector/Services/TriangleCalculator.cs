@@ -85,7 +85,7 @@ namespace TriangleCollector.Services
                     //}
                         
                     Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), oldestTimestamp, (key, oldValue) => oldValue = oldestTimestamp);
-                    Exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued
+                    //Exchange.RecalculatedTriangles.Enqueue(triangle); //this is never dequeued
                     
                 }
                 /*else

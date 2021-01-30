@@ -125,10 +125,31 @@ namespace TriangleCollector.Services
 
         public Triangle CreateTriangleSnapshot(Triangle triangle)
         {
-            var triangleSnapshot = new Triangle(triangle.FirstSymbolOrderbook, triangle.SecondSymbolOrderbook, triangle.ThirdSymbolOrderbook, triangle.Direction, triangle.Exchange);
+            IOrderbook firstOrderbookSnapshot;
+            IOrderbook secondOrderbookSnapshot;
+            IOrderbook thirdOrderbookSnapshot;
+
+            lock (triangle.FirstSymbolOrderbook.OrderbookLock)
+            {
+                firstOrderbookSnapshot = triangle.FirstSymbolOrderbook.DeepCopy();
+            }
+
+            lock (triangle.SecondSymbolOrderbook.OrderbookLock)
+            {
+                secondOrderbookSnapshot = triangle.SecondSymbolOrderbook.DeepCopy();
+            }
+
+            lock (triangle.ThirdSymbolOrderbook.OrderbookLock)
+            {
+                thirdOrderbookSnapshot = triangle.ThirdSymbolOrderbook.DeepCopy();
+            }
+
+            var triangleSnapshot = new Triangle(firstOrderbookSnapshot, secondOrderbookSnapshot, thirdOrderbookSnapshot, triangle.Direction, triangle.Exchange);
+
             triangleSnapshot.CreateOrderbookSnapshots();
             return triangleSnapshot;
         }
+
         public async Task SendPong(IOrderbook orderbook) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
         {
             if (Client.State == WebSocketState.Open)

@@ -33,7 +33,7 @@ namespace TriangleCollector.Services
             stoppingToken.Register(() => _logger.LogDebug("Stopping Orderbook Subscriber..."));
             await Task.Run(async () =>
             {
-                BackgroundProcessing(stoppingToken);
+                await BackgroundProcessing(stoppingToken);
             }, stoppingToken);
         }
 

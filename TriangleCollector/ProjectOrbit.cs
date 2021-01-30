@@ -18,19 +18,21 @@ namespace TriangleCollector
         //public static List<Type> ExchangesToInitialize = new List<Type>() {typeof(HuobiExchange)}; 
         public static List<IExchange> Exchanges = new List<IExchange>(); //contains all exchange objects
         public static HttpClient StaticHttpClient = new HttpClient();
-        public static Dictionary<string, Type> ExchangeTypes = new Dictionary<string, Type>()
+        public static Dictionary<int, Type> ExchangeTypes = new Dictionary<int, Type>()
         {
-            {"Binance", typeof(BinanceExchange) },
-            {"Huobi", typeof(HuobiExchange) },
-            {"Hitbtc", typeof(HitbtcExchange) }
+            {1, typeof(BinanceExchange) },
+            {2, typeof(HuobiExchange) },
+            {3, typeof(HitbtcExchange) }
         };
+
         public static void Main(string[] args)
         {
             try
             {
-                Console.WriteLine("Enter the exchange you'd like to monitor. Valid exchange names are 'Binance', 'Huobi', and 'Hitbtc'");
-                var exchange = Console.ReadLine();
-                InitializeExchanges(exchange); 
+                int exchangeNumber;
+                Console.WriteLine("Enter the exchange number you'd like to monitor. Valid exchange options are \n1: Binance\n2: Huobi\n3: Hitbtc");
+                exchangeNumber = int.Parse(Console.ReadLine());
+                InitializeExchanges(exchangeNumber); 
                 CreateHostBuilder(args).Build().Run(); 
             }
             catch (OperationCanceledException)
@@ -54,7 +56,7 @@ namespace TriangleCollector
             });
 
        
-        public static void InitializeExchanges(string exch)
+        public static void InitializeExchanges(int exch)
         {
             var exchangeType = ExchangeTypes[exch];
             IExchange exchange = (IExchange)Activator.CreateInstance(exchangeType, exchangeType.ToString());

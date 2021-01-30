@@ -146,6 +146,14 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 OfficialBids.TryRemove(layer.Key, out var _);
             }
         }
+
+        public IOrderbook DeepCopy()
+        {
+            IOrderbook deepCopy = (IOrderbook)this.MemberwiseClone();
+            deepCopy.OfficialAsks = new ConcurrentDictionary<decimal, decimal>(OfficialAsks);
+            deepCopy.OfficialBids = new ConcurrentDictionary<decimal, decimal>(OfficialBids);
+            return (deepCopy);
+        }
     }
 }
 
