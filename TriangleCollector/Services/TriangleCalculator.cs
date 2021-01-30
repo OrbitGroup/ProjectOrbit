@@ -74,6 +74,7 @@ namespace TriangleCollector.Services
                         if(triangle.ProfitPercent>0.02m)
                         {
                             Exchange.TotalUSDValueViableTriangles += (triangle.Profit * USDMonitor.BTCUSDPrice);
+                            Exchange.EstimatedViableProfit += (triangle.ProfitPercent - 0.02m) * triangle.MaxVolume;
                         }
                     }
 

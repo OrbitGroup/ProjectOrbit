@@ -64,6 +64,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         private readonly ILoggerFactory _factory = new NullLoggerFactory();
         public decimal TotalUSDValueProfitableTriangles { get; set; }
         public decimal TotalUSDValueViableTriangles { get; set; }
+        public decimal EstimatedViableProfit { get; set; }
 
         public HitbtcExchange(string name)
         {

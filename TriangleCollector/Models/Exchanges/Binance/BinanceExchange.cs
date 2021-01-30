@@ -63,6 +63,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
         private readonly ILoggerFactory _factory = new NullLoggerFactory();
         public decimal TotalUSDValueProfitableTriangles { get; set; }
         public decimal TotalUSDValueViableTriangles { get; set; }
+        public decimal EstimatedViableProfit { get; set; }
 
         public BinanceExchange(string name)
         {

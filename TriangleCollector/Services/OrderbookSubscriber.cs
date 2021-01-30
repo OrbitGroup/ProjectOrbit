@@ -67,7 +67,7 @@ namespace TriangleCollector.Services
                         {
                             _logger.LogError(ex.ToString());
                         }
-                    }
+                    } 
                 }
         }
         public async Task QueuedSubscriptionHandling()

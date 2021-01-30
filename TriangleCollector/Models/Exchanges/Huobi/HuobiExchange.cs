@@ -63,6 +63,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public decimal TotalUSDValueProfitableTriangles { get; set; }
         public decimal TotalUSDValueViableTriangles { get; set; }
+        public decimal EstimatedViableProfit { get; set; }
 
         public HuobiExchange(string name)
         {
