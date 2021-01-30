@@ -81,7 +81,7 @@ namespace TriangleCollector.Services
                     } 
                     else if (result.MessageType == WebSocketMessageType.Binary) //huobi global sends all data in a compressed GZIP format
                     {
-                        payload = await ReadBinarySocketMessage(ms);
+                        payload = ReadBinarySocketMessage(ms);
                     }
                     else if (result.MessageType == WebSocketMessageType.Close)
                     {
@@ -167,7 +167,7 @@ namespace TriangleCollector.Services
                 }
             }
         }
-        public async Task<string> ReadBinarySocketMessage(MemoryStream ms)
+        public string ReadBinarySocketMessage(MemoryStream ms)
         {
             var byteArray = ms.ToArray();
             using var decompressedStream = new MemoryStream();

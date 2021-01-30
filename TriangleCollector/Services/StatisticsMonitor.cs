@@ -18,13 +18,9 @@ namespace TriangleCollector.Services
 
         private double MergeCount = 0;
 
-        private double MergeTotal = 0; 
-
         private double AverageOrderbookUpdateDelta = 0;
 
         private double OrderbookUpdateCount = 0;
-
-        private double OrderbookUpdateTotal = 0;
 
         private readonly ILogger<StatisticsMonitor> _logger;
 
@@ -35,8 +31,8 @@ namespace TriangleCollector.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogDebug("Starting Stats Monitor...");
-            Task.Run(async () => await MergeProcessing(stoppingToken));
-            Task.Run(async () => await OrderbookUpdateProcessing(stoppingToken));
+            //Task.Run(async () => await MergeProcessing(stoppingToken));
+            //Task.Run(async () => await OrderbookUpdateProcessing(stoppingToken));
 
             while (!stoppingToken.IsCancellationRequested)
             {
