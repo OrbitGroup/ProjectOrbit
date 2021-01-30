@@ -62,14 +62,18 @@ namespace TriangleCollector.Services
                 {
                     string payload = string.Empty;
                     WebSocketReceiveResult result = null;
-                    try
+
+                    var receiptTask = Task.Run(() =>
                     {
-                        result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
-                    } catch (Exception ex)
+                        result = Client.ReceiveAsync(ms, buffer, CancellationToken.None).Result;
+                    });
+                    bool successfulReceiveAsync = receiptTask.Wait(TimeSpan.FromMilliseconds(10000));
+                    if (!successfulReceiveAsync)
                     {
-                        _logger.LogError("ReceiveAsync Failed");
+                        _logger.LogError($"ReceiveAsync Timed Out");
                         continue;
                     }
+
                     if (result.MessageType == WebSocketMessageType.Text) //hitbtc, binance
                     {
                         var reader = new StreamReader(ms, Encoding.UTF8);
@@ -158,6 +162,7 @@ namespace TriangleCollector.Services
         {
             Exchange.ActiveClients.Remove(Client);
             Exchange.InactiveClients.Add(Client);
+            Exchange.AggregateStreamOpen = false;
             foreach(var market in Client.Markets)
             {
                 Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _);

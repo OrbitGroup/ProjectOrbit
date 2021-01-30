@@ -50,8 +50,9 @@ namespace TriangleCollector.Services
                         {
                             Exchange.SubscribedMarkets.TryRemove(market.Symbol, out var _);
                             Exchange.SubscriptionQueue.Enqueue(market);
-                            Exchange.ActiveClients.Remove(activeClient);
                         }
+                        Exchange.ActiveClients.Remove(activeClient);
+                        Exchange.AggregateStreamOpen = false;
                     }
                 }
                 await Task.Delay(TimeInterval * 1000);

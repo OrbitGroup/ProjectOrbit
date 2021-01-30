@@ -35,7 +35,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
 
-        public bool QueuedSubscription { get; set; } = true;
+        public bool QueuedSubscription { get; set; } = false;
 
         public bool AggregateStreamOpen { get; set; } = false;
         public ConcurrentQueue<IOrderbook> SubscriptionQueue { get; set; } = new ConcurrentQueue<IOrderbook>();
