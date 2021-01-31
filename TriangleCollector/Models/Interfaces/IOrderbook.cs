@@ -58,5 +58,7 @@ namespace TriangleCollector.Models.Interfaces
         public void UpdateAskLayer(KeyValuePair<decimal, decimal> layer);
 
         public void UpdateBidLayer(KeyValuePair<decimal, decimal> layer);
+
+        public IOrderbook DeepCopy();
     }
 }

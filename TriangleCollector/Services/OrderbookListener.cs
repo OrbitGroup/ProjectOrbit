@@ -81,7 +81,7 @@ namespace TriangleCollector.Services
                     } 
                     else if (result.MessageType == WebSocketMessageType.Binary) //huobi global sends all data in a compressed GZIP format
                     {
-                        payload = await ReadBinarySocketMessage(ms);
+                        payload = ReadBinarySocketMessage(ms);
                     }
                     else if (result.MessageType == WebSocketMessageType.Close)
                     {
@@ -125,10 +125,31 @@ namespace TriangleCollector.Services
 
         public Triangle CreateTriangleSnapshot(Triangle triangle)
         {
-            var triangleSnapshot = new Triangle(triangle.FirstSymbolOrderbook, triangle.SecondSymbolOrderbook, triangle.ThirdSymbolOrderbook, triangle.Direction, triangle.Exchange);
+            IOrderbook firstOrderbookSnapshot;
+            IOrderbook secondOrderbookSnapshot;
+            IOrderbook thirdOrderbookSnapshot;
+
+            lock (triangle.FirstSymbolOrderbook.OrderbookLock)
+            {
+                firstOrderbookSnapshot = triangle.FirstSymbolOrderbook.DeepCopy();
+            }
+
+            lock (triangle.SecondSymbolOrderbook.OrderbookLock)
+            {
+                secondOrderbookSnapshot = triangle.SecondSymbolOrderbook.DeepCopy();
+            }
+
+            lock (triangle.ThirdSymbolOrderbook.OrderbookLock)
+            {
+                thirdOrderbookSnapshot = triangle.ThirdSymbolOrderbook.DeepCopy();
+            }
+
+            var triangleSnapshot = new Triangle(firstOrderbookSnapshot, secondOrderbookSnapshot, thirdOrderbookSnapshot, triangle.Direction, triangle.Exchange);
+
             triangleSnapshot.CreateOrderbookSnapshots();
             return triangleSnapshot;
         }
+
         public async Task SendPong(IOrderbook orderbook) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
         {
             if (Client.State == WebSocketState.Open)
@@ -146,7 +167,7 @@ namespace TriangleCollector.Services
                 }
             }
         }
-        public async Task<string> ReadBinarySocketMessage(MemoryStream ms)
+        public string ReadBinarySocketMessage(MemoryStream ms)
         {
             var byteArray = ms.ToArray();
             using var decompressedStream = new MemoryStream();

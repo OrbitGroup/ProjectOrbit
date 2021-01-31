@@ -18,8 +18,6 @@ namespace TriangleCollector.Services
 
         private IExchange Exchange;
 
-        private int TimeInterval = 1; //time interval in minutes
-
         private decimal SubscriptionThreshold = -0.1m;
 
         public SubscriptionManager(ILoggerFactory factory, ILogger<SubscriptionManager> logger, IExchange exch)
@@ -28,15 +26,16 @@ namespace TriangleCollector.Services
             _logger = logger;
             Exchange = exch;
         }
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogDebug($"Starting Subscription Manager for {Exchange.ExchangeName}...");
 
             stoppingToken.Register(() => _logger.LogDebug("Stopping Subscription Manager..."));
-            await BackgroundProcessing(stoppingToken);
+            BackgroundProcessing(stoppingToken);
             _logger.LogDebug("Stopped Subscription Manager.");
+            return Task.CompletedTask;
         }
-        private async Task BackgroundProcessing(CancellationToken stoppingToken)
+        private void BackgroundProcessing(CancellationToken stoppingToken)
         {
             var sw = new Stopwatch();
             sw.Start();
