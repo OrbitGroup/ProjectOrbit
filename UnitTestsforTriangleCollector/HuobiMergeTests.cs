@@ -64,7 +64,7 @@ namespace TriangleCollector.UnitTests
             //Arrange
             //Beginning Orderbooks: one empty, one with 10 values, one with 5 values
             var dummyExchange = new HuobiExchange("huobi");
-            dummyExchange.ProfitableSymbolMapping.TryAdd("dummy", 0);
+            dummyExchange.ProfitableSymbolMapping.TryAdd("dummy", DateTime.UtcNow);
 
             var beginningEmptyOrderbook = new HuobiOrderbook();
             

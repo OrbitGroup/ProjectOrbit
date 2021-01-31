@@ -42,23 +42,19 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 
-        public double AllOrderBookCounter { get; set; } = 0;
-
-        public double InsideLayerCounter { get; set; } = 0;
-
-        public double OutsideLayerCounter { get; set; } = 0;
-
-        public double PositivePriceChangeCounter { get; set; } = 0;
-
-        public double NegativePriceChangeCounter { get; set; } = 0;
-
         public int UniqueTriangleCount { get; set; } = 0;
 
-        public ConcurrentDictionary<string, int> ProfitableSymbolMapping { get; } = new ConcurrentDictionary<string, int>();
+        public ConcurrentQueue<(bool, string)> OrderbookUpdateQueue { get; } = new ConcurrentQueue<(bool, string)>();
+
+        public ConcurrentDictionary<string, int> OrderbookUpdateStats { get; set; } = new ConcurrentDictionary<string, int>();
+
+        public ConcurrentDictionary<string, DateTime> ProfitableSymbolMapping { get; } = new ConcurrentDictionary<string, DateTime>();
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; } = new ConcurrentDictionary<string, DateTime>();
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
+
+        public int TriangleCount { get; set; }
 
         private readonly ILoggerFactory _factory = new NullLoggerFactory();
         public decimal TotalUSDValueProfitableTriangles { get; set; }

@@ -47,6 +47,9 @@ namespace TriangleCollector.Services
                 var subscriber = new OrderbookSubscriber(_factory, _factory.CreateLogger<OrderbookSubscriber>(), exchange);
                 await subscriber.StartAsync(stoppingToken);
 
+                var statsMonitor = new StatisticsMonitor(_factory.CreateLogger<StatisticsMonitor>(), exchange);
+                await statsMonitor.StartAsync(stoppingToken);
+
                 var activityMonitor = new ActivityMonitor(_factory, _factory.CreateLogger<ActivityMonitor>(), exchange);
                 await activityMonitor.StartAsync(stoppingToken);
 

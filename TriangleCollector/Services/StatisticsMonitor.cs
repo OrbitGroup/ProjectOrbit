@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TriangleCollector.Models;
+using TriangleCollector.Models.Exchanges;
+using TriangleCollector.Models.Interfaces;
 
 namespace TriangleCollector.Services
 {
@@ -22,17 +25,24 @@ namespace TriangleCollector.Services
 
         private double OrderbookUpdateCount = 0;
 
+        private IExchange Exchange { get; set; }
+
+        private double OrderbookUpdateTotal = 0;
+
         private readonly ILogger<StatisticsMonitor> _logger;
 
-        public StatisticsMonitor(ILogger<StatisticsMonitor> logger)
+        public StatisticsMonitor(ILogger<StatisticsMonitor> logger, IExchange exch)
         {
             _logger = logger;
+            Exchange = exch;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogDebug("Starting Stats Monitor...");
-            //Task.Run(async () => await MergeProcessing(stoppingToken));
-            //Task.Run(async () => await OrderbookUpdateProcessing(stoppingToken));
+
+            Task.Run(async () => await TriangleMetrics(stoppingToken));
+            Task.Run(async () => await OrderbookUpdateMetrics(stoppingToken));
+
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -47,30 +57,37 @@ namespace TriangleCollector.Services
             }
         }
 
-        private async Task MergeProcessing(CancellationToken stoppingToken)
+        private async Task TriangleMetrics(CancellationToken stoppingToken)
         {
-            /*while (!stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
             {
-                if (TriangleCollector.MergeTimings.TryDequeue(out long merge))
+                if (Exchange.RecalculatedTriangles.TryDequeue(out Triangle triangle))
                 {
-                    MergeCount++;
-                    MergeTotal += merge;
-                    AverageMerge = MergeTotal / MergeCount;
+                    Exchange.TriangleCount++;
+                    if (triangle.ProfitPercent > 0)
+                    {
+                        Exchange.TotalUSDValueProfitableTriangles += (triangle.Profit * USDMonitor.BTCUSDPrice);
+                        if (triangle.ProfitPercent > 0.02m)
+                        {
+                            Exchange.TotalUSDValueViableTriangles += (triangle.Profit * USDMonitor.BTCUSDPrice);
+                            Exchange.EstimatedViableProfit += (triangle.ProfitPercent - 0.02m) * triangle.MaxVolume;
+                        }
+                    }
                 }
-            }*/
+            }
         }
 
-        private async Task OrderbookUpdateProcessing(CancellationToken stoppingToken)
+        private async Task OrderbookUpdateMetrics(CancellationToken stoppingToken)
         {
-            /*while (!stoppingToken.IsCancellationRequested)
+            Exchange.OrderbookUpdateStats["Total Update Count"] = 0;
+            while (!stoppingToken.IsCancellationRequested)
             {
-                if (TriangleCollector.OrderbookUpdateDeltas.TryDequeue(out TimeSpan delta))
+                if (Exchange.OrderbookUpdateQueue.TryDequeue(out var update))
                 {
-                    OrderbookUpdateCount++;
-                    OrderbookUpdateTotal += delta.TotalSeconds;
-                    AverageOrderbookUpdateDelta = OrderbookUpdateTotal / OrderbookUpdateCount;
+                    Exchange.OrderbookUpdateStats["Total Update Count"] += 1;
+                    Exchange.OrderbookUpdateStats.AddOrUpdate(update.Item2,1, (key, oldvalue) => oldvalue +=1);
                 }
-            }*/
+            }
         }
     }
 }

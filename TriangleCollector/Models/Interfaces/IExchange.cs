@@ -39,23 +39,19 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; }
 
-        public double AllOrderBookCounter { get; set; }
+        public ConcurrentQueue<(bool, string)> OrderbookUpdateQueue {get;}
 
-        public double InsideLayerCounter { get; set; }
-
-        public double OutsideLayerCounter { get; set; }
-
-        public double PositivePriceChangeCounter { get; set; }
-
-        public double NegativePriceChangeCounter { get; set; }
+        public ConcurrentDictionary<string, int> OrderbookUpdateStats { get; set; }
 
         public int UniqueTriangleCount { get; set; }
 
-        public ConcurrentDictionary<string, int> ProfitableSymbolMapping { get; }
+        public ConcurrentDictionary<string, DateTime> ProfitableSymbolMapping { get; }
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; }
 
         public ConcurrentQueue<Triangle> RecalculatedTriangles { get; }
+
+        public int TriangleCount { get; set; }
 
         public decimal TotalUSDValueProfitableTriangles { get; set; }
         public decimal TotalUSDValueViableTriangles { get; set; }
