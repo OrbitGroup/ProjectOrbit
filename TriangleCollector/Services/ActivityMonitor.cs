@@ -58,6 +58,7 @@ namespace TriangleCollector.Services
         }
         public async Task LogMetricsAsync()
         {
+            var orderbookCount = Exchange.OrderbookUpdateStats.TryGetValue("Total Update Count", out int obCount);
             var activeClientCount = Exchange.ActiveClients.Count;
             var abortedClientCount = Exchange.InactiveClients.Count;
             double activeSubscriptions = Exchange.SubscribedMarkets.Count;
@@ -73,9 +74,9 @@ namespace TriangleCollector.Services
 
                 _logger.LogDebug("*********************************************************************************************************************************************" +
                     Environment.NewLine +
-                    $"{Exchange.ExchangeName} --- Data Points Received: {Exchange.AllOrderBookCounter}. Data Receipts/Second (last {LoopTimer}s): {(Exchange.AllOrderBookCounter - LastOBCounter) / LoopTimer}." +
+                    $"{Exchange.ExchangeName} --- Data Points Received: {obCount}. Data Receipts/Second (last {LoopTimer}s): {(obCount - LastOBCounter) / LoopTimer}." +
                     Environment.NewLine +
-                    $"{Exchange.ExchangeName} --- Triarb Opportunities Calculated: {Exchange.RecalculatedTriangles.Count}. Triarb Opportunities/ Second(last {LoopTimer}s): {(Exchange.RecalculatedTriangles.Count - LastTriarbCounter) / LoopTimer}" +
+                    $"{Exchange.ExchangeName} --- Triarb Opportunities Calculated: {Exchange.TriangleCount}. Triarb Opportunities/ Second(last {LoopTimer}s): {(Exchange.TriangleCount - LastTriarbCounter) / LoopTimer}" +
                     Environment.NewLine +
                     $"{Exchange.ExchangeName} --- Queue Size: {Exchange.TrianglesToRecalculate.Count} - Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions / targetSubscriptions, 2) * 100}% subscribed. {relevantRatio}% of markets are deemed relevant." +
                     Environment.NewLine +
@@ -85,8 +86,8 @@ namespace TriangleCollector.Services
                     Environment.NewLine +
                     "*********************************************************************************************************************************************");
 
-                LastOBCounter = Exchange.AllOrderBookCounter;
-                LastTriarbCounter = Exchange.RecalculatedTriangles.Count;
+                LastOBCounter = obCount;
+                LastTriarbCounter = Exchange.TriangleCount;
             }
         }
     }

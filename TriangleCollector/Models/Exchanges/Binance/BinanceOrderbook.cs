@@ -53,7 +53,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
             {
                 this.Sequence = update.Sequence;
                 this.Timestamp = update.Timestamp;
-                Exchange.AllOrderBookCounter++;
 
                 if (OfficialAsks.Count() != 0 && OfficialBids.Count() != 0)
                 {
@@ -69,37 +68,31 @@ namespace TriangleCollector.Models.Exchanges.Binance
                 OfficialAsks = update.OfficialAsks;
                 OfficialBids = update.OfficialBids;
 
-                if (SignificantChange(update))
-                {
-                    return true;
-                }
-                return false;
+                var significantChange = SignificantChange(update);
+                Exchange.OrderbookUpdateQueue.Enqueue(significantChange);
+                return significantChange.Item1;
             }
 
             return false;
         }
-
-        public bool SignificantChange(IOrderbook updatedOrderbook)
+        public (bool, string) SignificantChange(IOrderbook updatedOrderbook)
         {
-            if (Exchange.ProfitableSymbolMapping.TryGetValue(Symbol, out var layers))
+            if (Exchange.ProfitableSymbolMapping.TryGetValue(Symbol, out var lastProfitable))
             {
-                CreateSorted();
-                if (SortedAsks.Count() > layers && SortedBids.Count() > layers) //avoid out of range exception due to 'layers' variable.
+                if (DateTime.UtcNow - lastProfitable < TimeSpan.FromMinutes(1)) //if the symbol had a profitable triangle in the last minute
                 {
-                    if ((updatedOrderbook.OfficialAsks.Count > 0 && updatedOrderbook.OfficialAsks.Keys.Min() < SortedAsks.Keys.ElementAt(layers)) || (updatedOrderbook.OfficialBids.Count > 0 && updatedOrderbook.OfficialBids.Keys.Max() > SortedBids.Keys.ElementAt(layers)))
-                    {
-                        Exchange.InsideLayerCounter++;
-                        return true;
-                    }
-                    else
-                    {
-                        Exchange.OutsideLayerCounter++;
-                        return false;
-                    }
+                    return (true, "Symbol had a profitable triangle within the last minute");
                 }
                 else
                 {
-                    return false;
+                    if (OfficialAsks.Keys.Min() < PreviousLowestAsk || OfficialBids.Keys.Max() > PreviousHighestBid)
+                    {
+                        return (true, "Price improved");
+                    }
+                    else //price got worse or did not change
+                    {
+                        return (false, "Price worsened");
+                    }
                 }
 
             }
@@ -107,18 +100,16 @@ namespace TriangleCollector.Models.Exchanges.Binance
             {
                 if (OfficialAsks.Count < 1 || OfficialBids.Count < 1)
                 {
-                    return false;
+                    return (false, "No OfficialAsks/Bids");
                 }
 
                 if (OfficialAsks.Keys.Min() < PreviousLowestAsk || OfficialBids.Keys.Max() > PreviousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
-                    Exchange.PositivePriceChangeCounter++;
-                    return true;
+                    return (true, "Price improved");
                 }
                 else //price got worse or did not change
                 {
-                    Exchange.NegativePriceChangeCounter++;
-                    return false;
+                    return (false, "Price worsened");
                 }
             }
         }
