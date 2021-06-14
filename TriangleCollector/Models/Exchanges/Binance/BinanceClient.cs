@@ -52,10 +52,12 @@ namespace TriangleCollector.Models.Exchanges.Binance
 
                 if (bidPrice > 0 && askPrice > 0 && bidSize > 0 && askSize > 0)
                 {
-                    output.Where(m => m.Symbol == symbol).First().OfficialBids.TryAdd(bidPrice, bidSize);
-                    output.Where(m => m.Symbol == symbol).First().OfficialAsks.TryAdd(askPrice, askSize);
+                    if(output.Where(m => m.Symbol == symbol).Count() > 0)
+                    {
+                        output.Where(m => m.Symbol == symbol).First().OfficialBids.TryAdd(bidPrice, bidSize);
+                        output.Where(m => m.Symbol == symbol).First().OfficialAsks.TryAdd(askPrice, askSize);
+                    }
                 }
-
             }
             output = output.Where(m => m.OfficialAsks.Count > 0 && m.OfficialBids.Count > 0).ToHashSet();
             return output;

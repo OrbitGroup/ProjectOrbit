@@ -82,7 +82,7 @@ namespace TriangleCollector.Services
                     Environment.NewLine +
                     $"{Exchange.ExchangeName} --- Active Clients: {activeClientCount} - Aborted Clients: {abortedClientCount} - Oldest Active Client: {oldestClientAge} minutes" +
                     Environment.NewLine +
-                    $"Notional USD Value of all profitable triangles: ${Math.Round(Exchange.TotalUSDValueProfitableTriangles,2)} - USD Value of triangles above 2% risk premium: ${Math.Round(Exchange.TotalUSDValueViableTriangles, 2)} - Estimated attainable profit: ${Math.Round(Exchange.EstimatedViableProfit,2)}" +
+                    $"Notional USD Profit of all profitable triangles: ${Math.Round(Exchange.TotalUSDValueProfitableTriangles,2)} - USD Profit of triangles above 2% risk premium: ${Math.Round(Exchange.TotalUSDValueViableTriangles, 2)} - Estimated attainable profit: ${Math.Round(Exchange.EstimatedViableProfit,2)}" +
                     Environment.NewLine +
                     "*********************************************************************************************************************************************");
 
