@@ -36,6 +36,12 @@ namespace TriangleCollector.Models
 
         public decimal MaxVolume { get; set; }
 
+        public long VolumeComputeTime = 0;
+
+        public long ProfitabilityComputeTime = 0;
+
+        public long LiquidityRemovalComputeTime = 0;
+
         public Directions Direction;
 
         public enum Directions
@@ -118,18 +124,34 @@ namespace TriangleCollector.Models
         {
             MaxVolume = 0;
             Profit = 0;
+            var sw = new Stopwatch();
 
             while (NoEmptyOrderbooks)
             {
+                sw.Start();
                 var newProfitPercent = GetProfitPercent();
+                sw.Stop();
+                ProfitabilityComputeTime += sw.ElapsedMilliseconds;
+                sw.Reset();
 
-                var maxVol = GetMaxVolume();
+                var maxVol = new KeyValuePair<Bottlenecks, decimal>();
 
                 if (newProfitPercent > 0)
                 {
-                    if(NoEmptyOrderbooks)
+                    //there is no direct utility in calculating the MaxVolume unless an opportunity is profitable
+                    sw.Start();
+                    maxVol = GetMaxVolume();
+                    sw.Stop();
+                    VolumeComputeTime += sw.ElapsedMilliseconds;
+                    sw.Reset();
+
+                    if (NoEmptyOrderbooks)
                     {
+                        sw.Start();
                         RemoveLiquidity(maxVol);
+                        sw.Stop();
+                        LiquidityRemovalComputeTime += sw.ElapsedMilliseconds;
+                        sw.Reset();
                     }
                     MaxVolume += maxVol.Value;
                     Profit += maxVol.Value * newProfitPercent;
@@ -150,7 +172,6 @@ namespace TriangleCollector.Models
                     break;
                 }
             }
-            
         }
 
         public void MapResultstoSymbols()
@@ -279,20 +300,26 @@ namespace TriangleCollector.Models
                 var thirdTrade = secondTrade * ThirdOrderBook.Keys.Max();
                 return thirdTrade - 1;
             }
+            
         }
 
         private KeyValuePair<Bottlenecks, decimal> GetMaxVolume()
         {
             if (Direction == Directions.BuyBuySell)
             {
+                //calculate the relevant lowest asks and highest bids once to avoid repeated calls to the min/max methods.
+                decimal firstOrderbookLowestAskPrice = FirstOrderBook.Keys.Min();
+                decimal secondOrderbookLowestAskPrice = SecondOrderBook.Keys.Min();
+                decimal thirdOrderbookHighestBidPrice = ThirdOrderBook.Keys.Max();
+
                 // since the first trade is quoted in BTC terms, the volume is simply the quantity available times the price.
                 // the second trade is in the other base's terms, so you must convert the base-terms volume into BTC using the first trade price (which is base-BTC) 
                 // Other than that, the logic is the same as the first trade since we are buying something again.
 
-                decimal firstBtcVolume = FirstOrderBook.Keys.Min() * FirstOrderBook[FirstOrderBook.Keys.Min()]; 
-                decimal secondBtcVolume = SecondOrderBook.Keys.Min() * SecondOrderBook[SecondOrderBook.Keys.Min()] * FirstOrderBookVolumeConverter.Key;
+                decimal firstBtcVolume = firstOrderbookLowestAskPrice * FirstOrderBook[firstOrderbookLowestAskPrice]; 
+                decimal secondBtcVolume = secondOrderbookLowestAskPrice * SecondOrderBook[secondOrderbookLowestAskPrice] * FirstOrderBookVolumeConverter.Key;
                 // the third direction must be Sell at this point (there is no other potential combination)
-                decimal thirdBtcVolume = ThirdOrderBook.Keys.Max() * ThirdOrderBook[ThirdOrderBook.Keys.Max()];
+                decimal thirdBtcVolume = thirdOrderbookHighestBidPrice * ThirdOrderBook[thirdOrderbookHighestBidPrice];
                 //calculate and identify the bottleneck
 
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
@@ -310,14 +337,19 @@ namespace TriangleCollector.Models
             }
             else if (Direction == Directions.BuySellSell)
             {
+                //calculate the lowest asks and highest bids once to avoid repeated calls to the Min/Max methods.
+                decimal firstOrderbookLowestAskPrice = FirstOrderBook.Keys.Min();
+                decimal secondOrderbookHighestBidPrice = SecondOrderBook.Keys.Max();
+                decimal thirdOrderbookHighestBidPrice = ThirdOrderBook.Keys.Max();
+
                 // since the first trade is quoted in BTC terms, the volume is simply the quantity available times the price.
                 // second trade is a sell order, so the direction must be Buy Sell Sell
                 // the depth is expressed in altcoin terms which must be converted to BTC. Price is expressed in basecoin terms.
                 // the first order book contains the ALT-BTC price, which is therefore used to convert the volume to BTC terms
-                decimal firstBtcVolume = FirstOrderBook.Keys.Min() * FirstOrderBook[FirstOrderBook.Keys.Min()];
-                decimal secondBtcVolume = SecondOrderBook.Keys.Max() * SecondOrderBook[SecondOrderBook.Keys.Max()] * ThirdOrderBook.Keys.Max();
+                decimal firstBtcVolume = firstOrderbookLowestAskPrice * FirstOrderBook[firstOrderbookLowestAskPrice];
+                decimal secondBtcVolume = secondOrderbookHighestBidPrice * SecondOrderBook[secondOrderbookHighestBidPrice] * thirdOrderbookHighestBidPrice;
                 // third trade is always in BTC price terms
-                decimal thirdBtcVolume = ThirdOrderBook.Keys.Max() * ThirdOrderBook[ThirdOrderBook.Keys.Max()];
+                decimal thirdBtcVolume = thirdOrderbookHighestBidPrice * ThirdOrderBook[thirdOrderbookHighestBidPrice];
                 //calculate and identify the bottleneck
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
                 {
@@ -334,13 +366,16 @@ namespace TriangleCollector.Models
             }
             else //Sell Buy Sell
             {
+                //calculate the third orderbook's highest bid once to avoid repeated calls to Max method.
+                decimal thirdOrderbookhighestBid = ThirdOrderBook.Keys.Max();
+
                 //first trade is a sell order. only one direction starts with a sell order: Sell Buy Sell
                 //the only scenario when the first trade is a sell order is USDT/TUSD based trades, in which depth is already expressed in BTC (price is expressed in USD)
                 decimal firstBtcVolume = FirstOrderBook[FirstOrderBook.Keys.Max()];
                 // for the second trade, the depth is expressed in the altcoin terms (price is expressed in USD). Therefore it just needs to be converted to BTC via the third order book.                
-                decimal secondBtcVolume = SecondOrderBook[SecondOrderBook.Keys.Min()] * ThirdOrderBook.Keys.Max();
+                decimal secondBtcVolume = SecondOrderBook[SecondOrderBook.Keys.Min()] * thirdOrderbookhighestBid;
                 //the third trade is always in BTC price terms
-                decimal thirdBtcVolume = ThirdOrderBook.Keys.Max() * ThirdOrderBook[ThirdOrderBook.Keys.Max()];
+                decimal thirdBtcVolume = thirdOrderbookhighestBid * ThirdOrderBook[thirdOrderbookhighestBid];
                 //calculate and identify the bottleneck
                 if (firstBtcVolume <= secondBtcVolume && firstBtcVolume <= thirdBtcVolume)
                 {

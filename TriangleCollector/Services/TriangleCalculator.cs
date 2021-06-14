@@ -62,7 +62,9 @@ namespace TriangleCollector.Services
 
                     if(sw.ElapsedMilliseconds > 50)
                     {
-                        _logger.LogWarning($"Irregular triangle calculation time for {triangle.ToString()}: {sw.ElapsedMilliseconds}ms");
+                        _logger.LogWarning($"Irregular triangle calculation time for {triangle.ToString()}: {sw.ElapsedMilliseconds}ms in grand total" + Environment.NewLine +
+                            $"Profitability calculation time: {triangle.ProfitabilityComputeTime}ms, Volume calculation time: {triangle.VolumeComputeTime}ms, Liquidity removal time: {triangle.LiquidityRemovalComputeTime}ms" + Environment.NewLine + 
+                            $"OB 1 size: {triangle.FirstOrderBook.Count}, OB 2 size: {triangle.SecondOrderBook.Count}, OB 3 size {triangle.ThirdOrderBook.Count}");
                     }
                     sw.Reset();
                     var oldestTimestamp = new List<DateTime> { triangle.FirstSymbolOrderbook.Timestamp, triangle.SecondSymbolOrderbook.Timestamp, triangle.ThirdSymbolOrderbook.Timestamp }.Min();
