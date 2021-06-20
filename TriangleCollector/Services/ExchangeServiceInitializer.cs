@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -14,10 +15,14 @@ namespace TriangleCollector.Services
         private readonly ILoggerFactory _factory;
 
         private readonly ILogger<ExchangeServiceInitializer> _logger;
-        public ExchangeServiceInitializer(ILoggerFactory factory, ILogger<ExchangeServiceInitializer> logger)
+
+        private TelemetryClient _telemetryClient;
+
+        public ExchangeServiceInitializer(ILoggerFactory factory, ILogger<ExchangeServiceInitializer> logger, TelemetryClient telemetryClient)
         {
             _factory = factory;
             _logger = logger;
+            _telemetryClient = telemetryClient;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -44,7 +49,7 @@ namespace TriangleCollector.Services
                 var queueMonitor = new QueueMonitor(_factory, _factory.CreateLogger<QueueMonitor>(), exchange);
                 await queueMonitor.StartAsync(stoppingToken);
 
-                var subscriber = new OrderbookSubscriber(_factory, _factory.CreateLogger<OrderbookSubscriber>(), exchange);
+                var subscriber = new OrderbookSubscriber(_factory, _factory.CreateLogger<OrderbookSubscriber>(), _telemetryClient, exchange);
                 await subscriber.StartAsync(stoppingToken);
 
                 var statsMonitor = new StatisticsMonitor(_factory.CreateLogger<StatisticsMonitor>(), exchange);

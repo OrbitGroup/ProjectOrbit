@@ -53,13 +53,14 @@ namespace TriangleCollector
             {
                 services.AddHostedService<ExchangeServiceInitializer>();
                 services.AddHostedService<USDMonitor>();
+                services.AddApplicationInsightsTelemetryWorkerService();
             });
 
        
         public static void InitializeExchanges(int exch)
         {
             var exchangeType = ExchangeTypes[exch];
-            IExchange exchange = (IExchange)Activator.CreateInstance(exchangeType, exchangeType.ToString());
+            IExchange exchange = (IExchange)Activator.CreateInstance(exchangeType, exchangeType.Name);
             Exchanges.Add(exchange);   
         }
     }

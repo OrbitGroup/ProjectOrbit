@@ -1,6 +1,9 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
@@ -15,14 +18,17 @@ namespace TriangleCollector.Services
 
         private readonly ILoggerFactory _factory;
 
+        private TelemetryClient _telemetryClient;
+
         private int ListenerID = 1; //identifier for each listener
 
         private IExchange Exchange { get; set; }
 
-        public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger, IExchange exch)
+        public OrderbookSubscriber(ILoggerFactory factory, ILogger<OrderbookSubscriber> logger, TelemetryClient telemetryClient, IExchange exch)
         {
             _logger = logger;
             _factory = factory;
+            _telemetryClient = telemetryClient;
             Exchange = exch;
         }
 
@@ -39,16 +45,18 @@ namespace TriangleCollector.Services
 
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
+            using (_telemetryClient.StartOperation<RequestTelemetry>($"OrderbookSubscriber-{Exchange.ExchangeName}"))
+            {
                 await CreateNewListenerAsync();
-                
-                while (!stoppingToken.IsCancellationRequested) 
+
+                while (!stoppingToken.IsCancellationRequested)
                 {
                     try
                     {
-                        if(Exchange.QueuedSubscription == true)
+                        if (Exchange.QueuedSubscription == true)
                         {
                             await QueuedSubscriptionHandling();
-                        } 
+                        }
                         else
                         {
                             await AggregateSubscriptionHandling();
@@ -67,9 +75,11 @@ namespace TriangleCollector.Services
                         {
                             _logger.LogError(ex.ToString());
                         }
-                    } 
+                    }
                 }
+            }
         }
+
         public async Task QueuedSubscriptionHandling()
         {
             if (Exchange.ExchangeClient.Client.Markets.Count < Exchange.ExchangeClient.MaxMarketsPerClient && Exchange.ExchangeClient.Client.State == WebSocketState.Open)
@@ -78,6 +88,8 @@ namespace TriangleCollector.Services
                 {
                     await Exchange.ExchangeClient.SubscribeViaQueue(market);
                     Exchange.SubscribedMarkets.TryAdd(market.Symbol, market);
+                    var properties = new Dictionary<string, string> { { "Market", market.Symbol }, { "ActiveClients", Exchange.ActiveClients.Count.ToString() } };
+                    _telemetryClient.TrackEvent("QueuedSubscription", properties);
                 }
             }
             else //initialize a new client/listener if the current client reached it's maximum number of markets or if it's been disconnected
@@ -85,6 +97,7 @@ namespace TriangleCollector.Services
                 await CreateNewListenerAsync();
             }
         }
+
         public async Task AggregateSubscriptionHandling()
         {
             if(Exchange.AggregateStreamOpen == false)
@@ -94,8 +107,11 @@ namespace TriangleCollector.Services
                     await CreateNewListenerAsync();
                 }
                 await Exchange.ExchangeClient.SubscribeViaAggregate();
+                var properties = new Dictionary<string, string> { { "ActiveClients", Exchange.ActiveClients.Count.ToString() } };
+                _telemetryClient.TrackEvent("AggregateSubscription", properties);
             }
         }
+
         public async Task CreateNewListenerAsync()
         {
             try
@@ -104,12 +120,18 @@ namespace TriangleCollector.Services
                 await Exchange.ExchangeClient.CreateExchangeClientAsync();
                 var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), Exchange.ExchangeClient.Client, Exchange, ListenerID);
                 await listener.StartAsync(stoppingToken);
-            } catch (Exception ex)
+                ListenerID++;
+                var properties = new Dictionary<string, string>
+                {
+                    { "ListenerId", ListenerID.ToString() },
+                    { "ExchangeName", Exchange.ExchangeName }
+                };
+                _telemetryClient.TrackEvent("CreateNewListenerAsync", properties);
+            } 
+            catch (Exception ex)
             {
-                await Task.Delay(3000);
-                await CreateNewListenerAsync();
+                _logger.LogError($"Failed to create a new listener: {ex.Message}");
             }
-            ListenerID++;
         }
     }
 }
