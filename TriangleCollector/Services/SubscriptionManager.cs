@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TriangleCollector.Models;
 using TriangleCollector.Models.Interfaces;
 
 namespace TriangleCollector.Services
@@ -50,7 +51,7 @@ namespace TriangleCollector.Services
                     {
                         foreach (var triangle in triangles)
                         {
-                            triangle.CreateOrderbookSnapshots();
+                            CreateSnapshots.CreateOrderbookSnapshots(triangle);
                             triangle.SetMaxVolumeAndProfitability();
                             if (triangle.ProfitPercent > SubscriptionThreshold)
                             {

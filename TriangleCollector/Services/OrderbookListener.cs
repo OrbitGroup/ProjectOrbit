@@ -112,8 +112,8 @@ namespace TriangleCollector.Services
                             {
                                 foreach (var impactedTriangle in impactedTriangles)
                                 {
-                                    var triangleSnapshot = CreateTriangleSnapshot(impactedTriangle);
-                                    Exchange.TrianglesToRecalculate.Enqueue(triangleSnapshot);
+                                    CreateSnapshots.CreateOrderbookSnapshots(impactedTriangle);
+                                    Exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
                                 }
                             }
                         }
@@ -121,33 +121,6 @@ namespace TriangleCollector.Services
                 }
             }
             await HandleWebsocketClose();
-        }
-
-        public Triangle CreateTriangleSnapshot(Triangle triangle)
-        {
-            IOrderbook firstOrderbookSnapshot;
-            IOrderbook secondOrderbookSnapshot;
-            IOrderbook thirdOrderbookSnapshot;
-
-            lock (triangle.FirstSymbolOrderbook.OrderbookLock)
-            {
-                firstOrderbookSnapshot = triangle.FirstSymbolOrderbook.DeepCopy();
-            }
-
-            lock (triangle.SecondSymbolOrderbook.OrderbookLock)
-            {
-                secondOrderbookSnapshot = triangle.SecondSymbolOrderbook.DeepCopy();
-            }
-
-            lock (triangle.ThirdSymbolOrderbook.OrderbookLock)
-            {
-                thirdOrderbookSnapshot = triangle.ThirdSymbolOrderbook.DeepCopy();
-            }
-
-            var triangleSnapshot = new Triangle(firstOrderbookSnapshot, secondOrderbookSnapshot, thirdOrderbookSnapshot, triangle.Direction, triangle.Exchange);
-
-            triangleSnapshot.CreateOrderbookSnapshots();
-            return triangleSnapshot;
         }
 
         public async Task SendPong(IOrderbook orderbook) //sends a 'pong' message back to the server if required to maintain connection. Only Huobi (so far) uses this methodology
