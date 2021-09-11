@@ -30,7 +30,7 @@ namespace TriangleCollector
             try
             {
                 int exchangeNumber;
-                Console.WriteLine("Enter the exchange number you'd like to monitor. Valid exchange options are \n1: Binance\n2: Huobi\n3: Hitbtc");
+                Console.WriteLine("Enter the exchange number you'd like to monitor. Valid exchange options are \n1: Binance [INACTIVE]\n2: Huobi\n3: Hitbtc [INACTIVE]");
                 exchangeNumber = int.Parse(Console.ReadLine());
                 InitializeExchanges(exchangeNumber); 
                 CreateHostBuilder(args).Build().Run(); 

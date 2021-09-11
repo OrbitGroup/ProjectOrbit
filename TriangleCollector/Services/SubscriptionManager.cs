@@ -42,6 +42,7 @@ namespace TriangleCollector.Services
             sw.Start();
             Exchange.TradedMarkets = Exchange.ExchangeClient.GetMarketsViaRestApi(); 
             MarketMapper.MapOpportunities(Exchange);
+            Console.WriteLine($"number of markets: {Exchange.TriarbEligibleMarkets.Count} -- number of opportunities: {Exchange.UniqueTriangleCount}");
             var queuedMarkets = new List<IOrderbook>();
             foreach(var market in Exchange.TradedMarkets)
             {
