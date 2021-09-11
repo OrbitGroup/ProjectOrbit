@@ -41,7 +41,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; } = new ConcurrentDictionary<string, IOrderbook>();
 
-        public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
+        public ConcurrentDictionary<string, List<Triangle>> TriangleTemplates { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 
         public int UniqueTriangleCount { get; set; } = 0;
 

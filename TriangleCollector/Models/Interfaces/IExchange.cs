@@ -37,7 +37,7 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, IOrderbook> SubscribedMarkets { get; set; }
 
-        public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; }
+        public ConcurrentDictionary<string, List<Triangle>> TriangleTemplates { get; }
 
         public ConcurrentQueue<(bool, string)> OrderbookUpdateQueue {get;}
 

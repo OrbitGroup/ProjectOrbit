@@ -138,19 +138,19 @@ namespace TriangleCollector.UnitTests
             //Act: Run the sample API response through the function
             
             testExchange.TriarbEligibleMarkets.Clear();
-            testExchange.TriarbMarketMapping.Clear();
+            testExchange.TriangleTemplates.Clear();
             testExchange.TradedMarkets = expectedTriangleEligiblePairs;
             MarketMapper.MapOpportunities(testExchange);
 
             //Assert: confirm that the result of the test matches the expected outcome
 
             //First, test that the correct number of symbols are being mapped.
-            Assert.IsTrue(expectedSymbolTriangleMapping.Count == testExchange.TriarbMarketMapping.Count, $"the wrong number of symbols were mapped. Expected: {expectedSymbolTriangleMapping.Count}. Actual: {testExchange.TriarbMarketMapping.Count}");
+            Assert.IsTrue(expectedSymbolTriangleMapping.Count == testExchange.TriangleTemplates.Count, $"the wrong number of symbols were mapped. Expected: {expectedSymbolTriangleMapping.Count}. Actual: {testExchange.TriangleTemplates.Count}");
 
             //Next, for each symbol mapped, test that the correct number of triangles is matched to the symbol.
             foreach (var testItem in expectedSymbolTriangleMapping)
             {
-                if (testExchange.TriarbMarketMapping.TryGetValue(testItem.Key, out List<Triangle> value))
+                if (testExchange.TriangleTemplates.TryGetValue(testItem.Key, out List<Triangle> value))
                 {
                     Assert.IsTrue(testItem.Value.Count == value.Count, $"the wrong number of triangles were mapped to a symbol. For {testItem.Key}, expected was {testItem.Value.Count}, but the actual count was {value.Count}");
 

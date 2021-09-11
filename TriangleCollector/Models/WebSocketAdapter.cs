@@ -28,7 +28,7 @@ namespace TriangleCollector.Models
 
         public async Task<WebSocketReceiveResult> ReceiveAsync(MemoryStream ms, ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
-            WebSocketReceiveResult result = null;
+            WebSocketReceiveResult result = new WebSocketReceiveResult(0, WebSocketMessageType.Text, false);
 
             do
             {

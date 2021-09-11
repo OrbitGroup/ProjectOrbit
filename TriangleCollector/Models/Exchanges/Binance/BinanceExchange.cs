@@ -40,7 +40,7 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public bool AggregateStreamOpen { get; set; } = false;
         public ConcurrentQueue<IOrderbook> SubscriptionQueue { get; set; } = new ConcurrentQueue<IOrderbook>();
 
-        public ConcurrentDictionary<string, List<Triangle>> TriarbMarketMapping { get; } = new ConcurrentDictionary<string, List<Triangle>>();
+        public ConcurrentDictionary<string, List<Triangle>> TriangleTemplates { get; } = new ConcurrentDictionary<string, List<Triangle>>();
 
         public int UniqueTriangleCount { get; set; } = 0;
 

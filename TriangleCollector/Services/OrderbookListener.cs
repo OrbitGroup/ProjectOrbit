@@ -108,12 +108,14 @@ namespace TriangleCollector.Services
 
                         if (shouldRecalculate)
                         {
-                            if (Exchange.TriarbMarketMapping.TryGetValue(orderbook.Symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
+                            if (Exchange.TriangleTemplates.TryGetValue(orderbook.Symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
                             {
                                 foreach (var impactedTriangle in impactedTriangles)
                                 {
-                                    CreateSnapshots.CreateOrderbookSnapshots(impactedTriangle);
-                                    Exchange.TrianglesToRecalculate.Enqueue(impactedTriangle);
+                                    //create a new Triangle object from the TriangleTemplates list to avoid threading issues
+                                    var triangle = new Triangle(impactedTriangle.FirstSymbolOrderbook, impactedTriangle.SecondSymbolOrderbook, impactedTriangle.ThirdSymbolOrderbook, impactedTriangle.Direction, impactedTriangle.Exchange);
+                                    CreateSnapshots.CreateOrderbookSnapshots(triangle);
+                                    Exchange.TrianglesToRecalculate.Enqueue(triangle);
                                 }
                             }
                         }

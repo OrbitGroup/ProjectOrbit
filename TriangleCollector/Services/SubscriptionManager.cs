@@ -47,7 +47,7 @@ namespace TriangleCollector.Services
             {
                 if(!Exchange.SubscribedMarkets.Keys.Contains(market.Symbol))
                 {
-                    if(Exchange.TriarbMarketMapping.TryGetValue(market.Symbol, out var triangles))
+                    if(Exchange.TriangleTemplates.TryGetValue(market.Symbol, out var triangles))
                     {
                         foreach (var triangle in triangles)
                         {

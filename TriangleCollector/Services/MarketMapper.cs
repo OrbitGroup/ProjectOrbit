@@ -89,9 +89,9 @@ namespace TriangleCollector.Services
             Exchange.OfficialOrderbooks.TryAdd(thirdMarket.Symbol, thirdMarket);
             foreach (var marketName in new List<string> { firstMarket.Symbol, secondMarket.Symbol, thirdMarket.Symbol })
             {
-                if(!Exchange.TriarbMarketMapping.Keys.Contains(marketName))
+                if(!Exchange.TriangleTemplates.Keys.Contains(marketName))
                 {
-                    Exchange.TriarbMarketMapping.AddOrUpdate(marketName, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                    Exchange.TriangleTemplates.AddOrUpdate(marketName, new List<Triangle>() { newTriangle }, (key, triangleList) =>
                     {
                         if (key == marketName && !triangleList.Contains(newTriangle))
                         {
@@ -101,10 +101,10 @@ namespace TriangleCollector.Services
                     });
                 } else
                 {
-                    Exchange.TriarbMarketMapping.TryGetValue(marketName, out var triangles);
+                    Exchange.TriangleTemplates.TryGetValue(marketName, out var triangles);
                     if(!triangles.Contains(newTriangle))
                     {
-                        Exchange.TriarbMarketMapping.AddOrUpdate(marketName, new List<Triangle>() { newTriangle }, (key, triangleList) =>
+                        Exchange.TriangleTemplates.AddOrUpdate(marketName, new List<Triangle>() { newTriangle }, (key, triangleList) =>
                         {
                             if (key == marketName && !triangleList.Contains(newTriangle))
                             {

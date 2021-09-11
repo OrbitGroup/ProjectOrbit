@@ -15,9 +15,9 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
     public class HitbtcClient : IExchangeClient
     {
         public IExchange Exchange { get; set; }
-        public string SymbolsRestApi { get; set; } = "https://api.hitbtc.com/api/2/public/symbol"; //REST API call to get all of the traded markets
-        public string PricesRestApi { get; set; } = "https://api.hitbtc.com/api/2/public/orderbook/?limit=1"; //REST API call to get all of the best prices for all markets
-        public string SocketClientApi { get; set; } = "wss://api.hitbtc.com/api/2/ws";
+        public string SymbolsRestApi { get; set; } = "https://api.hitbtc.com/api/3/public/symbol"; //REST API call to get all of the traded markets
+        public string PricesRestApi { get; set; } = "https://api.hitbtc.com/api/3/public/orderbook/?limit=1"; //REST API call to get all of the best prices for all markets
+        public string SocketClientApi { get; set; } = "wss://api.hitbtc.com/api/3/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
         public IClientWebSocket Client { get; set; }
         public int MaxMarketsPerClient { get; } = 40;

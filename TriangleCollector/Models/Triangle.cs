@@ -38,6 +38,8 @@ namespace TriangleCollector.Models
 
         public long VolumeComputeTime = 0;
 
+        public int ProfitabilityComputeCount = 0;
+
         public long ProfitabilityComputeTime = 0;
 
         public long LiquidityRemovalComputeTime = 0;
@@ -112,6 +114,7 @@ namespace TriangleCollector.Models
                 var newProfitPercent = ProfitPercentCalculator.GetProfitPercent(this);
                 sw.Stop();
                 ProfitabilityComputeTime += sw.ElapsedMilliseconds;
+                ProfitabilityComputeCount++;
                 sw.Reset();
 
                 var maxVol = new KeyValuePair<Bottlenecks, decimal>();
@@ -125,21 +128,19 @@ namespace TriangleCollector.Models
                     VolumeComputeTime += sw.ElapsedMilliseconds;
                     sw.Reset();
 
-                    if (NoEmptyOrderbooks)
-                    {
-                        sw.Start();
-                        LiquidityRemover.RemoveLiquidity(maxVol, this);
-                        sw.Stop();
-                        LiquidityRemovalComputeTime += sw.ElapsedMilliseconds;
-                        sw.Reset();
-                    }
+                    sw.Start();
+                    LiquidityRemover.RemoveLiquidity(maxVol, this);
+                    sw.Stop();
+                    LiquidityRemovalComputeTime += sw.ElapsedMilliseconds;
+                    sw.Reset();
+                    
                     MaxVolume += maxVol.Value;
                     Profit += maxVol.Value * newProfitPercent;
                     ProfitPercent = Profit / MaxVolume;
+                    MapResultstoSymbols(); //log the symbols that have experienced positive profitability
                 }
                 else
                 {
-                    MapResultstoSymbols();
                     if (ProfitPercent == 0)
                     {
                         ProfitPercent = newProfitPercent;
