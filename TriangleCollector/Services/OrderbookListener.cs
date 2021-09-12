@@ -61,7 +61,7 @@ namespace TriangleCollector.Services
                 using (var ms = new MemoryStream())
                 {
                     string payload = string.Empty;
-                    WebSocketReceiveResult result = null;
+                    WebSocketReceiveResult result = new WebSocketReceiveResult(0, WebSocketMessageType.Text, false);
 
                     var receiptTask = Task.Run(() =>
                     {
