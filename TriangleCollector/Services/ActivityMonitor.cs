@@ -16,7 +16,7 @@ namespace TriangleCollector.Services
 
         private readonly ILoggerFactory _factory;
 
-        private int LoopTimer = 5; //the interval (in seconds) for each printout of the activity monitor
+        private readonly int LoopTimer = 5; //the interval (in seconds) for each printout of the activity monitor
 
         private IExchange Exchange { get; set; }
 
@@ -31,7 +31,7 @@ namespace TriangleCollector.Services
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogDebug($"Starting Activity Monitor for {Exchange.ExchangeName}...");
+            _logger.LogDebug("Starting Activity Monitor for {ExchangeName}...", Exchange.ExchangeName);
 
             stoppingToken.Register(() => _logger.LogDebug("Stopping Activity Monitor..."));
             await Task.Run(async () =>
@@ -39,24 +39,20 @@ namespace TriangleCollector.Services
                 await BackgroundProcessing(stoppingToken);
             }, stoppingToken);
         }
+
         public async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var task = Task.Run(() =>
+                var task = Task.Run(async () =>
                 {
-                    LogMetricsAsync();
-                });
-                bool completedSuccessfully = task.Wait(TimeSpan.FromSeconds(LoopTimer));
-                if(!completedSuccessfully)
-                {
-                    continue;
-                    //_logger.LogError($"activity monitor timed out for {Exchange.ExchangeName}");
-                }
-                await Task.Delay(LoopTimer * 1000);
+                   await LogMetrics();
+                }, stoppingToken);
+
+                await Task.Delay(LoopTimer * 1000, stoppingToken);
             }
         }
-        public async Task LogMetricsAsync()
+        public Task LogMetrics()
         {
             var orderbookCount = Exchange.OrderbookUpdateStats.TryGetValue("Total Update Count", out int obCount);
             var activeClientCount = Exchange.ActiveClients.Count;
@@ -89,6 +85,8 @@ namespace TriangleCollector.Services
                 LastOBCounter = obCount;
                 LastTriarbCounter = Exchange.TriangleCount;
             }
+
+            return Task.CompletedTask;
         }
     }
 }

@@ -16,9 +16,9 @@ namespace TriangleCollector
     public class ProjectOrbit
     {
         //public static List<Type> ExchangesToInitialize = new List<Type>() {typeof(HuobiExchange)}; 
-        public static List<IExchange> Exchanges = new List<IExchange>(); //contains all exchange objects
-        public static HttpClient StaticHttpClient = new HttpClient();
-        public static Dictionary<int, Type> ExchangeTypes = new Dictionary<int, Type>()
+        public static List<IExchange> Exchanges = new(); //contains all exchange objects
+        public static HttpClient StaticHttpClient = new();
+        public static Dictionary<int, Type> ExchangeTypes = new()
         {
             {1, typeof(BinanceExchange) },
             {2, typeof(HuobiExchange) },

@@ -63,16 +63,17 @@ namespace TriangleCollector.Services
                     string payload = string.Empty;
                     WebSocketReceiveResult result = new WebSocketReceiveResult(0, WebSocketMessageType.Text, false);
 
-                    var receiptTask = Task.Run(() =>
-                    {
-                        result = Client.ReceiveAsync(ms, buffer, CancellationToken.None).Result;
-                    });
-                    bool successfulReceiveAsync = receiptTask.Wait(TimeSpan.FromMilliseconds(10000));
-                    if (!successfulReceiveAsync)
-                    {
-                        _logger.LogError($"ReceiveAsync Timed Out");
-                        continue;
-                    }
+                    //var receiptTask = Task.Run(async () =>
+                    //{
+                        
+                    //});
+                    result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
+                    //bool successfulReceiveAsync = receiptTask.Wait(TimeSpan.FromMilliseconds(10000));
+                    //if (!successfulReceiveAsync)
+                    //{
+                    //    _logger.LogError($"ReceiveAsync Timed Out");
+                    //    continue;
+                    //}
 
                     if (result.MessageType == WebSocketMessageType.Text) //hitbtc, binance
                     {

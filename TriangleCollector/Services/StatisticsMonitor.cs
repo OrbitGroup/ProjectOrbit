@@ -77,7 +77,7 @@ namespace TriangleCollector.Services
             }
         }
 
-        private async Task OrderbookUpdateMetrics(CancellationToken stoppingToken)
+        private Task OrderbookUpdateMetrics(CancellationToken stoppingToken)
         {
             Exchange.OrderbookUpdateStats["Total Update Count"] = 0;
             while (!stoppingToken.IsCancellationRequested)
@@ -88,6 +88,8 @@ namespace TriangleCollector.Services
                     Exchange.OrderbookUpdateStats.AddOrUpdate(update.Item2,1, (key, oldvalue) => oldvalue +=1);
                 }
             }
+
+            return Task.CompletedTask;
         }
     }
 }

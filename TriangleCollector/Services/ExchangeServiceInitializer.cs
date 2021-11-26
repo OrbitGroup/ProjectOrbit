@@ -16,7 +16,7 @@ namespace TriangleCollector.Services
 
         private readonly ILogger<ExchangeServiceInitializer> _logger;
 
-        private TelemetryClient _telemetryClient;
+        private readonly TelemetryClient _telemetryClient;
 
         public ExchangeServiceInitializer(ILoggerFactory factory, ILogger<ExchangeServiceInitializer> logger, TelemetryClient telemetryClient)
         {

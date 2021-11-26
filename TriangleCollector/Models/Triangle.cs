@@ -60,7 +60,7 @@ namespace TriangleCollector.Models
             ThirdTrade
         }
 
-        private ILogger<Triangle> _logger;
+        private readonly ILogger<Triangle> _logger;
 
         public Triangle(IOrderbook firstSymbolOrderbook, IOrderbook secondSymbolOrderbook, IOrderbook thirdSymbolOrderbook, Directions direction, IExchange exch)
         {

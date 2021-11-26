@@ -27,7 +27,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public IClientWebSocket Client { get; set; }
 
-        public int MaxMarketsPerClient { get; } = 40;
+        public int MaxMarketsPerClient { get; } = 4000;
 
         public int ID = 1;
 

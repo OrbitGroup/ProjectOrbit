@@ -20,7 +20,7 @@ namespace TriangleCollector.Services
 
         private IExchange Exchange;
 
-        private int TimeInterval = 1; //time interval in seconds
+        private readonly int TimeInterval = 1; //time interval in seconds
 
         public ClientManager(ILoggerFactory factory, ILogger<ClientManager> logger, IExchange exch)
         {
@@ -30,7 +30,7 @@ namespace TriangleCollector.Services
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogDebug($"Starting Client Manager for {Exchange.ExchangeName}...");
+            _logger.LogDebug("Starting Client Manager for {ExchangeName}...", Exchange.ExchangeName);
 
             stoppingToken.Register(() => _logger.LogDebug("Stopping Client Manager..."));
             await BackgroundProcessing(stoppingToken);
@@ -55,7 +55,7 @@ namespace TriangleCollector.Services
                         Exchange.AggregateStreamOpen = false;
                     }
                 }
-                await Task.Delay(TimeInterval * 1000);
+                await Task.Delay(TimeInterval * 1000, stoppingToken);
             }
         }
     }
