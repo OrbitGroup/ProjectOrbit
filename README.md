@@ -10,7 +10,7 @@ Once the application has initiated websocket subscriptions for its relevant mark
 
 Development should be fully supported on Linux/Windows/Mac as the project does not take a dependency on anything other than native .NET Core libraries. 
 
-All you need to be able to run this project is .NET Core 3.1 and an IDE. You do not need to have Docker installed. Simply load the solution and run it, your IDE (Visual Studio, Rider, etc) should automatically restore the nuget packages.
+All you need to be able to run this project is .NET 6 and an IDE. You do not need to have Docker installed. Simply load the solution and run it, your IDE (Visual Studio, Rider, etc) should automatically restore the nuget packages.
 
 ## Models
 
