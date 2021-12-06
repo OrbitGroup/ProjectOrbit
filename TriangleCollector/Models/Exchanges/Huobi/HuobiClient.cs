@@ -65,7 +65,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             foreach (var ticker in tickerPrices)
             {
                 var symbol = ticker.GetProperty("symbol").ToString().ToUpper();
-                if (output.Where(m => m.Symbol == symbol).Count() > 0)
+                if (output.Where(m => m.Symbol == symbol).Any())
                 {
                     var bidPrice = ticker.GetProperty("bid").GetDecimal();
                     var bidSize = ticker.GetProperty("bidSize").GetDecimal();
@@ -78,7 +78,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                     }
                 }
             }
-            output = output.Where(m => m.OfficialAsks.Count > 0 && m.OfficialBids.Count > 0).ToHashSet();
+            output = output.Where(m => m.OfficialAsks.Any() && m.OfficialBids.Any()).ToHashSet();
             return output;
         }
         

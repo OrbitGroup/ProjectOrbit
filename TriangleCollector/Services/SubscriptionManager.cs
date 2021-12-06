@@ -19,7 +19,7 @@ namespace TriangleCollector.Services
 
         private IExchange Exchange;
 
-        private decimal SubscriptionThreshold = -0.1m;
+        private readonly decimal SubscriptionThreshold = -0.1m;
 
         public SubscriptionManager(ILoggerFactory factory, ILogger<SubscriptionManager> logger, IExchange exch)
         {

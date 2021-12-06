@@ -25,8 +25,6 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentQueue<Triangle> TrianglesToRecalculate { get; set; }
 
-        public ConcurrentDictionary<string, Triangle> Triangles { get; }
-
         public HashSet<string> TriarbEligibleMarkets { get; set; }
 
         public bool QueuedSubscription { get; set; }
@@ -45,11 +43,6 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; }
 
-        public int TriangleCount { get; set; }
-
-        public decimal TotalUSDValueProfitableTriangles { get; set; }
-        public decimal TotalUSDValueViableTriangles { get; set; }
-        public decimal EstimatedViableProfit { get; set; }
     }
 }
 

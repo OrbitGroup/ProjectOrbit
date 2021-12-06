@@ -27,9 +27,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public override HuobiOrderbook Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var ob = new HuobiOrderbook();
-            var orders = new ConcurrentDictionary<decimal, decimal>();
-            bool ask = true;
-            decimal lastPrice = 0;
 
             var firstLine = string.Empty; //the first line will determine which exchange the JSON response is from
             if (reader.Read() && reader.TokenType != JsonTokenType.StartObject)

@@ -16,7 +16,7 @@ namespace TriangleCollector.Services
     {
         private readonly ILogger<TriangleCalculator> _logger;
         private readonly TelemetryClient _telemetryClient;
-        private int CalculatorId;
+        private readonly int CalculatorId;
 
         private IExchange Exchange { get; set; }
 
@@ -70,8 +70,8 @@ namespace TriangleCollector.Services
                             $"OB 1 size: {triangle.FirstOrderBook.Count}, OB 2 size: {triangle.SecondOrderBook.Count}, OB 3 size {triangle.ThirdOrderBook.Count}");
                     }
                     sw.Reset();
-                    var oldestTimestamp = new List<DateTime> { triangle.FirstSymbolOrderbook.Timestamp, triangle.SecondSymbolOrderbook.Timestamp, triangle.ThirdSymbolOrderbook.Timestamp }.Min();
-                    var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
+                    //var oldestTimestamp = new List<DateTime> { triangle.FirstSymbolOrderbook.Timestamp, triangle.SecondSymbolOrderbook.Timestamp, triangle.ThirdSymbolOrderbook.Timestamp }.Min();
+                    // var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
 
                     triangleCalculationMetric.TrackValue(1);
 

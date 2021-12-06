@@ -37,7 +37,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 this.Sequence = update.Sequence;
                 this.Timestamp = update.Timestamp;
 
-                if (OfficialAsks.Count() != 0 && OfficialBids.Count() != 0)
+                if (OfficialAsks.Any() && OfficialBids.Any())
                 {
                     PreviousLowestAsk = OfficialAsks.Keys.Min();
                     PreviousHighestBid = OfficialBids.Keys.Max();
@@ -81,7 +81,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
             }
             else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
             {
-                if (OfficialAsks.Count < 1 || OfficialBids.Count < 1)
+                if (OfficialAsks.IsEmpty || OfficialBids.IsEmpty)
                 {
                     significantChange = (false, "No OfficialAsks/Bids");
                 }

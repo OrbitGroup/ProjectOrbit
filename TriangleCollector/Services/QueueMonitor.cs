@@ -18,7 +18,7 @@ namespace TriangleCollector.Services
         private readonly TelemetryClient _telemetryClient;
         private int CalculatorCount = 1;
 
-        private int MaxTriangleCalculators = 7;
+        private readonly int MaxTriangleCalculators = 7;
 
         private IExchange Exchange { get; set; }
 

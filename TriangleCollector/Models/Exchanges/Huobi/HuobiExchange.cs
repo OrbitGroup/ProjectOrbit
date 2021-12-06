@@ -29,8 +29,6 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public ConcurrentQueue<Triangle> TrianglesToRecalculate { get; set; } = new ConcurrentQueue<Triangle>();
 
-        public ConcurrentDictionary<string, Triangle> Triangles { get; } = new ConcurrentDictionary<string, Triangle>();
-
         public HashSet<string> TriarbEligibleMarkets { get; set; } = new HashSet<string>();
 
         public ConcurrentQueue<IOrderbook> SubscriptionQueue { get; set; } = new ConcurrentQueue<IOrderbook>();
@@ -45,21 +43,9 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public int UniqueTriangleCount { get; set; } = 0;
 
-        public ConcurrentQueue<(bool, string)> OrderbookUpdateQueue { get; } = new ConcurrentQueue<(bool, string)>();
-
-        public ConcurrentDictionary<string, int> OrderbookUpdateStats { get; set; } = new ConcurrentDictionary<string, int>();
-
         public ConcurrentDictionary<string, DateTime> ProfitableSymbolMapping { get; } = new ConcurrentDictionary<string, DateTime>();
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; } = new ConcurrentDictionary<string, DateTime>();
-
-        public ConcurrentQueue<Triangle> RecalculatedTriangles { get; } = new ConcurrentQueue<Triangle>();
-
-        public int TriangleCount { get; set; }
-
-        public decimal TotalUSDValueProfitableTriangles { get; set; }
-        public decimal TotalUSDValueViableTriangles { get; set; }
-        public decimal EstimatedViableProfit { get; set; }
 
         public HuobiExchange(string name)
         {
