@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace TriangleCollector.Services
     public class OrderbookListener : BackgroundService
     {
         private readonly ILogger<OrderbookListener> _logger;
+        private readonly TelemetryClient _telemetryClient;
 
         private int ID { get; set; }
 
@@ -29,9 +31,10 @@ namespace TriangleCollector.Services
         private Type OrderbookType { get; set; }
         private CancellationToken StoppingToken { get; set; }
 
-        public OrderbookListener(ILogger<OrderbookListener> logger, IClientWebSocket client, IExchange exch, int id)
+        public OrderbookListener(ILogger<OrderbookListener> logger, TelemetryClient telemetryClient, IClientWebSocket client, IExchange exch, int id)
         {
             _logger = logger;
+            _telemetryClient = telemetryClient;
             Client = client;
             Exchange = exch;
             ID = id;
@@ -54,6 +57,8 @@ namespace TriangleCollector.Services
 
         private async Task BackgroundProcessing(CancellationToken stoppingToken)
         {
+            var dataReceiptMetric = _telemetryClient.GetMetric("DataReceipt", "Category");
+
             while (Client.State == WebSocketState.Open && !stoppingToken.IsCancellationRequested)
             {
                 var buffer = WebSocket.CreateClientBuffer(1024 * 64, 1024);
@@ -63,17 +68,7 @@ namespace TriangleCollector.Services
                     string payload = string.Empty;
                     WebSocketReceiveResult result = new WebSocketReceiveResult(0, WebSocketMessageType.Text, false);
 
-                    //var receiptTask = Task.Run(async () =>
-                    //{
-                        
-                    //});
                     result = await Client.ReceiveAsync(ms, buffer, CancellationToken.None);
-                    //bool successfulReceiveAsync = receiptTask.Wait(TimeSpan.FromMilliseconds(10000));
-                    //if (!successfulReceiveAsync)
-                    //{
-                    //    _logger.LogError($"ReceiveAsync Timed Out");
-                    //    continue;
-                    //}
 
                     if (result.MessageType == WebSocketMessageType.Text) //hitbtc, binance
                     {
@@ -101,13 +96,16 @@ namespace TriangleCollector.Services
 
                     if(Exchange.OfficialOrderbooks.TryGetValue(orderbook.Symbol, out IOrderbook OfficialOrderbook))
                     {
-                        bool shouldRecalculate = false;
+                        (bool IsSignificant, string Category) shouldRecalculate;
                         lock (OfficialOrderbook.OrderbookLock) //lock the orderbook when the orderbook is being modified
                         {
                             shouldRecalculate = OfficialOrderbook.Merge(orderbook);
                         }
 
-                        if (shouldRecalculate)
+                        dataReceiptMetric.TrackValue(Convert.ToInt32(shouldRecalculate.IsSignificant), shouldRecalculate.Category);
+                        dataReceiptMetric.TrackValue(Convert.ToInt32(shouldRecalculate.IsSignificant), "Total");
+
+                        if (shouldRecalculate.IsSignificant)
                         {
                             if (Exchange.TriangleTemplates.TryGetValue(orderbook.Symbol, out List<Triangle> impactedTriangles)) //get all of the impacted triangles
                             {
@@ -157,6 +155,7 @@ namespace TriangleCollector.Services
         }
         public async Task HandleWebsocketClose()
         {
+            _logger.LogError("CLIENT DISCONNECT!");
             Exchange.ActiveClients.Remove(Client);
             Exchange.InactiveClients.Add(Client);
             Exchange.AggregateStreamOpen = false;

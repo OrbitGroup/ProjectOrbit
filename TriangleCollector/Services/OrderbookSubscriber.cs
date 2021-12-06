@@ -88,8 +88,11 @@ namespace TriangleCollector.Services
                 {
                     await Exchange.ExchangeClient.SubscribeViaQueue(market);
                     Exchange.SubscribedMarkets.TryAdd(market.Symbol, market);
-                    var properties = new Dictionary<string, string> { { "Market", market.Symbol }, { "ActiveClients", Exchange.ActiveClients.Count.ToString() } };
-                    _telemetryClient.TrackEvent("QueuedSubscription", properties);
+
+                    double activeSubscriptions = Exchange.SubscribedMarkets.Count;
+                    double targetSubscriptions = Exchange.SubscribedMarkets.Count + Exchange.SubscriptionQueue.Count;
+                    double relevantRatio = Math.Round(targetSubscriptions / Exchange.TradedMarkets.Count, 2) * 100;
+                    _logger.LogInformation($"{Exchange.ExchangeName} -- Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions / targetSubscriptions, 2) * 100}% subscribed. {relevantRatio}% of markets are deemed relevant.");
                 }
             }
             else //initialize a new client/listener if the current client reached it's maximum number of markets or if it's been disconnected
@@ -118,7 +121,7 @@ namespace TriangleCollector.Services
             {
                 var stoppingToken = new CancellationToken(); //create a new cancellation token for every listener
                 await Exchange.ExchangeClient.CreateExchangeClientAsync();
-                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), Exchange.ExchangeClient.Client, Exchange, ListenerID);
+                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), _telemetryClient, Exchange.ExchangeClient.Client, Exchange, ListenerID);
                 await listener.StartAsync(stoppingToken);
                 ListenerID++;
                 var properties = new Dictionary<string, string>

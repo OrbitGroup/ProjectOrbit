@@ -69,7 +69,6 @@ namespace TriangleCollector.Models.Exchanges.Binance
                 OfficialBids = update.OfficialBids;
 
                 var significantChange = SignificantChange(update);
-                Exchange.OrderbookUpdateQueue.Enqueue(significantChange);
                 return significantChange.Item1;
             }
 
@@ -144,6 +143,11 @@ namespace TriangleCollector.Models.Exchanges.Binance
             deepCopy.OfficialAsks = new ConcurrentDictionary<decimal, decimal>(OfficialAsks);
             deepCopy.OfficialBids = new ConcurrentDictionary<decimal, decimal>(OfficialBids);
             return (deepCopy);
+        }
+
+        (bool IsSignificant, string Category) IOrderbook.Merge(IOrderbook update)
+        {
+            throw new NotImplementedException();
         }
     }
 }

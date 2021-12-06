@@ -43,20 +43,17 @@ namespace TriangleCollector.Services
                 var clientManager = new ClientManager(_factory, _factory.CreateLogger<ClientManager>(), exchange);
                 await clientManager.StartAsync(stoppingToken);
 
-                var calculator = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), exchange);
+                var calculator = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), _telemetryClient, exchange);
                 await calculator.StartAsync(stoppingToken);
 
-                var queueMonitor = new QueueMonitor(_factory, _factory.CreateLogger<QueueMonitor>(), exchange);
+                var queueMonitor = new QueueMonitor(_factory, _factory.CreateLogger<QueueMonitor>(), _telemetryClient, exchange);
                 await queueMonitor.StartAsync(stoppingToken);
 
                 var subscriber = new OrderbookSubscriber(_factory, _factory.CreateLogger<OrderbookSubscriber>(), _telemetryClient, exchange);
                 await subscriber.StartAsync(stoppingToken);
 
-                var statsMonitor = new StatisticsMonitor(_factory.CreateLogger<StatisticsMonitor>(), exchange);
+                var statsMonitor = new StatisticsMonitor(_factory.CreateLogger<StatisticsMonitor>());
                 await statsMonitor.StartAsync(stoppingToken);
-
-                var activityMonitor = new ActivityMonitor(_factory, _factory.CreateLogger<ActivityMonitor>(), exchange);
-                await activityMonitor.StartAsync(stoppingToken);
 
                 //_logger.LogInformation($"there are {exchange.TradedMarkets.Count} markets traded on {exchange.ExchangeName}. Of these markets, {exchange.TriarbEligibleMarkets.Count} markets interact to form {exchange.UniqueTriangleCount} triangular arbitrage opportunities");
             }

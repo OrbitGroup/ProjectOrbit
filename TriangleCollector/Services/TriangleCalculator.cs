@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -14,29 +15,29 @@ namespace TriangleCollector.Services
     public class TriangleCalculator : BackgroundService
     {
         private readonly ILogger<TriangleCalculator> _logger;
-
+        private readonly TelemetryClient _telemetryClient;
         private int CalculatorId;
 
         private IExchange Exchange { get; set; }
 
-        public TriangleCalculator(ILogger<TriangleCalculator> logger, IExchange exch)
+        public TriangleCalculator(ILogger<TriangleCalculator> logger, TelemetryClient telemetryClient, IExchange exch)
         {
             _logger = logger;
+            _telemetryClient = telemetryClient;
             CalculatorId = 1;
             Exchange = exch;
         }
 
-        public TriangleCalculator(ILogger<TriangleCalculator> logger, int calculatorCount, IExchange exch)
+        public TriangleCalculator(ILogger<TriangleCalculator> logger, TelemetryClient telemetryClient, int calculatorCount, IExchange exch)
         {
             _logger = logger;
+            _telemetryClient = telemetryClient;
             CalculatorId = calculatorCount;
             Exchange = exch;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-
-
             stoppingToken.Register(() => _logger.LogDebug("Stopping Triangle Calculator..."));
 
             _logger.LogDebug($"Starting Triangle Calculator {CalculatorId} for {Exchange.ExchangeName}");
@@ -51,6 +52,8 @@ namespace TriangleCollector.Services
 
         private Task BackgroundProcessing(CancellationToken stoppingToken)
         {
+            var triangleCalculationMetric = _telemetryClient.GetMetric("TriangleCalculation");
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 var sw = new Stopwatch();
@@ -60,9 +63,9 @@ namespace TriangleCollector.Services
                     triangle.SetMaxVolumeAndProfitability();
                     sw.Stop();
 
-                    if(sw.ElapsedMilliseconds > 50)
+                    if (sw.ElapsedMilliseconds > 50)
                     {
-                        _logger.LogWarning($"Irregular triangle calculation time for {triangle.ToString()}: {sw.ElapsedMilliseconds}ms in grand total" + Environment.NewLine +
+                        _logger.LogWarning($"Irregular triangle calculation time for {triangle}: {sw.ElapsedMilliseconds}ms in grand total" + Environment.NewLine +
                             $"Profitability calculation time, count: {triangle.ProfitabilityComputeTime}ms, {triangle.ProfitabilityComputeCount}, Volume calculation time: {triangle.VolumeComputeTime}ms, Liquidity removal time: {triangle.LiquidityRemovalComputeTime}ms" + Environment.NewLine + 
                             $"OB 1 size: {triangle.FirstOrderBook.Count}, OB 2 size: {triangle.SecondOrderBook.Count}, OB 3 size {triangle.ThirdOrderBook.Count}");
                     }
@@ -70,28 +73,21 @@ namespace TriangleCollector.Services
                     var oldestTimestamp = new List<DateTime> { triangle.FirstSymbolOrderbook.Timestamp, triangle.SecondSymbolOrderbook.Timestamp, triangle.ThirdSymbolOrderbook.Timestamp }.Min();
                     var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
 
-                    
+                    triangleCalculationMetric.TrackValue(1);
 
-
-                    //if (triangle.ProfitPercent > Convert.ToDecimal(0.002) && triangle.MaxVolume > Convert.ToDecimal(0.001) && triangle.Profit != Convert.ToDecimal(0))
-                    //{
-                        //Console.WriteLine($"Triarb Opportunity on {Exchange.ExchangeName} | Markets: {firstSymbolOrderbook.Symbol}, {secondSymbolOrderbook.Symbol}, {thirdSymbolOrderbook.Symbol} | Profitability: {Math.Round(triangle.ProfitPercent, 4)}% | Liquidity: {Math.Round(triangle.MaxVolume, 4)} BTC | Profit: {Math.Round(triangle.Profit, 4)} BTC, or ${Math.Round(triangle.Profit * USDMonitor.BTCUSDPrice, 2)} | Delay: {age}ms");
-                    //}
-                        
-
-                    //Exchange.TriangleRefreshTimes.AddOrUpdate(triangle.ToString(), oldestTimestamp, (key, oldValue) => oldValue = oldestTimestamp);
-                    Exchange.RecalculatedTriangles.Enqueue(triangle);
-
-                    
-                }
-                /*else
-                {
-                    if (Exchange.TrianglesToRecalculate.Count > 0)
+                    if (triangle.ProfitPercent > 0)
                     {
-                        var test = Exchange.TrianglesToRecalculate.TryDequeue(out var result);
-                        _logger.LogError("unable to dequeue triangles");
+                        var properties = new Dictionary<string, string>
+                        {
+                            { "ExchangeName", Exchange.ExchangeName },
+                            { "TriangleId", triangle.ToString() },
+                            { "ProfitPercent", triangle.ProfitPercent.ToString() },
+                            { "MaxVolume", triangle.MaxVolume.ToString() },
+                            { "BTCUSDPrice", USDMonitor.BTCUSDPrice.ToString() }
+                        };
+                        _telemetryClient.TrackEvent("ProfitableTriangle", properties);
                     }
-                }*/
+                }
             }
             return Task.CompletedTask;
         }

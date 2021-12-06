@@ -30,7 +30,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public object OrderbookLock { get; } = new object();
 
-        public bool Merge(IOrderbook update)
+        public (bool IsSignificant, string Category) Merge(IOrderbook update)
         {
             if (this.Sequence < update.Sequence)
             {
@@ -51,49 +51,52 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 OfficialAsks = update.OfficialAsks;
                 OfficialBids = update.OfficialBids;
                 var significantChange = SignificantChange(update);
-                Exchange.OrderbookUpdateQueue.Enqueue(significantChange);
-                return significantChange.Item1;
+
+                return significantChange;
             }
-            return false;
+            return (IsSignificant: false, Category: "Sequence out of order.");
         }
 
-        public (bool, string) SignificantChange(IOrderbook updatedOrderbook)
+        public (bool IsSignificant, string Category) SignificantChange(IOrderbook updatedOrderbook)
         {
+            (bool IsSignificant, string Category) significantChange;
+
             if (Exchange.ProfitableSymbolMapping.TryGetValue(Symbol, out var lastProfitable))
             {
                 if (DateTime.UtcNow - lastProfitable < TimeSpan.FromMinutes(1)) //if the symbol had a profitable triangle in the last minute
                 {
-                    return (true, "Symbol had a profitable triangle within the last minute");
+                     significantChange = (true, "Symbol had a profitable triangle within the last minute");
                 }
                 else
                 {
                     if (OfficialAsks.Keys.Min() < PreviousLowestAsk || OfficialBids.Keys.Max() > PreviousHighestBid) 
                     {
-                        return (true, "Price improved");
+                        significantChange = (true, "Price improved");
                     }
                     else //price got worse or did not change
                     {
-                        return (false, "Price worsened");
+                        significantChange = (false, "Price worsened");
                     }
                 }
-
             }
             else //symbol is not mapped as profitable - update is only significant if the bottom bid/ask layers changed, and the price improved
             {
                 if (OfficialAsks.Count < 1 || OfficialBids.Count < 1)
                 {
-                    return (false, "No OfficialAsks/Bids");
+                    significantChange = (false, "No OfficialAsks/Bids");
                 }
 
                 if (OfficialAsks.Keys.Min() < PreviousLowestAsk || OfficialBids.Keys.Max() > PreviousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
-                    return (true, "Price improved");
+                    significantChange = (true, "Price improved");
                 }
                 else //price got worse or did not change
                 {
-                    return (false, "Price worsened");
+                    significantChange = (false, "Price worsened");
                 }
             }
+
+            return significantChange;
         }
 
         public void UpdateAskLayer(KeyValuePair<decimal, decimal> layer)

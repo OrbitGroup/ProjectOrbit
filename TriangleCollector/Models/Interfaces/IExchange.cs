@@ -39,17 +39,11 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, List<Triangle>> TriangleTemplates { get; }
 
-        public ConcurrentQueue<(bool, string)> OrderbookUpdateQueue {get;}
-
-        public ConcurrentDictionary<string, int> OrderbookUpdateStats { get; set; }
-
         public int UniqueTriangleCount { get; set; }
 
         public ConcurrentDictionary<string, DateTime> ProfitableSymbolMapping { get; }
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; }
-
-        public ConcurrentQueue<Triangle> RecalculatedTriangles { get; }
 
         public int TriangleCount { get; set; }
 

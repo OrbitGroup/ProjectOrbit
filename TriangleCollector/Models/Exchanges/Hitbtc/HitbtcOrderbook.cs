@@ -81,7 +81,6 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
                 update.OfficialBids.AsParallel().ForAll(UpdateBidLayer);
 
                 var significantChange = SignificantChange(update);
-                Exchange.OrderbookUpdateQueue.Enqueue(significantChange);
                 return significantChange.Item1;
             }
 
@@ -148,6 +147,11 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             {
                 OfficialBids.TryRemove(layer.Key, out var _);
             }
+        }
+
+        (bool IsSignificant, string Category) IOrderbook.Merge(IOrderbook update)
+        {
+            throw new NotImplementedException();
         }
     }
 }

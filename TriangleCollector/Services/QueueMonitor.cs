@@ -6,6 +6,7 @@ using TriangleCollector.Models.Interfaces;
 using System.Linq;
 using System.Collections.Generic;
 using TriangleCollector.Models;
+using Microsoft.ApplicationInsights;
 
 namespace TriangleCollector.Services
 {
@@ -14,17 +15,18 @@ namespace TriangleCollector.Services
         private readonly ILoggerFactory _factory;
 
         private readonly ILogger<QueueMonitor> _logger;
-
+        private readonly TelemetryClient _telemetryClient;
         private int CalculatorCount = 1;
 
         private int MaxTriangleCalculators = 7;
 
         private IExchange Exchange { get; set; }
 
-        public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger, IExchange exch)
+        public QueueMonitor(ILoggerFactory factory, ILogger<QueueMonitor> logger, TelemetryClient telemetryClient, IExchange exch)
         {
             _factory = factory;
             _logger = logger;
+            _telemetryClient = telemetryClient;
             Exchange = exch;
         }
 
@@ -45,7 +47,7 @@ namespace TriangleCollector.Services
                 {
                     //TODO: implement average queue size metric to decrement TriangleCalculators.
                     CalculatorCount++;
-                    var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), CalculatorCount, Exchange);
+                    var newCalc = new TriangleCalculator(_factory.CreateLogger<TriangleCalculator>(), _telemetryClient, CalculatorCount, Exchange);
                     await newCalc.StartAsync(stoppingToken);
                     
                 }

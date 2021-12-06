@@ -51,9 +51,9 @@ namespace TriangleCollector.Models.Interfaces
         /// Takes an update and merges it with this orderbook.
         /// </summary>
         /// <param name="update">An orderbook update</param>
-        public bool Merge(IOrderbook update);
+        public (bool IsSignificant, string Category) Merge(IOrderbook update);
 
-        public (bool, string) SignificantChange(IOrderbook updatedOrderbook); //TO DO: add flagging system to simply flag triangles as profitable and therefore signficant
+        public (bool IsSignificant, string Category) SignificantChange(IOrderbook updatedOrderbook); //TO DO: add flagging system to simply flag triangles as profitable and therefore signficant
 
         public void UpdateAskLayer(KeyValuePair<decimal, decimal> layer);
 
