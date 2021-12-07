@@ -102,8 +102,8 @@ namespace TriangleCollector.Services
                             shouldRecalculate = OfficialOrderbook.Merge(orderbook);
                         }
 
-                        dataReceiptMetric.TrackValue(Convert.ToInt32(shouldRecalculate.IsSignificant), shouldRecalculate.Category);
-                        dataReceiptMetric.TrackValue(Convert.ToInt32(shouldRecalculate.IsSignificant), "Total");
+                        dataReceiptMetric.TrackValue(1, shouldRecalculate.Category);
+                        dataReceiptMetric.TrackValue(1, "Total");
 
                         if (shouldRecalculate.IsSignificant)
                         {

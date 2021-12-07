@@ -85,8 +85,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
                 {
                     significantChange = (false, "No OfficialAsks/Bids");
                 }
-
-                if (OfficialAsks.Keys.Min() < PreviousLowestAsk || OfficialBids.Keys.Max() > PreviousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
+                else if (OfficialAsks.Keys.Min() < PreviousLowestAsk || OfficialBids.Keys.Max() > PreviousHighestBid) //if the lowest ask price got lower, or the highest bid got higher, this is a universally better price that will always improve profitability
                 {
                     significantChange = (true, "Price improved");
                 }
