@@ -17,10 +17,12 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         public IExchange Exchange { get; set; }
         public string SymbolsRestApi { get; set; } = "https://api.hitbtc.com/api/3/public/symbol"; //REST API call to get all of the traded markets
         public string PricesRestApi { get; set; } = "https://api.hitbtc.com/api/3/public/orderbook/?limit=1"; //REST API call to get all of the best prices for all markets
-        public string SocketClientApi { get; set; } = "wss://api.hitbtc.com/api/3/ws";
+        public string PublicMarketDataSocketClientUrl { get; set; } = "wss://api.hitbtc.com/api/3/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
-        public IClientWebSocket Client { get; set; }
+        public IClientWebSocket PublicClient { get; set; }
         public int MaxMarketsPerClient { get; } = 40;
+
+        public string PrivateAccountDataSocketClientUrl { get; set; }
 
 
         //public BinanceClient() //to add a new exchange to Orbit, append the list below with the proper REST API URL.
@@ -80,18 +82,18 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
             return output;
         }
 
-        public async Task<WebSocketAdapter> CreateExchangeClientAsync() //create new websocket client
+        public async Task<WebSocketAdapter> CreatePublicExchangeClientAsync() //create new websocket client
         {
             var client = new ClientWebSocket();
             var factory = new LoggerFactory();
             var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
 
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
-            await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
+            await client.ConnectAsync(new Uri(PublicMarketDataSocketClientUrl), CancellationToken.None);
             adapter.TimeStarted = DateTime.UtcNow;
             adapter.Markets = new List<IOrderbook>();
-            Client = adapter;
-            Exchange.ActiveClients.Add(Client);
+            PublicClient = adapter;
+            Exchange.ActiveClients.Add(PublicClient);
             return adapter;
         }
 
@@ -99,12 +101,12 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         {
             market.OfficialAsks.Clear();
             market.OfficialBids.Clear();
-            if (Client.State == WebSocketState.Open) //given the amount of time it takes to complete this for loop, a client could be aborted in process.
+            if (PublicClient.State == WebSocketState.Open) //given the amount of time it takes to complete this for loop, a client could be aborted in process.
             {
-                await Client.SendAsync(
+                await PublicClient.SendAsync(
                 new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"subscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
                 WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                Client.Markets.Add(market);
+                PublicClient.Markets.Add(market);
             } 
         }
         public Task SubscribeViaAggregate()
@@ -115,7 +117,7 @@ namespace TriangleCollector.Models.Exchanges.Hitbtc
         {
             if (client.State == WebSocketState.Open)
             {
-                await Client.SendAsync(
+                await PublicClient.SendAsync(
                 new ArraySegment<byte>(Encoding.ASCII.GetBytes($"{{\"method\": \"unsubscribeOrderbook\",\"params\": {{ \"symbol\": \"{market.Symbol}\" }} }}")),
                 WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
             }

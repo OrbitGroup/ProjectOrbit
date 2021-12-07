@@ -18,10 +18,12 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public IExchange Exchange { get; set; }
         public string SymbolsRestApi { get; set; } = "https://api.binance.com/api/v3/exchangeInfo";
         public string PricesRestApi { get; set; } = "https://api.binance.com/api/v3/ticker/bookTicker";
-        public string SocketClientApi { get; set; } = "wss://stream.binance.com:9443/ws";
+        public string PublicMarketDataSocketClientUrl { get; set; } = "wss://stream.binance.com:9443/ws";
         public JsonElement.ArrayEnumerator Tickers { get; set; }
-        public IClientWebSocket Client { get; set; }
+        public IClientWebSocket PublicClient { get; set; }
         public int MaxMarketsPerClient { get; } = 20;
+
+        public string PrivateAccountDataSocketClientUrl { get; set; }
 
         public int ID = 1;
 
@@ -63,27 +65,27 @@ namespace TriangleCollector.Models.Exchanges.Binance
             return output;
         }
 
-        public async Task<WebSocketAdapter> CreateExchangeClientAsync()
+        public async Task<WebSocketAdapter> CreatePublicExchangeClientAsync()
         {
             var client = new ClientWebSocket();
             var factory = new LoggerFactory();
             var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
 
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
-            await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
+            await client.ConnectAsync(new Uri(PublicMarketDataSocketClientUrl), CancellationToken.None);
             adapter.TimeStarted = DateTime.UtcNow;
             adapter.Markets = new List<IOrderbook>();
-            Client = adapter;
-            Exchange.ActiveClients.Add(Client);
+            PublicClient = adapter;
+            Exchange.ActiveClients.Add(PublicClient);
             await Task.Delay(250); // clients with zero subscriptions are being aborted; give 1/4 second to ensure connection is complete
             return adapter;
         }
 
         public async Task SubscribeViaAggregate()
         {
-            if (Client.State == WebSocketState.Open)
+            if (PublicClient.State == WebSocketState.Open)
             {
-                await Client.SendAsync(new ArraySegment<byte>(
+                await PublicClient.SendAsync(new ArraySegment<byte>(
                         Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"!bookTicker\"], \"id\": {ID} }}")
                         ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                 ID++;
@@ -93,13 +95,13 @@ namespace TriangleCollector.Models.Exchanges.Binance
         }
         public async Task SubscribeViaQueue(IOrderbook market)
         {
-            if (Client.State == WebSocketState.Open)
+            if (PublicClient.State == WebSocketState.Open)
             {
-                await Client.SendAsync(new ArraySegment<byte>(
+                await PublicClient.SendAsync(new ArraySegment<byte>(
                         Encoding.ASCII.GetBytes($"{{\"method\": \"SUBSCRIBE\",\"params\": [\"{market.Symbol.ToLower()}@bookTicker\"], \"id\": {ID} }}")
                         ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                 ID++;
-                Client.Markets.Add(market);
+                PublicClient.Markets.Add(market);
             }
             await Task.Delay(250);
         }

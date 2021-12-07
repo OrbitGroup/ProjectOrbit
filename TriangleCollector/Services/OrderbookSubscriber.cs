@@ -82,7 +82,7 @@ namespace TriangleCollector.Services
 
         public async Task QueuedSubscriptionHandling()
         {
-            if (Exchange.ExchangeClient.Client.Markets.Count < Exchange.ExchangeClient.MaxMarketsPerClient && Exchange.ExchangeClient.Client.State == WebSocketState.Open)
+            if (Exchange.ExchangeClient.PublicClient.Markets.Count < Exchange.ExchangeClient.MaxMarketsPerClient && Exchange.ExchangeClient.PublicClient.State == WebSocketState.Open)
             {
                 if (Exchange.SubscriptionQueue.TryDequeue(out var market))
                 {
@@ -105,7 +105,7 @@ namespace TriangleCollector.Services
         {
             if(Exchange.AggregateStreamOpen == false)
             {
-                if(Exchange.ExchangeClient.Client.State != WebSocketState.Open)
+                if(Exchange.ExchangeClient.PublicClient.State != WebSocketState.Open)
                 {
                     await CreateNewListenerAsync();
                 }
@@ -120,8 +120,8 @@ namespace TriangleCollector.Services
             try
             {
                 var stoppingToken = new CancellationToken(); //create a new cancellation token for every listener
-                await Exchange.ExchangeClient.CreateExchangeClientAsync();
-                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), _telemetryClient, Exchange.ExchangeClient.Client, Exchange, ListenerID);
+                await Exchange.ExchangeClient.CreatePublicExchangeClientAsync();
+                var listener = new OrderbookListener(_factory.CreateLogger<OrderbookListener>(), _telemetryClient, Exchange.ExchangeClient.PublicClient, Exchange, ListenerID);
                 await listener.StartAsync(stoppingToken);
                 ListenerID++;
                 var properties = new Dictionary<string, string>

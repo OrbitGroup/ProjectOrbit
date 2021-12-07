@@ -19,32 +19,56 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public string SymbolsRestApi { get; set; } = "https://api.huobi.pro/v1/common/symbols"; //dictionary of the REST API calls which pull all symbols for the exchanges
 
+        public string PlaceOrderRestApi { get; set; } = "https://api.huobi.pro/v1/order/orders/place";
+
         public string PricesRestApi { get; set; } = "https://api.huobi.pro/market/tickers";
 
-        public string SocketClientApi { get; set; } = "wss://api.huobi.pro/ws";
+        public string PrivateAccountDataSocketClientUrl { get; set; } = "wss://api.huobi.pro/ws/v2"; // the only difference is v2...adding 'v2' breaks the public URL
+
+        public string PublicMarketDataSocketClientUrl { get; set; } = "wss://api.huobi.pro/ws";
 
         public JsonElement.ArrayEnumerator Tickers { get; set; }
 
-        public IClientWebSocket Client { get; set; }
+        public IClientWebSocket PublicClient { get; set; }
+
+        public IClientWebSocket AuthenticatedClient { get; set; }
 
         public int MaxMarketsPerClient { get; } = 4000;
 
         public int ID = 1;
 
-        public async Task<WebSocketAdapter> CreateExchangeClientAsync()
+        public async Task<WebSocketAdapter> CreatePublicExchangeClientAsync()
         {
             var client = new ClientWebSocket();
             var factory = new LoggerFactory();
             var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
 
             client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
-            await client.ConnectAsync(new Uri(SocketClientApi), CancellationToken.None);
+            await client.ConnectAsync(new Uri(PublicMarketDataSocketClientUrl), CancellationToken.None);
             adapter.TimeStarted = DateTime.UtcNow;
             adapter.Markets = new List<IOrderbook>();
-            Client = adapter;
-            Exchange.ActiveClients.Add(Client);
+            PublicClient = adapter;
+            Exchange.ActiveClients.Add(PublicClient);
             return adapter;
         }
+
+        public async Task<WebSocketAdapter> CreateAuthenticatedExchangeClientAsync()
+        {
+            var client = new ClientWebSocket();
+            var factory = new LoggerFactory();
+            var adapter = new WebSocketAdapter(factory.CreateLogger<WebSocketAdapter>(), client);
+
+            client.Options.KeepAliveInterval = new TimeSpan(0, 0, 5);
+            await client.ConnectAsync(new Uri(PrivateAccountDataSocketClientUrl), CancellationToken.None);
+
+            //TO DO HERE: add method to authenticate client via signature
+
+            adapter.TimeStarted = DateTime.UtcNow;
+            AuthenticatedClient = adapter;
+            Exchange.ActiveClients.Add(AuthenticatedClient);
+            return adapter;
+        }
+    
         public HashSet<IOrderbook> GetMarketsViaRestApi()
         {
             var output = new HashSet<IOrderbook>();
@@ -84,15 +108,15 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         
         public async Task SubscribeViaQueue(IOrderbook market)
         {
-            if (Client.State == WebSocketState.Open)
+            if (PublicClient.State == WebSocketState.Open)
             {
                 try
                 {
-                    await Client.SendAsync(new ArraySegment<byte>(
+                    await PublicClient.SendAsync(new ArraySegment<byte>(
                         Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.refresh.10\",\n  \"id\": \"id{ID}\"\n }}")
                         ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                     ID++;
-                    Client.Markets.Add(market);
+                    PublicClient.Markets.Add(market);
                 } catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
@@ -110,10 +134,17 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         {
             if (client.State == WebSocketState.Open)
             {
-                await Client.SendAsync(new ArraySegment<byte>(
+                await PublicClient.SendAsync(new ArraySegment<byte>(
                             Encoding.ASCII.GetBytes($"{{\"sub\": \"market.{market.Symbol.ToLower()}.mbp.150\",\n  \"id\": \"id{ID}\"\n }}")
                             ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
             }
+        }
+
+        public async Task SubscribeToOrderUpdates()
+        {
+            await AuthenticatedClient.SendAsync(new ArraySegment<byte>(
+                        Encoding.ASCII.GetBytes($"{{\"action\": \"sub\",\n  \"ch\": \"orders#*\"\n }}") //wildcard symbol will subscribe to order updates for all markets
+                        ), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

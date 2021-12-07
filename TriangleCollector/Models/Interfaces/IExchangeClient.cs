@@ -13,14 +13,15 @@ namespace TriangleCollector.Models.Interfaces
         public IExchange Exchange { get; set; }
         public string SymbolsRestApi { get; }
         public string PricesRestApi { get; }
-        public string SocketClientApi { get; }
+        public string PublicMarketDataSocketClientUrl { get; }
+        public string PrivateAccountDataSocketClientUrl { get; }
         public JsonElement.ArrayEnumerator Tickers { get; }
-        public IClientWebSocket Client { get; }
+        public IClientWebSocket PublicClient { get; }
         public int MaxMarketsPerClient { get; }
 
         public HashSet<IOrderbook> GetMarketsViaRestApi();
 
-        public Task<WebSocketAdapter> CreateExchangeClientAsync(); //establishes initial connection to exchange for websocket
+        public Task<WebSocketAdapter> CreatePublicExchangeClientAsync(); //establishes initial connection to exchange for websocket
 
         public Task SubscribeViaQueue(IOrderbook market);
 
