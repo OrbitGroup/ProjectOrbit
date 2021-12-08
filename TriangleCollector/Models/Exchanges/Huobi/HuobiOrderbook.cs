@@ -20,7 +20,7 @@ namespace TriangleCollector.Models.Exchanges.Huobi
         public SortedDictionary<decimal, decimal> SortedAsks { get; set; } = new SortedDictionary<decimal, decimal>();
         public ConcurrentDictionary<decimal, decimal> OfficialBids { get; set; } = new ConcurrentDictionary<decimal, decimal>();
         public SortedDictionary<decimal, decimal> SortedBids { get; set; } = new SortedDictionary<decimal, decimal>();
-        public DateTime Timestamp { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
         public decimal LowestAsk { get; set; }
         public bool Pong { get; set; }
         public long PongValue { get; set; }

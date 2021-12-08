@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Concurrent;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using TriangleCollector.Models.Interfaces;
 using TriangleCollector.Services;
@@ -60,6 +62,10 @@ namespace TriangleCollector.Models.Exchanges.Binance
         public decimal TotalUSDValueProfitableTriangles { get; set; }
         public decimal TotalUSDValueViableTriangles { get; set; }
         public decimal EstimatedViableProfit { get; set; }
+
+        public Channel<Triangle> TradeQueue => throw new NotImplementedException();
+
+        public IMemoryCache RecentlyTradedTriangles => throw new NotImplementedException();
 
         public BinanceExchange(string name)
         {

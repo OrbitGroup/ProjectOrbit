@@ -1,4 +1,5 @@
 ﻿using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -70,14 +71,10 @@ namespace TriangleCollector.Services
                             $"OB 1 size: {triangle.FirstOrderBook.Count}, OB 2 size: {triangle.SecondOrderBook.Count}, OB 3 size {triangle.ThirdOrderBook.Count}");
                     }
                     sw.Reset();
-                    //var oldestTimestamp = new List<DateTime> { triangle.FirstSymbolOrderbook.Timestamp, triangle.SecondSymbolOrderbook.Timestamp, triangle.ThirdSymbolOrderbook.Timestamp }.Min();
-                    // var age = (DateTime.UtcNow - oldestTimestamp).TotalMilliseconds;
 
                     triangleCalculationMetric.TrackValue(1);
 
-                    if (triangle.ProfitPercent > 0)
-                    {
-                        var properties = new Dictionary<string, string>
+                    var properties = new Dictionary<string, string>
                         {
                             { "ExchangeName", Exchange.ExchangeName },
                             { "TriangleId", triangle.ToString() },
@@ -85,10 +82,33 @@ namespace TriangleCollector.Services
                             { "MaxVolume", triangle.MaxVolume.ToString() },
                             { "BTCUSDPrice", USDMonitor.BTCUSDPrice.ToString() }
                         };
+
+                    //TODO: Organize the min-profit percent and min-volume as part of IExchange
+                    if (triangle.ProfitPercent > 0.05m)
+                    {
+                        //Check if the triangle has been recently traded. This is determined by the cache's AbsoluteExpirationRelativeToNow property which is set in the Trader.
+                        if (!Exchange.RecentlyTradedTriangles.TryGetValue(triangle.ToString(), out _))
+                        {
+                            //Triangle isn't cached, so we write it to the TradeQueue channel and log the queued trade.
+                            Exchange.TradeQueue.Writer.TryWrite(triangle);
+                            _telemetryClient.TrackEvent("QueuedTrade", properties);
+                        }
+                    }
+                    else
+                    {
+                        //In the current FullMode of the Channel<Triangle> this will never happen
+                        //because we are dropping the oldest item in the queue and will always successfully write a triangle.
+                        _logger.LogTrace("Failed to queue Triangle", properties);
+                    }
+
+                    if (triangle.ProfitPercent > 0)
+                    {
+                        //Logging all triangles over 0% profit just for data.
                         _telemetryClient.TrackEvent("ProfitableTriangle", properties);
                     }
                 }
             }
+
             return Task.CompletedTask;
         }
     }

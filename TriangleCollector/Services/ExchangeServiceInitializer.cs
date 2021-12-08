@@ -52,8 +52,8 @@ namespace TriangleCollector.Services
                 var subscriber = new OrderbookSubscriber(_factory, _factory.CreateLogger<OrderbookSubscriber>(), _telemetryClient, exchange);
                 await subscriber.StartAsync(stoppingToken);
 
-                var statsMonitor = new StatisticsMonitor(_factory.CreateLogger<StatisticsMonitor>());
-                await statsMonitor.StartAsync(stoppingToken);
+                var trader = new Trader(_factory.CreateLogger<Trader>(), _telemetryClient, exchange);
+                await trader.StartAsync(stoppingToken);
 
                 //_logger.LogInformation($"there are {exchange.TradedMarkets.Count} markets traded on {exchange.ExchangeName}. Of these markets, {exchange.TriarbEligibleMarkets.Count} markets interact to form {exchange.UniqueTriangleCount} triangular arbitrage opportunities");
             }

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Text.Json;
-
-
+using System.Threading.Channels;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TriangleCollector.Models.Interfaces
 {
@@ -43,6 +43,9 @@ namespace TriangleCollector.Models.Interfaces
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; }
 
+        public Channel<Triangle> TradeQueue { get; }
+
+        public IMemoryCache RecentlyTradedTriangles { get; }
     }
 }
 

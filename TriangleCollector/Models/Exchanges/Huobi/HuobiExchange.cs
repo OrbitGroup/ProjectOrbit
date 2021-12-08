@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Concurrent;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using TriangleCollector.Models.Interfaces;
 using TriangleCollector.Services;
@@ -47,12 +49,15 @@ namespace TriangleCollector.Models.Exchanges.Huobi
 
         public ConcurrentDictionary<string, DateTime> TriangleRefreshTimes { get; } = new ConcurrentDictionary<string, DateTime>();
 
+        //TODO: Optimize queue size and implement our own FullMode to drop the lowest USD value triangle.
+        public Channel<Triangle> TradeQueue { get; } = Channel.CreateBounded<Triangle>(new BoundedChannelOptions(2) { FullMode = BoundedChannelFullMode.DropOldest });
+
+        public IMemoryCache RecentlyTradedTriangles { get; } = new MemoryCache(new MemoryCacheOptions());
+
         public HuobiExchange(string name)
         {
-
             ExchangeName = name;
             ExchangeClient.Exchange = this;
-
         }
     }
 }
