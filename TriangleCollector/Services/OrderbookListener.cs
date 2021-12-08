@@ -155,7 +155,8 @@ namespace TriangleCollector.Services
         }
         public async Task HandleWebsocketClose()
         {
-            _logger.LogError("CLIENT DISCONNECT!");
+            _logger.LogError($"ClientDisconnected");
+            Console.WriteLine($"Client disconnected at {DateTime.Now}");
             Exchange.ActiveClients.Remove(Client);
             Exchange.InactiveClients.Add(Client);
             Exchange.AggregateStreamOpen = false;
