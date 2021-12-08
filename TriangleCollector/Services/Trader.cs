@@ -87,19 +87,19 @@ namespace TriangleCollector.Services
             category = "";
 
             //When the app first starts we don't have the BTCUSD price, this stops us from logging a supposedly $0 trade.
-            if (USDMonitor.BTCUSDPrice == 0) category = "BTCUSD Price Not Populated";
+            if (USDMonitor.BTCUSDPrice == 0) category += "|BTCUSD Price Not Populated";
 
             //Orderbooks appear to be able to get as old as 30 seconds. This TimeSpan value could be used as another way of adjusting our risk tolerance besides the ProfitPercent.
             //i.e. The higher the ProfitPercent the higher this TimeSpan could go.
-            if (DateTime.UtcNow - triangle.FirstSymbolOrderbook.Timestamp > TimeSpan.FromSeconds(MaxOrderBookAge)) category = "First Orderbook Stale";
-            if (DateTime.UtcNow - triangle.SecondSymbolOrderbook.Timestamp > TimeSpan.FromSeconds(MaxOrderBookAge)) category = "Second Orderbook Stale";
-            if (DateTime.UtcNow - triangle.ThirdSymbolOrderbook.Timestamp > TimeSpan.FromSeconds(MaxOrderBookAge)) category = "Third Orderbook Stale";
+            if (DateTime.UtcNow - triangle.FirstSymbolOrderbook.Timestamp > TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|First Orderbook Stale";
+            if (DateTime.UtcNow - triangle.SecondSymbolOrderbook.Timestamp > TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|Second Orderbook Stale";
+            if (DateTime.UtcNow - triangle.ThirdSymbolOrderbook.Timestamp > TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|Third Orderbook Stale";
 
-            if (triangle.MaxVolume > MinVolume) category = "Low Volume";
+            if (triangle.MaxVolume > MinVolume) category += "|Low Volume";
 
             if (string.IsNullOrEmpty(category))
             {
-                category = "Passed";
+                category += "Passed";
                 RulesEvaluationMetric.TrackValue(1, category);
                 return true;
             }
