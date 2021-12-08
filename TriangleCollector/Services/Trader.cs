@@ -92,9 +92,9 @@ namespace TriangleCollector.Services
 
             //Orderbooks appear to be able to get as old as 30 seconds. This TimeSpan value could be used as another way of adjusting our risk tolerance besides the ProfitPercent.
             //i.e. The higher the ProfitPercent the higher this TimeSpan could go.
-            if (DateTime.UtcNow - triangle.FirstSymbolOrderbook.Timestamp >= TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|First Orderbook Stale";
-            if (DateTime.UtcNow - triangle.SecondSymbolOrderbook.Timestamp >= TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|Second Orderbook Stale";
-            if (DateTime.UtcNow - triangle.ThirdSymbolOrderbook.Timestamp >= TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|Third Orderbook Stale";
+            if (DateTime.UtcNow - triangle.FirstSymbolOrderbook.Timestamp <= TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|First Orderbook Stale";
+            if (DateTime.UtcNow - triangle.SecondSymbolOrderbook.Timestamp <= TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|Second Orderbook Stale";
+            if (DateTime.UtcNow - triangle.ThirdSymbolOrderbook.Timestamp <= TimeSpan.FromSeconds(MaxOrderBookAge)) category += "|Third Orderbook Stale";
 
             if (triangle.Profit >= MinUsdProfit) category += "|Low Volume";
 
