@@ -92,7 +92,7 @@ namespace TriangleCollector.Services
                     double activeSubscriptions = Exchange.SubscribedMarkets.Count;
                     double targetSubscriptions = Exchange.SubscribedMarkets.Count + Exchange.SubscriptionQueue.Count;
                     double relevantRatio = Math.Round(targetSubscriptions / Exchange.TradedMarkets.Count, 2) * 100;
-                    _logger.LogInformation($"{DateTime.Now}: {Exchange.ExchangeName} -- Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions / targetSubscriptions, 2) * 100}% subscribed. {relevantRatio}% of markets are deemed relevant.");
+                    //_logger.LogInformation($"{DateTime.Now}: {Exchange.ExchangeName} -- Active Subscriptions: {activeSubscriptions} - {Math.Round(activeSubscriptions / targetSubscriptions, 2) * 100}% subscribed. {relevantRatio}% of markets are deemed relevant.");
                 }
             }
             else //initialize a new client/listener if the current client reached it's maximum number of markets or if it's been disconnected
