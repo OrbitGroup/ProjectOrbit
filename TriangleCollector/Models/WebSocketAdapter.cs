@@ -49,7 +49,6 @@ namespace TriangleCollector.Models
                 {
                     _logger.LogError($"WebSocket Client disconnected: {_client.CloseStatusDescription}");
                     _logger.LogError(ex.Message);
-                    _logger.LogError(ex.InnerException.Message);
                 }
             }
             while (!result.EndOfMessage && !cancellationToken.IsCancellationRequested);
