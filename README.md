@@ -1,5 +1,7 @@
 ﻿# Project Orbit
 
+*Please note that this repository was forked and taken private in December 2021 (the private version contains proprietary code).* 
+
 Project Orbit is a .NET Core application which analyzes 846 unique cryptocurrency markets traded across three exchanges, and calculates every possible [triangular arbitrage opportunity](https://www.investopedia.com/terms/t/triangulararbitrage.asp) as well as the liquidity available as a market taker. As of writing, there are 799 unique triangular arbitrage opportunities monitored by Project Orbit.
 
 The application first polls the REST API services for each exchange for listings of all traded markets as well as the best bid and ask levels available. It then uses the base and quote currencies of each market to map every possible triangular arbitrage opportunity, and calculates the profitability of each opportunity as of that moment in time. For markets that interact with opportunities above a profitability threshold, it then initiates websocket subscriptions with the exchange for real-time orderbook updates, and recalculates the impacted triangular arbitrage opportunities whenever the orderbooks change. Depending on the volume and price efficiency of the exchange, as little as 40% or as many as 90% of markets may meet the threshold for websocket subscription.
